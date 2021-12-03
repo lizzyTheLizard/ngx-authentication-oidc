@@ -1,0 +1,18 @@
+version: "3.9"
+services:
+  keycloak:
+    image: jboss/keycloak
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./keycloak-config.json:/keycloak-config.json
+    environment:
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
+      KEYCLOAK_IMPORT: /keycloak-config.json
+  mock-server:
+    image: lizzythelizard/oauth-mock-resource-server
+    ports:
+    - "3000:3000"
+    environment:
+      ISSUER: http://keycloak:8080/auth/realms/Test-Application
