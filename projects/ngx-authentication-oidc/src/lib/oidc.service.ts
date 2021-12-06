@@ -5,7 +5,6 @@ import jwt_decode from "jwt-decode";
 import { AuthConfigService } from "./auth-config.service";
 import { HttpClient, HttpParameterCodec, HttpParams } from '@angular/common/http';
 import { catchError, firstValueFrom, map } from "rxjs";
-import { v4 as uuid } from "uuid";
 import { TokenStoreWrapper } from "./token-store/token-store-wrapper";
 import { ProviderConfig } from "./configuration/provider-config";
 import { ClientConfig } from "./configuration/client-config";
@@ -216,7 +215,9 @@ export class OidcService {
   }
 
   private createAuthenticationRequest(loginOptions: LoginOptions): URL {
-    const nonce = uuid();
+    const array = new Uint32Array(1);
+    crypto.getRandomValues(array);
+    const nonce = array[0].toString();
     this.tokenStore.setString('nonce', nonce);
     const state = this.encodeState(loginOptions);
   
