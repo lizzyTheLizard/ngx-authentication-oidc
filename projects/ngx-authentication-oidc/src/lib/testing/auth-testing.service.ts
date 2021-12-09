@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, map, Observable } from 'rxjs';
-import { LoginResult, UserInfo } from '../oidc.service';
+import { LoginResult, UserInfo } from '../oidc/login-result';
 
 @Injectable()
 export class AuthTestingService {

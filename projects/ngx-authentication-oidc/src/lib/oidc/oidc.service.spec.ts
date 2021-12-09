@@ -1,17 +1,31 @@
+import { APP_BASE_HREF } from "@angular/common";
 import { HttpClientTestingModule, HttpTestingController } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
 import { RouterTestingModule } from "@angular/router/testing";
-import { AuthenticationModule } from "./authentication-module";
-import { ResponseType } from "./configuration/login-options";
-import { OidcService, WindowToken } from "./oidc.service";
+import { AuthenticationModule } from "../authentication-module";
+import { ResponseType } from "../configuration/login-options";
+import { DocumentToken, OidcService, WindowToken } from "./oidc.service";
 
 const config = {
   tokenStore: localStorage,
   client: {clientId: "id", redirectUri: "https://example.com/rd"},
   initializer: () => Promise.resolve({isLoggedIn: false}),
-  provider: {authEndpoint: "http://example.com/ta", tokenEndpoint: "http://example.com/te"}
+  provider: {authEndpoint: "http://example.com/ta", tokenEndpoint: "http://example.com/te"},
+  silentLoginTimeoutInSecond: 1,
 };
-const windowMock = { location: { href: 'http://localhost'}};
+const windowMock = {
+  addEventListener: jasmine.createSpy('addEventListener'),
+  removeEventListener: jasmine.createSpy('removeEventListener '),
+  location: { href: 'http://localhost', origin: "http://localhost"}
+};
+
+const iframeMock = jasmine.createSpyObj('iframe', ['setAttribute'])
+iframeMock.style = new Map();
+
+const documentMock = jasmine.createSpyObj('documentMock', ['createElement', 'getElementById', ]);
+documentMock.body = jasmine.createSpyObj('body', ['appendChild']);
+documentMock.createElement = jasmine.createSpy('createElement').and.returnValue(iframeMock);
+
 
 let service: OidcService;
 let httpTestingController: HttpTestingController;
@@ -25,7 +39,9 @@ describe('OidcService', () => {
         HttpClientTestingModule
       ],
       providers:[
+        { provide: APP_BASE_HREF, useFactory: () => "http://localhost/temp/" },
         { provide: WindowToken, useFactory: () => windowMock },
+        { provide: DocumentToken, useFactory: () => documentMock },
       ],
     });
     httpTestingController = TestBed.inject(HttpTestingController);
@@ -81,13 +97,13 @@ describe('OidcService', () => {
   });
 
   it("Implicit Response State", async () => {
-    windowMock.location.href = 'http://example.com/rd?access_token=SlAV32hkKG&token_type=bearer&id_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U&expires_in=3600&state=%7B%22state%22%3A%22tst%22%2C%22finalUrl%22%3A%22http%3A%2F%2Fxy%22%7D';
+    windowMock.location.href = 'http://example.com/rd?access_token=SlAV32hkKG&token_type=bearer&id_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U&expires_in=3600&state=%7B%22stateMessage%22%3A%22tst%22%2C%22finalUrl%22%3A%22http%3A%2F%2Fxy%22%7D';
     service.initialize();
 
     const res = await service.checkResponse();
 
     expect(res.redirectPath).toEqual("http://xy");
-    expect(res.state).toEqual("tst");
+    expect(res.stateMessage).toEqual("tst");
   });
 
   it("Response Error", (done) => {
@@ -141,12 +157,12 @@ describe('OidcService', () => {
   });
 
   it("Code Response State", async () => {
-    windowMock.location.href = 'http://example.com/rd#code=123-123&state=%7B%22state%22%3A%22tst%22%2C%22finalUrl%22%3A%22http%3A%2F%2Fxy%22%7D';
+    windowMock.location.href = 'http://example.com/rd#code=123-123&state=%7B%22stateMessage%22%3A%22tst%22%2C%22finalUrl%22%3A%22http%3A%2F%2Fxy%22%7D';
     service.initialize();
 
     service.checkResponse().then(res => {
       expect(res.redirectPath).toEqual("http://xy");
-      expect(res.state).toEqual("tst");
+      expect(res.stateMessage).toEqual("tst");
     });
 
     const req = httpTestingController.expectOne(config.provider.tokenEndpoint);
@@ -197,7 +213,7 @@ describe('OidcService', () => {
     service.initialize();
 
     service.login({
-      state: "test",
+      stateMessage: "test",
       finalUrl: "https://example.com/final",
       scope: ["openid", "profile", "email"],
       prompt: "none",
@@ -214,7 +230,7 @@ describe('OidcService', () => {
     expect(url.searchParams.get("response_type")).toEqual("id_token token")
     expect(url.searchParams.get("scope")).toEqual("openid profile email")
     expect(url.searchParams.get("client_id")).toEqual("id")
-    expect(JSON.parse(url.searchParams.get("state")!)).toEqual({state: "test", finalURL: "https://example.com/final"});
+    expect(JSON.parse(url.searchParams.get("state")!)).toEqual({stateMessage: "test", finalUrl: "https://example.com/final"});
     expect(url.searchParams.get("redirect_uri")).toEqual("https://example.com/rd")
     expect(url.searchParams.has("nonce")).toBeTrue();
     expect(url.searchParams.get("prompt")).toEqual("none")
@@ -224,4 +240,54 @@ describe('OidcService', () => {
     expect(url.searchParams.get("acr_values")).toEqual("acr")
   });
 
+  it("Silent Login Timeout", async () => {
+    windowMock.addEventListener = jasmine.createSpy('addEventListener').and.callFake(() => {});
+    service.initialize();
+
+    const result = await service.silentLogin({});
+    expect(result).toEqual({isLoggedIn: false});
+  });
+
+  it("Silent Login Failed", async () => {
+    const mock = {origin: windowMock.location.origin, data: "failed", source: iframeMock};
+    windowMock.addEventListener = jasmine.createSpy('addEventListener').and.callFake((m,l) => l(mock));
+    
+    service.initialize();
+
+    const result = await service.silentLogin({});
+
+    expect(result).toEqual({isLoggedIn: false});
+  });
+
+  it("Silent Login Request", async () => {
+    const mock = {origin: windowMock.location.origin, data: "failed", source: iframeMock};
+    windowMock.addEventListener = jasmine.createSpy('addEventListener').and.callFake((m,l) => l(mock));
+    service.initialize();
+
+    await service.silentLogin({});
+
+    expect(iframeMock.setAttribute.calls.mostRecent().args[0]).toEqual("src");
+    expect(iframeMock.setAttribute.calls.mostRecent().args[1]).toMatch("response_type=code");
+    expect(iframeMock.setAttribute.calls.mostRecent().args[1]).toMatch("scope=openid\\+profile");
+    expect(iframeMock.setAttribute.calls.mostRecent().args[1]).toMatch("client_id=id");
+    expect(iframeMock.setAttribute.calls.mostRecent().args[1]).toMatch("state=%7B%7D");
+    expect(iframeMock.setAttribute.calls.mostRecent().args[1]).toMatch("redirect_uri=http%3A%2F%2Flocalhost%2Ftemp%2Fassets%2Fsilent-refresh.html");
+    expect(iframeMock.setAttribute.calls.mostRecent().args[1]).toMatch("&prompt=none"); 
+  });    
+
+  it("Silent Login Success", async () => {
+    const mock = {origin: windowMock.location.origin, data: "access_token=SlAV32hkKG&token_type=bearer&id_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U&expires_in=3600&state=af0ifjsldkj", source: iframeMock};
+    windowMock.addEventListener = jasmine.createSpy('addEventListener').and.callFake((m,l) => l(mock));
+    service.initialize();
+
+    const result = await service.silentLogin({});
+
+    expect(result.isLoggedIn).toEqual(true);
+    expect(result.accessToken).toEqual('SlAV32hkKG');
+    expect(result.idToken).toEqual('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U');
+    expect(result.userInfo).toEqual({ sub: '1234567890' });
+    expect(result.stateMessage).toEqual('af0ifjsldkj');
+    const expiresIn = Math.round((result.expiresAt!.getTime() - Date.now())/1000); 
+    expect(expiresIn).toEqual(3600);
+  });  
 });

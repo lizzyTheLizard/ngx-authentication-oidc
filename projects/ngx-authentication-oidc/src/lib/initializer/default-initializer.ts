@@ -1,22 +1,24 @@
 import { Logger } from "../logger/logger";
-import { LoginResult, OidcService } from "../oidc.service";
+import { LoginResult } from "../oidc/login-result";
+import { OidcService } from "../oidc/oidc.service";
 import { InitializerInput } from "./initializer";
 
 export async function loginResponseCheck(input: InitializerInput) {
   const logger = input.loggerFactory('LoginResponseInitializer');
   const loginResult = input.initialLoginResult;
 
-  logger.debug('This is a successful login response');
   const responseLoginResult = await input.oidcService.checkResponse()
   
   if(responseLoginResult.isLoggedIn) {
-    logger.info('Login was successful', responseLoginResult);
+    logger.debug('This is a successful login response', responseLoginResult);
     return responseLoginResult;
+  } else if (loginResult.isLoggedIn) {
+    logger.debug('User is already logged in', loginResult);
   }
   return loginResult;
 }
 
-export async function silentLoginCheck(input: InitializerInput) {
+export async function silentLoginCheck(input: InitializerInput) : Promise<LoginResult> {
   const logger = input.loggerFactory('SilentLoginCheckInitializer');
   let loginResult = await loginResponseCheck(input);
 
@@ -25,11 +27,13 @@ export async function silentLoginCheck(input: InitializerInput) {
   }
 
   logger.debug('Try login without user interaction');
-  loginResult = await login(logger, input.oidcService, true);
-  if(loginResult.isLoggedIn) {
+  return login(logger, input.oidcService, true).then(lr => {
     logger.info('User is silently logged in', loginResult);
-  }
-  return loginResult
+    return lr;
+  }).catch(e => {
+    logger.info('Could not perform a silent login',e);
+    return {isLoggedIn: false};
+  });
 }
 
 export async function enforceLogin(input: InitializerInput) {

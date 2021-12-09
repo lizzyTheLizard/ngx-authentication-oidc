@@ -1,5 +1,5 @@
 export interface LoginOptions {
-    state?: string;
+    stateMessage?: string;
     finalUrl?: string;
     response_type?: ResponseType;
     scope?: string[];

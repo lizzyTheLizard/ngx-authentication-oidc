@@ -16,18 +16,22 @@ export class AuthConfigService {
   public readonly sessionHandler: SessionHandler;
   public readonly loggerFactory: LoggerFactory;
   public readonly initializer: Initializer;
-  public readonly isSilentLoginEnabled: boolean;
+  public readonly silentLoginEnabled: boolean;
+  public readonly silentLoginTimeoutInSecond: number;
   public readonly client: ClientConfig;
   public readonly provider: string | ProviderConfig;
+  public readonly silentRefreshRedirectUri: string | undefined;
 
   constructor(config: OauthConfig) {
     this.loggerFactory = config.loggerFactory ?? consoleLoggerFactory;
     this.sessionHandler = config.sessionHandler ?? new DefaultSessionHandler;
-    this.tokenStore = new TokenStoreWrapper(config.tokenStore ?? localStorage);
+    this.tokenStore = new TokenStoreWrapper(config.tokenStore ?? sessionStorage);
     this.logoutUrl = config.logoutUrl;
     this.errorUrl = config.errorUrl ?? 'auth-error'
     this.initializer = config.initializer ?? silentLoginCheck;
-    this.isSilentLoginEnabled = config.isSilentLoginEnabled ?? true;
+    this.silentLoginEnabled = config.silentLoginEnabled ?? true;
+    this.silentLoginTimeoutInSecond = config.silentLoginTimeoutInSecond ?? 5;
+    this.silentRefreshRedirectUri = config.silentRefreshRedirectUri;
     this.client = config.client;
     this.provider = config.provider;
   }

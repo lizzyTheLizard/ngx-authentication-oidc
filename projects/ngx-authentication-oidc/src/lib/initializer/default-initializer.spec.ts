@@ -1,4 +1,5 @@
-import { LoginResult, OidcService } from "../oidc.service";
+import { LoginResult } from "../oidc/login-result";
+import { OidcService } from "../oidc/oidc.service";
 import { enforceLogin, loginResponseCheck, silentCheckAndThenEnforce, silentLoginCheck } from "./default-initializer";
 import { InitializerInput } from "./initializer";
 

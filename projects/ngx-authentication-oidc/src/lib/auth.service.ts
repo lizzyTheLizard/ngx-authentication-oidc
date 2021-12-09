@@ -5,7 +5,8 @@ import { AuthConfigService } from './auth-config.service';
 import { LoginOptions } from './configuration/login-options';
 import { InitializerInput } from './initializer/initializer';
 import { Logger } from './logger/logger';
-import { LoginResult, OidcService, UserInfo } from './oidc.service';
+import { LoginResult, UserInfo } from './oidc/login-result';
+import { OidcService } from './oidc/oidc.service';
 
 @Injectable()
 export class AuthService {
@@ -47,7 +48,7 @@ export class AuthService {
       if(loginResult.isLoggedIn) {
         this.handleSuccessfulLoginResult(loginResult);
       }
-      this.logger.info('Finished initialization of authentication module, user is ' + (!loginResult.isLoggedIn ? "not " : "") + "logged in");
+      this.logger.info('Finished initialization of authentication module, user is ' + (!loginResult.isLoggedIn ? "not " : "") + " logged in");
       this.initialSetupFinishedResolve(true);
     } catch (e) {
       this.logger.error('Could not initialize authentication module', e);

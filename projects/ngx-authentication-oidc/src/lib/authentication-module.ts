@@ -1,9 +1,10 @@
+import { Location, LocationStrategy, PathLocationStrategy } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { ModuleWithProviders, NgModule } from '@angular/core';
 import { AuthConfigService } from './auth-config.service';
 import { AuthService } from './auth.service';
 import { OauthConfig } from './configuration/oauth-config';
-import { OidcService, WindowToken } from './oidc.service';
+import { OidcService, WindowToken, DocumentToken } from './oidc/oidc.service';
 
 @NgModule({
   imports: [ HttpClientModule],
@@ -14,8 +15,11 @@ export class AuthenticationModule {
     return {
       ngModule: AuthenticationModule,
       providers: [
+        Location,
+        {provide: LocationStrategy, useClass: PathLocationStrategy},
         { provide: AuthConfigService, useValue: authConfig },
         { provide: WindowToken, useFactory: () => window},
+        { provide: DocumentToken, useFactory: () => document},
         AuthService,
         OidcService,
       ],

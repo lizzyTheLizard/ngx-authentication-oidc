@@ -17,5 +17,7 @@ export interface OauthConfig {
   sessionHandler?: SessionHandler;
   loggerFactory?: LoggerFactory;
   initializer?: Initializer;
-  isSilentLoginEnabled?: boolean;
+  silentLoginEnabled?: boolean;
+  silentLoginTimeoutInSecond?: number;
+  silentRefreshRedirectUri?: string;
 }

@@ -1,8 +1,9 @@
 import { AuthService } from './auth.service';
 import { TokenStore } from './token-store/token-store';
-import { LoginResult, OidcService, UserInfo } from './oidc.service';
 import { TokenStoreWrapper } from './token-store/token-store-wrapper';
 import { Router } from '@angular/router';
+import { OidcService } from './oidc/oidc.service';
+import { LoginResult, UserInfo } from './oidc/login-result';
 
 const loginResult: LoginResult = {isLoggedIn: true, idToken: 'at', accessToken: 'id', userInfo: {name: 'name'}};
 const failedLoginResult: LoginResult = {isLoggedIn: false};

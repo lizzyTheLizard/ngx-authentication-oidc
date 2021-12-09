@@ -63,6 +63,7 @@
             "polyfills": "projects/keycloak-sample/src/polyfills.ts",
             "tsConfig": "projects/keycloak-sample/tsconfig.app.json",
             "assets": [
+              { "input": "dist/ngx-authentication-oidc/assets", "glob": "**/*", "output": "assets" },
               "projects/keycloak-sample/src/favicon.ico",
               "projects/keycloak-sample/src/assets"
             ],

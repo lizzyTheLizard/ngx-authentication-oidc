@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { AuthenticationModule, OauthConfig, loginResponseCheck } from 'ngx-authentication-oidc';
+import { AuthenticationModule, OauthConfig, silentLoginCheck } from 'ngx-authentication-oidc';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -19,7 +19,8 @@ const config: OauthConfig = {
     authEndpoint: "http://localhost:8080/auth/realms/Test-Application/protocol/openid-connect/auth",
     tokenEndpoint: "http://localhost:8080/auth/realms/Test-Application/protocol/openid-connect/token"
   },
-  initializer: loginResponseCheck
+  initializer: silentLoginCheck,
+  //silentRefreshRedirectUri: "http://localhost:4200/assets/silent-refresh.html"
 }
 
 @NgModule({

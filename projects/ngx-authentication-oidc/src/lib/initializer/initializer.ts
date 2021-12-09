@@ -1,5 +1,6 @@
 import { LoggerFactory } from "../logger/logger";
-import { LoginResult, OidcService } from "../oidc.service";
+import { LoginResult } from "../oidc/login-result";
+import { OidcService } from "../oidc/oidc.service";
 
 export interface InitializerInput {
   loggerFactory: LoggerFactory, 
