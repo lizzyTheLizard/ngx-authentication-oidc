@@ -2,10 +2,9 @@ import { AuthService } from './auth.service';
 import { TokenStore } from './token-store/token-store';
 import { TokenStoreWrapper } from './token-store/token-store-wrapper';
 import { Router } from '@angular/router';
-import { OidcService } from './oidc/oidc.service';
-import { LoginResult, UserInfo } from './oidc/login-result';
+import { LoginResult, OidcService, UserInfo } from './oidc/oidc.service';
 
-const loginResult: LoginResult = {isLoggedIn: true, idToken: 'at', accessToken: 'id', userInfo: {name: 'name'}};
+const loginResult: LoginResult = {isLoggedIn: true, idToken: 'at', accessToken: 'id', userInfo: {sub: 'name'}};
 const failedLoginResult: LoginResult = {isLoggedIn: false};
 
 let config: any;

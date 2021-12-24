@@ -1,9 +1,8 @@
-import { LoginResult } from "../oidc/login-result";
-import { OidcService } from "../oidc/oidc.service";
+import { LoginResult, OidcService } from "../oidc/oidc.service";
 import { enforceLogin, loginResponseCheck, silentCheckAndThenEnforce, silentLoginCheck } from "./default-initializer";
 import { InitializerInput } from "./initializer";
 
-const successfulLoginResult: LoginResult = { isLoggedIn: true, userInfo: 'test'};
+const successfulLoginResult: LoginResult = { isLoggedIn: true, userInfo: {sub: 'test'}};
 const failedLoginResult: LoginResult = { isLoggedIn: false};
 
 let input: InitializerInput;
@@ -44,7 +43,7 @@ describe('loginResponseCheck', async () => {
 
   it("Successful login and already logged in", async () => {
     input.oidcService.checkResponse = jasmine.createSpy('processLoginResponse').and.returnValue(successfulLoginResult);
-    input.initialLoginResult = { isLoggedIn: true, userInfo: 'other'};
+    input.initialLoginResult = { isLoggedIn: true, userInfo: {sub: 'other'}};
 
     const result = await loginResponseCheck(input);
 

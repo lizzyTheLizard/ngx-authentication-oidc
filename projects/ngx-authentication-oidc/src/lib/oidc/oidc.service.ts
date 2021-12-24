@@ -1,7 +1,6 @@
 import { Inject, Injectable, InjectionToken } from "@angular/core";
-import { LoginOptions } from "../configuration/login-options";
+import { LoginOptions, ResponseType } from "../configuration/login-options";
 import { Logger } from "../logger/logger";
-import jwt_decode from "jwt-decode";
 import { AuthConfigService } from "../auth-config.service";
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { catchError, firstValueFrom, map, Observable, of, Subject, timeout } from "rxjs";
@@ -9,9 +8,52 @@ import { TokenStoreWrapper } from "../token-store/token-store-wrapper";
 import { ProviderConfig } from "../configuration/provider-config";
 import { ClientConfig } from "../configuration/client-config";
 import { CustomHttpParamEncoder } from "./custom-http-params-encoder";
-import { LoginResult, UserInfo } from "./login-result";
-import { createAuthenticationRequest, Metadata, parseResponseParams, RequestParams, ResponseParams } from "./messages";
 import { Location } from "@angular/common";
+import { importJWK, JWTHeaderParameters, jwtVerify, KeyLike } from 'jose'
+import { ValidatorService } from "./validator.service";
+import { oidcDiscovery } from "./oidc-discovery";
+
+interface State {
+  stateMessage?: string;
+  finalUrl?: string;
+}
+interface ResponseParams extends State {
+  error_description?: string;
+  error_uri?: string;
+  expires_in?: string;
+  error?: string;
+  code?: string;
+  id_token?: string;
+  access_token?: string;
+}
+
+interface RequestParams extends State {
+  authEndpoint: string | URL;
+  clientId: string;
+  redirectUri: string;
+  response_type?: string;
+  scope?: string[];
+  prompt?: string;
+  ui_locales?: string;
+  id_token_hint?: string;
+  login_hint?: string;
+  acr_values?: string;
+  nonce?: string;
+}
+
+export interface LoginResult {
+  isLoggedIn: boolean;
+  idToken?: string;
+  accessToken?: string;
+  redirectPath?: string;
+  userInfo?: UserInfo;
+  expiresAt?: Date;
+  stateMessage?: string;
+}
+
+export interface UserInfo {
+  sub: string;
+}
 
 export const WindowToken = new InjectionToken('Window');
 export const DocumentToken = new InjectionToken('Document');
@@ -20,45 +62,46 @@ const silentRefreshIFrameName = 'silent-refresh-iframe';
 /**
  * The following parts of OIDC are Supported:
  * 
- * The core (https://openid.net/specs/openid-connect-core-1_0.html) with some exceptions as those
- * features are not usually used with a web client
+ * Core (https://openid.net/specs/openid-connect-core-1_0.html)
+ * The following features are not supported as they are not usually used with a web client
  * * Initiating Login from a Third Party (Chapter 4)
  * * Requesting Claims using the "claims" Request Parameter (Chapter 5.5)
  * * Passing Request Parameters as JWTs (Chapter 6)
  * * Support for Self-Issued OpenID Provider (Chapter 7)
  * * Client Authentication (Chapter 9)
  * * Offline Access (Chapter 11)
+ * The following features are planned in a later version
+ * * UserInfo Endpoint (Chapter 5.3)
+ * * Using Refresh Tokens (Chapter 12)
  * 
  * Discovery (https://openid.net/specs/openid-connect-discovery-1_0.html)
  * 
  * 
- * The following is not supported but planned in a later version
- * *  5.3. UserInfo Endpoint
- * * 12.  Using Refresh Tokens
- *
- * 
  * Planned is support for the following
- * https://openid.net/specs/openid-connect-rpinitiated-1_0.html
- * https://openid.net/specs/openid-connect-session-1_0.html
- * https://openid.net/specs/oauth-v2-multiple-response-types-1_0.html
- * https://openid.net/specs/oauth-v2-form-post-response-mode-1_0.html
+ * RP-Initiated Logout (https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
+ * Session Management (https://openid.net/specs/openid-connect-session-1_0.html)
+ * 
  * 
  * Maybe:
  * https://openid.net/specs/openid-connect-frontchannel-1_0.html
+ * 
  * https://openid.net/specs/openid-financial-api-part-1-1_0.html
  * https://openid.net/specs/openid-financial-api-part-1-1_0.html
  * 
  * Never:
+ * Form Post Response (https://openid.net/specs/oauth-v2-form-post-response-mode-1_0.html)
+ * 
  * https://openid.net/specs/openid-connect-registration-1_0.html
  * https://openid.net/specs/openid-connect-backchannel-1_0.html
  * 
  */
 
- @Injectable()
+@Injectable()
 export class OidcService {
   private readonly logger: Logger
   private readonly tokenStore: TokenStoreWrapper;
   private readonly clientConfig: ClientConfig;
+  private readonly encoder = new CustomHttpParamEncoder();
   private providerConfig?: ProviderConfig;
   private silentRefreshPostMessageEventListener: ((e: MessageEvent) => void) | undefined;
 
@@ -66,28 +109,21 @@ export class OidcService {
       private readonly config: AuthConfigService,
       private readonly httpClient: HttpClient,
       private readonly location: Location,
+      private readonly validator: ValidatorService,
       @Inject(DocumentToken) private readonly document: Document,
       @Inject(WindowToken) private readonly window: Window){
     this.logger = config.loggerFactory('OidcService');
     this.clientConfig = config.client;
     this.tokenStore = config.tokenStore;
-  } 
+  }
 
   public async initialize(): Promise<void> {
     if(typeof(this.config.provider) === 'string') {
-      this.providerConfig = await this.oidcDiscovery(this.config.provider);
+      this.providerConfig = await oidcDiscovery(this.httpClient, this.config.provider);
     } else {
       this.providerConfig = this.config.provider;
     }
-  }
-
-  private async oidcDiscovery(issuer: string): Promise<ProviderConfig>{
-    const url = issuer + "/.well-known/openid-configuration";
-    const metadata = await firstValueFrom(this.httpClient.get<Metadata>(url));
-    return {
-      tokenEndpoint: metadata.token_endpoint,
-      authEndpoint: metadata.authorization_endpoint
-    }
+    this.validator.setProviderConfig(this.providerConfig);
   }
 
   public async checkResponse() : Promise<LoginResult> {
@@ -97,16 +133,37 @@ export class OidcService {
       this.logger.debug('This is not a redirect as URL', currentUrl,' is not redirect url', redirectUrl);
       return {isLoggedIn: false};
     }
-    if(currentUrl.hash) {
-      return this.checkResponseUrl(currentUrl.hash.substr(1), redirectUrl);
-    } else {
-      return this.checkResponseUrl(currentUrl.search, redirectUrl);
-    }
+    const params = this.parseResponseParams(currentUrl.hash ? currentUrl.hash.substr(1): currentUrl.search);
+    return this.handleResponse(params, redirectUrl);
   }
   
-  private async checkResponseUrl(searchParams: string, redirectUri: URL) : Promise<LoginResult> {
-    const params = parseResponseParams(searchParams);
-    this.logger.debug('Parsed response', params);
+  private parseResponseParams(queryString: string): ResponseParams  {
+    const urlSearchParams = new URLSearchParams(queryString);
+    const state = this.parseResponseState(urlSearchParams.get('state'));
+    return {
+      ...state,
+      error_description: urlSearchParams.get('error_description') ?? undefined,
+      error_uri: urlSearchParams.get('error_uri') ?? undefined,
+      expires_in: urlSearchParams.get('expires_in') ?? undefined,
+      error: urlSearchParams.get('error') ?? undefined,
+      code: urlSearchParams.get('code') ?? undefined,
+      id_token: urlSearchParams.get('id_token') ?? undefined,
+      access_token: urlSearchParams.get('access_token') ?? undefined,
+    };
+  }
+
+  private parseResponseState(state: string | null) : State {
+    if(!state) {
+      return {};
+    }
+    try {
+      return JSON.parse(state);
+    } catch (e) {
+      return {stateMessage: state};
+    }
+  }
+
+  private async handleResponse(params: ResponseParams, redirectUri: URL) : Promise<LoginResult> {
     if(params.error) {
       return this.handleErrorResponse(params);
     }
@@ -125,10 +182,9 @@ export class OidcService {
     return {isLoggedIn: false};
   }
 
-  //TODO: Implement Authentication Response Validation (Chapter 3.1.2.7.)
   //TODO: Implement confidential clients
   private async handleCodeResponse(params: ResponseParams, redirectUrl: URL): Promise<LoginResult> {
-    const payload = new HttpParams({encoder: new CustomHttpParamEncoder()})
+    const payload = new HttpParams({encoder: this.encoder})
       .set('client_id', this.clientConfig.clientId)
       .set('grant_type', 'authorization_code')
       .set('code', params.code!)
@@ -146,12 +202,12 @@ export class OidcService {
     };
   }
 
-  //TODO: Implement Response Validation (Chapter 3.2.2.8, 3.2.2.9, 3.1.2.11, 3.1.3.5, 3.1.3.7, 3.1.3.8 )
-  //TODO: Validate nonce
-  private handleTokenResponse(response: ResponseParams): LoginResult {
+  private async handleTokenResponse(response: ResponseParams): Promise<LoginResult> {
     const accessToken = response.access_token ?? undefined;
     const idToken = response.id_token ?? undefined;
-    const userInfo = idToken ? jwt_decode<UserInfo>(idToken) : undefined;
+    const verifyResult = idToken ? await jwtVerify(idToken, header => this.getKey(header), {}) : undefined;
+    this.validator.validate(verifyResult?.payload, verifyResult?.protectedHeader);
+    const userInfo = verifyResult?.payload;
     const expiresIn = response.expires_in;
     const expiresAt = expiresIn ? new Date(Date.now() + parseInt(expiresIn)*1000) : undefined;
     const result = {
@@ -159,7 +215,7 @@ export class OidcService {
       accessToken: accessToken,
       idToken: idToken,
       expiresAt: expiresAt,
-      userInfo: userInfo,
+      userInfo: userInfo as UserInfo,
       redirectPath: response.finalUrl,
       stateMessage: response.stateMessage
     }
@@ -168,6 +224,30 @@ export class OidcService {
     console.log(userInfo);
     console.log(result);
     return result;
+  }
+
+  private async getKey(header: JWTHeaderParameters): Promise<KeyLike | Uint8Array> {
+    const sigKeys = this.providerConfig!.publicKeys
+      .filter(k => !header.alg || !k.alg || k.alg === header.alg)
+      .filter(k => !k.use || k.use == 'sig')
+    if (sigKeys.length === 0) {
+      this.logger.error('No signature keys given');
+      throw new Error('No valid signature key found');
+    }
+    if(!header.kid && sigKeys.length == 1) {
+      return importJWK(sigKeys[0]);
+    }
+    if(!header.kid) {
+      this.logger.error('Multiple signature keys but no kid keys given, take first');
+      return importJWK(sigKeys[0]);
+    }
+    const keys = sigKeys
+      .filter(k => k.kid === header.kid);
+    if(keys.length == 0) {
+      this.logger.error('No key with kid ' + header.kid + ' could be found in the key set');
+      throw new Error('No valid key found');
+    }
+    return importJWK(keys[0]);
   }
   
   private handleErrorResponse(params: ResponseParams): Promise<LoginResult> {
@@ -178,7 +258,7 @@ export class OidcService {
     throw new Error("Login failed: " + error);
   }
 
-  async login(loginOptions: LoginOptions): Promise<LoginResult> {
+  public async login(loginOptions: LoginOptions): Promise<LoginResult> {
     const requestParams: RequestParams = {
       ...loginOptions,
       authEndpoint: this.providerConfig!.authEndpoint,
@@ -186,13 +266,50 @@ export class OidcService {
       nonce: this.createNonce(),
       redirectUri: this.clientConfig.redirectUri,
     };
-    const url = createAuthenticationRequest(requestParams)
+    const url = this.createAuthenticationRequest(requestParams)
     this.logger.info('Start a login request to', url);
     this.window.location.href = url.toString();
     return new Promise<LoginResult>((_, reject) => setTimeout(() => reject("Browser should be redirected"), 1000));
   }
 
-  async silentLogin(loginOptions: LoginOptions): Promise<LoginResult> {
+  private createAuthenticationRequest(requestMessage: RequestParams): URL {
+    const url = new URL(requestMessage.authEndpoint);
+    const state: State = {stateMessage: requestMessage.stateMessage, finalUrl: requestMessage.finalUrl};
+    url.searchParams.append("response_type", requestMessage.response_type ?? ResponseType.AUTH_CODE_FLOE );
+    url.searchParams.append("scope", requestMessage.scope?.join(" ") ?? "openid profile");
+    url.searchParams.append("client_id", requestMessage.clientId);
+    url.searchParams.append("state", JSON.stringify(state));
+    url.searchParams.append("redirect_uri", requestMessage.redirectUri);
+    if(requestMessage.nonce) {
+      url.searchParams.append("nonce", requestMessage.nonce);
+    }
+    if(requestMessage.prompt) {
+      url.searchParams.append("prompt", requestMessage.prompt);
+    }
+    if(requestMessage.ui_locales) {
+      url.searchParams.append("ui_locales", requestMessage.ui_locales);
+    }
+    if(requestMessage.id_token_hint) {
+      url.searchParams.append("id_token_hint", requestMessage.id_token_hint);
+    }
+    if(requestMessage.login_hint) {
+      url.searchParams.append("login_hint", requestMessage.login_hint);
+    }
+    if(requestMessage.acr_values) {
+      url.searchParams.append("acr_values", requestMessage.acr_values);
+    }
+    return url;
+  }
+
+  private createNonce(): string {
+    const array = new Uint32Array(1);
+    crypto.getRandomValues(array);
+    const nonce = array[0].toString();
+    this.tokenStore.setString('nonce', nonce);
+    return nonce;
+  }
+
+  public async silentLogin(loginOptions: LoginOptions): Promise<LoginResult> {
     if(!this.config.silentLoginEnabled) {
       throw new Error("Silent login is not enabled");
     }
@@ -204,7 +321,7 @@ export class OidcService {
       redirectUri: this.getSilentRefreshUrl().toString(),
       prompt: "none",
     };
-    const url = createAuthenticationRequest(requestParams)
+    const url = this.createAuthenticationRequest(requestParams)
     const iframe = this.createIFrame(url);
     const result = this.setupSilentLoginEventListener(iframe);
     this.document.body.appendChild(iframe);
@@ -228,14 +345,6 @@ export class OidcService {
       this.logger.info('silentRefreshRedirectUri and base href are both not set, use origin as redirect URI', result);
       return result;
     }
-  }
-
-  private createNonce(): string {
-    const array = new Uint32Array(1);
-    crypto.getRandomValues(array);
-    const nonce = array[0].toString();
-    this.tokenStore.setString('nonce', nonce);
-    return nonce;
   }
 
   private createIFrame(url: URL): HTMLIFrameElement {
@@ -273,14 +382,15 @@ export class OidcService {
     this.window.removeEventListener("message", this.silentRefreshPostMessageEventListener!);
     const redirectUrl = this.getSilentRefreshUrl();
     this.logger.info('Got silent refrehs response', e.data);
-    this.checkResponseUrl(e.data, redirectUrl).then(
+    const params = this.parseResponseParams(e.data);
+    this.handleResponse(params, redirectUrl).then(
       result => subject.next(result), 
       error => subject.error(error)
     );
   }
 
   //TODO: Implement single logout
-  async logout() {
+  public async logout() {
     //Nothing to do here
   }
 }

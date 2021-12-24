@@ -1,6 +1,5 @@
 import { Logger } from "../logger/logger";
-import { LoginResult } from "../oidc/login-result";
-import { OidcService } from "../oidc/oidc.service";
+import { LoginResult, OidcService } from "../oidc/oidc.service";
 import { InitializerInput } from "./initializer";
 
 export async function loginResponseCheck(input: InitializerInput) {

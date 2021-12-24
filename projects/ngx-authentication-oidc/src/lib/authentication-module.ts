@@ -5,6 +5,7 @@ import { AuthConfigService } from './auth-config.service';
 import { AuthService } from './auth.service';
 import { OauthConfig } from './configuration/oauth-config';
 import { OidcService, WindowToken, DocumentToken } from './oidc/oidc.service';
+import { ValidatorService } from './oidc/validator.service';
 
 @NgModule({
   imports: [ HttpClientModule],
@@ -16,17 +17,18 @@ export class AuthenticationModule {
       ngModule: AuthenticationModule,
       providers: [
         Location,
-        {provide: LocationStrategy, useClass: PathLocationStrategy},
+        { provide: LocationStrategy, useClass: PathLocationStrategy },
         { provide: AuthConfigService, useValue: authConfig },
         { provide: WindowToken, useFactory: () => window},
         { provide: DocumentToken, useFactory: () => document},
         AuthService,
         OidcService,
+        ValidatorService
       ],
     };
   }
 
   constructor(authService: AuthService) {
-    authService.initialize();
+    authService.initialize().catch(e => console.log(e));
   }
 }

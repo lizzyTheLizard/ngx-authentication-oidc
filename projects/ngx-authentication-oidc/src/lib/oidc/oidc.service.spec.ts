@@ -4,15 +4,31 @@ import { TestBed } from "@angular/core/testing";
 import { RouterTestingModule } from "@angular/router/testing";
 import { AuthenticationModule } from "../authentication-module";
 import { ResponseType } from "../configuration/login-options";
+import { OauthConfig } from "../configuration/oauth-config";
+import { ProviderConfig } from "../configuration/provider-config";
 import { DocumentToken, OidcService, WindowToken } from "./oidc.service";
+import { ValidatorService } from "./validator.service";
 
-const config = {
+const providerConfig: ProviderConfig = {
+  authEndpoint: "http://example.com/ta",
+  tokenEndpoint: "http://example.com/te",
+  issuer: "http://example.com",
+  publicKeys: [{
+    kty : "oct",
+    kid : "0afee142-a0af-4410-abcc-9f2d44ff45b5",
+    alg : "HS256",
+    k   : "eyJ"    
+  }],
+};
+
+const config: OauthConfig = {
   tokenStore: localStorage,
   client: {clientId: "id", redirectUri: "https://example.com/rd"},
   initializer: () => Promise.resolve({isLoggedIn: false}),
-  provider: {authEndpoint: "http://example.com/ta", tokenEndpoint: "http://example.com/te"},
+  provider: providerConfig,
   silentLoginTimeoutInSecond: 1,
 };
+
 const windowMock = {
   addEventListener: jasmine.createSpy('addEventListener'),
   removeEventListener: jasmine.createSpy('removeEventListener '),
@@ -26,12 +42,16 @@ const documentMock = jasmine.createSpyObj('documentMock', ['createElement', 'get
 documentMock.body = jasmine.createSpyObj('body', ['appendChild']);
 documentMock.createElement = jasmine.createSpy('createElement').and.returnValue(iframeMock);
 
+const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.GjKRxKZWcBLTjWTOPSwFBoRsu0zuMkK-uh-7gdfiNDA';
 
 let service: OidcService;
 let httpTestingController: HttpTestingController;
+let validator: ValidatorService;
 
 describe('OidcService', () => {
   beforeEach(() => {  
+    validator = jasmine.createSpyObj('validator', ['validate']);
+
     TestBed.configureTestingModule({
       imports: [
         AuthenticationModule.forRoot(config),
@@ -42,8 +62,10 @@ describe('OidcService', () => {
         { provide: APP_BASE_HREF, useFactory: () => "http://localhost/temp/" },
         { provide: WindowToken, useFactory: () => windowMock },
         { provide: DocumentToken, useFactory: () => documentMock },
+        { provide: ValidatorService, useValue: validator},
       ],
     });
+
     httpTestingController = TestBed.inject(HttpTestingController);
     service = TestBed.inject(OidcService);
   });
@@ -67,7 +89,7 @@ describe('OidcService', () => {
   });
 
   it("Implicit Response", async () => {
-    windowMock.location.href = 'http://example.com/rd#access_token=SlAV32hkKG&token_type=bearer&id_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U&expires_in=3600&state=af0ifjsldkj';
+    windowMock.location.href = 'http://example.com/rd#access_token=SlAV32hkKG&token_type=bearer&id_token='+ token + '&expires_in=3600&state=af0ifjsldkj';
     service.initialize();
 
     const res = await service.checkResponse();
@@ -75,14 +97,14 @@ describe('OidcService', () => {
     expect(res.accessToken).toEqual('SlAV32hkKG');
     const expiresIn = Math.round((res.expiresAt!.getTime() - Date.now())/1000); 
     expect(expiresIn).toEqual(3600);
-    expect(res.idToken).toEqual('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U');
+    expect(res.idToken).toEqual(token);
     expect(res.isLoggedIn).toBeTrue();
     expect(res.redirectPath).toBeUndefined();
     expect(res.userInfo).toEqual({sub: '1234567890'});
   });
 
   it("Implicit Response Query-Param", async () => {
-    windowMock.location.href = 'http://example.com/rd?access_token=SlAV32hkKG&token_type=bearer&id_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U&expires_in=3600&state=af0ifjsldkj';
+    windowMock.location.href = 'http://example.com/rd?access_token=SlAV32hkKG&token_type=bearer&id_token='+ token + '&expires_in=3600&state=af0ifjsldkj';
     service.initialize();
 
     const res = await service.checkResponse();
@@ -90,14 +112,14 @@ describe('OidcService', () => {
     expect(res.accessToken).toEqual('SlAV32hkKG');
     const expiresIn = Math.round((res.expiresAt!.getTime() - Date.now())/1000); 
     expect(expiresIn).toEqual(3600);
-    expect(res.idToken).toEqual('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U');
+    expect(res.idToken).toEqual(token);
     expect(res.isLoggedIn).toBeTrue();
     expect(res.redirectPath).toBeUndefined();
     expect(res.userInfo).toEqual({sub: '1234567890'});
   });
 
   it("Implicit Response State", async () => {
-    windowMock.location.href = 'http://example.com/rd?access_token=SlAV32hkKG&token_type=bearer&id_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U&expires_in=3600&state=%7B%22stateMessage%22%3A%22tst%22%2C%22finalUrl%22%3A%22http%3A%2F%2Fxy%22%7D';
+    windowMock.location.href = 'http://example.com/rd?access_token=SlAV32hkKG&token_type=bearer&id_token=' + token + '&expires_in=3600&state=%7B%22stateMessage%22%3A%22tst%22%2C%22finalUrl%22%3A%22http%3A%2F%2Fxy%22%7D';
     service.initialize();
 
     const res = await service.checkResponse();
@@ -130,7 +152,7 @@ describe('OidcService', () => {
       });
   });
 
-  it("Code Response", async () => {
+  it("Code Response", (done) => {
     windowMock.location.href = 'http://example.com/rd#code=123-123&state=af0ifjsldkj';
     service.initialize();
 
@@ -138,13 +160,14 @@ describe('OidcService', () => {
       expect(res.accessToken).toEqual('SlAV32hkKG');
       const expiresIn = Math.round((res.expiresAt!.getTime() - Date.now())/1000); 
       expect(expiresIn).toEqual(3600);
-      expect(res.idToken).toEqual('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U');
+      expect(res.idToken).toEqual(token);
       expect(res.isLoggedIn).toBeTrue();
       expect(res.redirectPath).toBeUndefined();
       expect(res.userInfo).toEqual({sub: '1234567890'});
-    });
+      done();
+    }).catch(e => done.fail(e));
 
-    const req = httpTestingController.expectOne(config.provider.tokenEndpoint);
+    const req = httpTestingController.expectOne(providerConfig.tokenEndpoint);
     expect(req.request.method).toEqual('POST');
     expect(req.request.body.toString()).toEqual("client_id=id&grant_type=authorization_code&code=123-123&redirect_uri=https%3A%2F%2Fexample.com%2Frd")
     req.flush({
@@ -152,7 +175,68 @@ describe('OidcService', () => {
       token_type: "Bearer",
       refresh_token: "8xLOxBtZp8",
       expires_in: 3600,
-      id_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"
+      id_token: token
+    });   
+  });
+
+  it("Invalid Token", (done) => {
+    windowMock.location.href = 'http://example.com/rd#code=123-123&state=af0ifjsldkj';
+    service.initialize();
+
+    service.checkResponse().then(() => {
+      done.fail('This should not work');
+    }).catch(() => done());
+
+    const req = httpTestingController.expectOne(providerConfig.tokenEndpoint);
+    expect(req.request.method).toEqual('POST');
+    expect(req.request.body.toString()).toEqual("client_id=id&grant_type=authorization_code&code=123-123&redirect_uri=https%3A%2F%2Fexample.com%2Frd")
+    req.flush({
+      access_token: "SlAV32hkKG",
+      token_type: "Bearer",
+      refresh_token: "8xLOxBtZp8",
+      expires_in: 3600,
+      id_token: 'invalid'
+    });    
+  });
+
+  it("Wrong Signature", (done) => {
+    windowMock.location.href = 'http://example.com/rd#code=123-123&state=af0ifjsldkj';
+    service.initialize();
+
+    service.checkResponse().then(() => {
+      done.fail('This should not work');
+    }).catch(() => done());
+
+    const req = httpTestingController.expectOne(providerConfig.tokenEndpoint);
+    expect(req.request.method).toEqual('POST');
+    expect(req.request.body.toString()).toEqual("client_id=id&grant_type=authorization_code&code=123-123&redirect_uri=https%3A%2F%2Fexample.com%2Frd")
+    req.flush({
+      access_token: "SlAV32hkKG",
+      token_type: "Bearer",
+      refresh_token: "8xLOxBtZp8",
+      expires_in: 3600,
+      id_token: token.substring(0, token.length-2) + 'ds'
+    });    
+  });
+
+  it("Validation Failed", (done) => {
+    validator.validate = jasmine.createSpy('validate').and.throwError(new Error('Not valid'));
+    windowMock.location.href = 'http://example.com/rd#code=123-123&state=af0ifjsldkj';
+    service.initialize();
+
+    service.checkResponse().then(() => {
+      done.fail('This should not work');
+    }).catch(() => done());
+
+    const req = httpTestingController.expectOne(providerConfig.tokenEndpoint);
+    expect(req.request.method).toEqual('POST');
+    expect(req.request.body.toString()).toEqual("client_id=id&grant_type=authorization_code&code=123-123&redirect_uri=https%3A%2F%2Fexample.com%2Frd")
+    req.flush({
+      access_token: "SlAV32hkKG",
+      token_type: "Bearer",
+      refresh_token: "8xLOxBtZp8",
+      expires_in: 3600,
+      id_token: token
     });    
   });
 
@@ -165,7 +249,7 @@ describe('OidcService', () => {
       expect(res.stateMessage).toEqual("tst");
     });
 
-    const req = httpTestingController.expectOne(config.provider.tokenEndpoint);
+    const req = httpTestingController.expectOne(providerConfig.tokenEndpoint);
     expect(req.request.method).toEqual('POST');
     expect(req.request.body.toString()).toEqual("client_id=id&grant_type=authorization_code&code=123-123&redirect_uri=https%3A%2F%2Fexample.com%2Frd")
     req.flush({
@@ -173,27 +257,28 @@ describe('OidcService', () => {
       token_type: "Bearer",
       refresh_token: "8xLOxBtZp8",
       expires_in: 3600,
-      id_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"
+      id_token: token
     });    
   });
 
-  it("Code Response TokenRequest failed", async () => {
+  it("Code Response TokenRequest failed", (done) => {
     windowMock.location.href = 'http://example.com/rd#code=123-123';
     service.initialize();
 
     service.checkResponse().then(
-      () => fail(new Error('This should not work')),
+      () => done.fail(new Error('This should not work')),
       (e: Error) => {
         expect(e.message).toEqual('Login failed: invalid_request')
+        done();
       });
 
-    const req = httpTestingController.expectOne(config.provider.tokenEndpoint);
+    const req = httpTestingController.expectOne(providerConfig.tokenEndpoint);
     expect(req.request.method).toEqual('POST');
     expect(req.request.body.toString()).toEqual("client_id=id&grant_type=authorization_code&code=123-123&redirect_uri=https%3A%2F%2Fexample.com%2Frd")
     req.flush({error: "invalid_request"}, { status: 400, statusText: "Bad Request"});    
   });
 
-  it("Login default params", async () => {
+  it("Login default params", () => {
     service.initialize();
 
     service.login({});
@@ -209,7 +294,7 @@ describe('OidcService', () => {
     expect(url.searchParams.has("nonce")).toBeTrue();
   });
 
-  it("Login special params", async () => {
+  it("Login special params", () => {
     service.initialize();
 
     service.login({
@@ -276,7 +361,7 @@ describe('OidcService', () => {
   });    
 
   it("Silent Login Success", async () => {
-    const mock = {origin: windowMock.location.origin, data: "access_token=SlAV32hkKG&token_type=bearer&id_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U&expires_in=3600&state=af0ifjsldkj", source: iframeMock};
+    const mock = {origin: windowMock.location.origin, data: "access_token=SlAV32hkKG&token_type=bearer&id_token="+ token + "&expires_in=3600&state=af0ifjsldkj", source: iframeMock};
     windowMock.addEventListener = jasmine.createSpy('addEventListener').and.callFake((m,l) => l(mock));
     service.initialize();
 
@@ -284,7 +369,7 @@ describe('OidcService', () => {
 
     expect(result.isLoggedIn).toEqual(true);
     expect(result.accessToken).toEqual('SlAV32hkKG');
-    expect(result.idToken).toEqual('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U');
+    expect(result.idToken).toEqual(token);
     expect(result.userInfo).toEqual({ sub: '1234567890' });
     expect(result.stateMessage).toEqual('af0ifjsldkj');
     const expiresIn = Math.round((result.expiresAt!.getTime() - Date.now())/1000); 

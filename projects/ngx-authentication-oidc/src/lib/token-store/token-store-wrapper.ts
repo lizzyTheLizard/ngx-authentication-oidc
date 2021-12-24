@@ -1,4 +1,4 @@
-import { LoginResult } from "../oidc/login-result";
+import { LoginResult } from "../oidc/oidc.service";
 import { TokenStore } from "./token-store";
 
 const prefix: string = "auth.";

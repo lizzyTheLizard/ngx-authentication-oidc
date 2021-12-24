@@ -5,8 +5,7 @@ import { AuthConfigService } from './auth-config.service';
 import { LoginOptions } from './configuration/login-options';
 import { InitializerInput } from './initializer/initializer';
 import { Logger } from './logger/logger';
-import { LoginResult, UserInfo } from './oidc/login-result';
-import { OidcService } from './oidc/oidc.service';
+import { LoginResult, OidcService, UserInfo } from './oidc/oidc.service';
 
 @Injectable()
 export class AuthService {

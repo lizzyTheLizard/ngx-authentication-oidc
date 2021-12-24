@@ -15,12 +15,8 @@ const config: OauthConfig = {
     clientId: 'keycloak-sample',
     redirectUri: 'http://localhost:4200/'
   },
-  provider: {
-    authEndpoint: "http://localhost:8080/auth/realms/Test-Application/protocol/openid-connect/auth",
-    tokenEndpoint: "http://localhost:8080/auth/realms/Test-Application/protocol/openid-connect/token"
-  },
+  provider: "http://localhost:8080/auth/realms/Test-Application",
   initializer: silentLoginCheck,
-  //silentRefreshRedirectUri: "http://localhost:4200/assets/silent-refresh.html"
 }
 
 @NgModule({
