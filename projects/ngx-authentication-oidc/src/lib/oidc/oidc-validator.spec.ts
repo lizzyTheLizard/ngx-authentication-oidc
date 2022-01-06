@@ -1,8 +1,8 @@
-import { ClientConfig } from "../configuration/client-config";
-import { ProviderConfig } from "../configuration/provider-config";
-import { ValidatorService } from "./validator.service";
+import { AuthConfigService } from "../auth-config.service";
+import { ClientConfig, ProviderConfig } from "../configuration/oauth-config";
+import { OidcValidator } from "./oidc-validator";
 
-const config: ClientConfig = {
+const cc: ClientConfig = {
   clientId: 'id',
   redirectUri: "http://xxx"
 }
@@ -16,14 +16,19 @@ const pc: ProviderConfig = {
   maxAge: 10000
 }
 
+const config: AuthConfigService = {
+  getProviderConfiguration: jasmine.createSpy('getProviderConfiguration').and.returnValue(pc),
+  client: cc,
+} as any;
+
 const nonce = "12231232";
 
 const claims =  {
   iss: pc.issuer,
-  aud: [config.clientId],
-  exp: Date.now() + 10000,
-  iat: Date.now() - 10,
-  nbf: Date.now() - 10,
+  aud: [cc.clientId],
+  exp: getCurrentTime() + 10,
+  iat: getCurrentTime() - 1,
+  nbf: getCurrentTime() - 1,
   nonce: nonce
 }
 
@@ -31,18 +36,19 @@ const headers = {
   alg: pc.alg![0],
 }
 
-let validator: ValidatorService;
+let validator: OidcValidator;
 
+function getCurrentTime() : number{
+  return Math.floor(Date.now()/1000);
+}
 
-describe('Validator', () => {
+describe('OidcValidator', () => {
   beforeEach(() => {
-    validator = new ValidatorService({client: config} as any);
-    validator.setProviderConfig(pc);
-
+    validator = new OidcValidator(config);
   });
 
   it("Valid", async () => {
-    validator.validate(claims, headers, nonce);
+    expect(() => validator.validate(claims, headers, nonce)).not.toThrow();
   });
 
   it("Missing Issuer", async () => {
@@ -58,7 +64,7 @@ describe('Validator', () => {
   });
 
   it("Single Audience", async () => {
-    validator.validate({...claims, aud: config.clientId }, headers, nonce);
+    expect(() => validator.validate({...claims, aud: cc.clientId }, headers, nonce)).not.toThrow();
   });
 
   it("Wrong Single Audience", async () => {
@@ -66,7 +72,7 @@ describe('Validator', () => {
   });
 
   it("Multiple Audience", async () => {
-    validator.validate({...claims, aud: ["1", config.clientId] }, headers, nonce);
+    expect(() => validator.validate({...claims, aud: ["1", cc.clientId] }, headers, nonce)).not.toThrow();
   });
 
   it("Wrong Multiple Audience", async () => {
@@ -78,7 +84,7 @@ describe('Validator', () => {
   });
 
   it("exp in past", async () => {
-    expect(() => validator.validate({...claims, exp: Date.now() - 1000 }, headers, nonce)).toThrow();
+    expect(() => validator.validate({...claims, exp: getCurrentTime() - 10 }, headers, nonce)).toThrow();
   });
 
   it("iat missing", async () => {
@@ -86,11 +92,11 @@ describe('Validator', () => {
   });
 
   it("iat in Future", async () => {
-    expect(() => validator.validate({...claims, iat: Date.now() + 100 }, headers, nonce)).toThrow();
+    expect(() => validator.validate({...claims, iat: getCurrentTime() + 1 }, headers, nonce)).toThrow();
   });
 
   it("nbf in Future", async () => {
-    expect(() => validator.validate({...claims, nbf: Date.now() + 100 }, headers, nonce)).toThrow();
+    expect(() => validator.validate({...claims, nbf: getCurrentTime() + 1 }, headers, nonce)).toThrow();
   });
 
   it("No Nonce returned", async () => {
@@ -102,6 +108,6 @@ describe('Validator', () => {
   });
 
   it("No Nonce Send", async () => {
-    validator.validate({...claims, nonce: undefined }, headers, undefined);
+    expect(() => validator.validate({...claims, nonce: undefined }, headers, undefined)).not.toThrow();
   });
 });

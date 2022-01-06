@@ -1,199 +1,196 @@
 import { AuthService } from './auth.service';
 import { TokenStore } from './token-store/token-store';
-import { TokenStoreWrapper } from './token-store/token-store-wrapper';
+import { LoginResult } from './login-result';
+import { Initializer, LoginOptions, OauthConfig } from '../public-api';
+import { TestBed } from '@angular/core/testing';
+import { AuthenticationModule, InitializerToken, LoggerFactoryToken, SessionHandlerToken } from './authentication-module';
+import { RouterTestingModule } from '@angular/router/testing';
+import { OidcDiscovery } from './oidc/oidc-discovery';
+import { OidcLogin } from './oidc/oidc-login';
+import { OidcSilentLogin } from './oidc/oidc-silent-login';
+import { OidcLogout } from './oidc/oidc-logout';
 import { Router } from '@angular/router';
-import { LoginResult, OidcService, UserInfo } from './oidc/oidc.service';
 
 const loginResult: LoginResult = {isLoggedIn: true, idToken: 'at', accessToken: 'id', userInfo: {sub: 'name'}};
 const failedLoginResult: LoginResult = {isLoggedIn: false};
+const config: OauthConfig = {
+  errorUrl: 'auth/error',
+  logoutUrl: 'auth/logout',
+  client: {clientId: "id", redirectUri: "url"},
+  provider: {authEndpoint: "auth", tokenEndpoint: "token", issuer: "iss", publicKeys: []},
+  silentLoginEnabled: true      
+};
 
-let config: any;
-let oidcService: OidcService;
 let service: AuthService;
 let router: Router;
+let initializer: jasmine.Spy<Initializer>;
+let discovery: jasmine.Spy<() => Promise<void>>;
+let login: jasmine.Spy<(options: LoginOptions) => Promise<LoginResult>>;
+let silentLogin: jasmine.Spy<(options: LoginOptions) => Promise<LoginResult>>;
 
 describe('AuthService', () => {
-  beforeEach(() => {
-    config = {
-      errorUrl: 'auth/error',
-      logoutUrl: 'auth/logout',
-      sessionHandler: jasmine.createSpyObj('sessionHandler', ["startWatching", 'stopWatching']),
-      tokenStore: new TokenStoreWrapper(localStorage),
-      initializer: jasmine.createSpy('initializer').and.returnValue(Promise.resolve({isLoggedIn: false})),
-      loggerFactory: () => console,
-      client: {clientId: "id", redirectUri: "url"},
-      provider: {authEndpoint: "auth", tokenEndpoint: "token"},
-      isSilentLoginEnabled: true      
-    };
-    oidcService = jasmine.createSpyObj('oidcService', ["checkResponse", "login", "silentLogin", "logout"]);
-    oidcService.initialize = jasmine.createSpy().and.returnValue(Promise.resolve());
+  beforeEach(() => {  
+    initializer = jasmine.createSpy('initializer');
+    let oidcLogin: OidcLogin= jasmine.createSpyObj('oidcLogin', [ 'login']);
+    login = oidcLogin.login as jasmine.Spy<(options: LoginOptions) => Promise<LoginResult>>;
+    let oidcSilentLogin: OidcSilentLogin = jasmine.createSpyObj('oidcSilentLogin', [ 'login']);
+    silentLogin = oidcSilentLogin.login as jasmine.Spy<(options: LoginOptions) => Promise<LoginResult>>;
+    let oidcDiscovery: OidcDiscovery = jasmine.createSpyObj('oidcDiscovery', [ 'discover']);
+    discovery = oidcDiscovery.discover as jasmine.Spy<() => Promise<void>>;
+    let oidcLogout: OidcLogout = jasmine.createSpyObj('oidcLogout', [ 'logout']);
+    let sessionHandler = jasmine.createSpyObj('sessionHandler', ["startWatching", 'stopWatching']);
+
+    TestBed.configureTestingModule({
+      imports: [
+        AuthenticationModule.forRoot(config as OauthConfig),
+        RouterTestingModule,
+      ],
+      providers:[
+        { provide: LoggerFactoryToken, useValue: () => console },
+        { provide: InitializerToken, useValue: initializer },
+        { provide: SessionHandlerToken, useValue: sessionHandler },
+        { provide: OidcLogin, useValue: oidcLogin},
+        { provide: OidcSilentLogin, useValue: oidcSilentLogin},
+        { provide: OidcDiscovery, useValue: oidcDiscovery},
+        { provide: OidcLogout, useValue: oidcLogout},
+      ],
+    });
+    service = TestBed.inject(AuthService);
+    router = TestBed.inject(Router);
+    localStorage.clear();
     spyOn<TokenStore, any>(localStorage, 'setItem').and.callThrough();
     spyOn<TokenStore, any>(localStorage, 'removeItem').and.callThrough();
-    localStorage.clear();
-    router = jasmine.createSpyObj('router', ["navigateByUrl"]);
-    service = new AuthService(oidcService, config, router);
   });
 
-  it("LoginHandler Initialization Failed", async () => {
-    oidcService.initialize = jasmine.createSpy().and.returnValue(Promise.reject());
-    service.initialize();
-    await service.initialSetupFinished$;
-
-    expect(oidcService.initialize).toHaveBeenCalledTimes(1);
-    expect(config.initializer).toHaveBeenCalledTimes(0);
-    expect(router.navigateByUrl).toHaveBeenCalledTimes(1);
-    expect(router.navigateByUrl).toHaveBeenCalledWith('auth/error');
-  });
-
-  it("Initializer Failed", async () => {
-    config.initializer = jasmine.createSpy().and.returnValue(Promise.reject());
-    service.initialize();
-    await service.initialSetupFinished$;
-
-    expect(oidcService.initialize).toHaveBeenCalledTimes(1);
-    expect(config.initializer).toHaveBeenCalledTimes(1);
-    expect(router.navigateByUrl).toHaveBeenCalledTimes(1);
-    expect(router.navigateByUrl).toHaveBeenCalledWith('auth/error');
-  });
-
-  it("Properties before initialization", async () => {
-    oidcService.initialize = jasmine.createSpy().and.returnValue(new Promise(res => setTimeout(() => res({}), 1000)));
-    service.initialize();
+  it("Discovery Failed", async () => {
+    const navigateSpy = spyOn(router, 'navigateByUrl');
+    discovery.and.returnValue(Promise.reject("Cannot perform initialization"));
+    initializer.and.returnValue(Promise.resolve(failedLoginResult));
     
-    let isLoggedIn: boolean | undefined;
-    let userInfo: UserInfo | undefined;
-    service.isLoggedIn$.subscribe(x => isLoggedIn = x);
-    service.userInfo$.subscribe(x => userInfo = x);
-
-    expect(service.isLoggedIn()).toBeFalse();
-    expect(service.getUserInfo()).toBeUndefined();
-    expect(service.getIdToken()).toBeUndefined();
-    expect(service.getAccessToken()).toBeUndefined();
-    expect(isLoggedIn).toBeUndefined();
-    expect(userInfo).toBeUndefined();
+    service.initialize();
+    await service.initialSetupFinished$;
+    
+    expect(navigateSpy).toHaveBeenCalledWith('auth/error');
+    expect(service.getAccessToken()).toEqual(undefined);
+    expect(service.getIdToken()).toEqual(undefined);
+    expect(service.getUserInfo()).toEqual(undefined);
+    expect(service.isLoggedIn()).toEqual(false);
   });
 
-  it("Properties after initialization", async () => {
-    config.initializer = jasmine.createSpy().and.returnValue(Promise.resolve(loginResult));
-    service.initialize();
+  it("Initialization No Login", async () => {
+    discovery.and.returnValue(Promise.resolve());
+    initializer.and.returnValue(Promise.resolve(failedLoginResult));
 
-    let isLoggedIn: boolean | undefined;
-    let userInfo: UserInfo | undefined;
-    service.isLoggedIn$.subscribe(x => isLoggedIn = x);
-    service.userInfo$.subscribe(x => userInfo = x);
+    service.initialize();
     await service.initialSetupFinished$;
 
-    expect(service.isLoggedIn()).toBeTrue();
-    expect(service.getUserInfo()).toEqual(loginResult.userInfo);
-    expect(service.getIdToken()).toEqual(loginResult.idToken);
-    expect(service.getAccessToken()).toEqual(loginResult.accessToken);
-    expect(isLoggedIn).toBeTrue
-    expect(userInfo).toEqual(loginResult.userInfo);
+    expect(service.getAccessToken()).toEqual(undefined);
+    expect(service.getIdToken()).toEqual(undefined);
+    expect(service.getUserInfo()).toEqual(undefined);
+    expect(service.isLoggedIn()).toEqual(false);
   });
-  
+
+  it("Initialization Login", async () => {
+    discovery.and.returnValue(Promise.resolve());
+    initializer.and.returnValue(Promise.resolve(loginResult));
+
+    service.initialize();
+    await service.initialSetupFinished$;
+
+    expect(service.getAccessToken()).toEqual(loginResult.accessToken);
+    expect(service.getIdToken()).toEqual(loginResult.idToken);
+    expect(service.getUserInfo()).toEqual(loginResult.userInfo);
+    expect(service.isLoggedIn()).toEqual(true);
+  });
+
+  it("Initialization Failed", async () => {
+    const navigateSpy = spyOn(router, 'navigateByUrl');
+    discovery.and.returnValue(Promise.resolve());
+    initializer.and.returnValue(Promise.reject("Cannot perform initialization"));
+    
+    service.initialize();
+    await service.initialSetupFinished$;
+    
+    expect(navigateSpy).toHaveBeenCalledWith('auth/error');
+    expect(service.getAccessToken()).toEqual(undefined);
+    expect(service.getIdToken()).toEqual(undefined);
+    expect(service.getUserInfo()).toEqual(undefined);
+    expect(service.isLoggedIn()).toEqual(false);
+  });
+
   it("Login", async () => {
-    oidcService.login = jasmine.createSpy().and.returnValue(Promise.resolve(loginResult));
+    login.and.returnValue(Promise.resolve(loginResult))
+    discovery.and.returnValue(Promise.resolve());
+    initializer.and.returnValue(Promise.resolve(failedLoginResult));
     service.initialize();
-
-    let isLoggedIn: boolean | undefined;
-    let userInfo: UserInfo | undefined;
-    service.isLoggedIn$.subscribe(x => isLoggedIn = x);
-    service.userInfo$.subscribe(x => userInfo = x);
     await service.initialSetupFinished$;
+
     await service.login();
-    
-    expect(service.isLoggedIn()).toBeTrue();
-    expect(service.getUserInfo()).toEqual(loginResult.userInfo);
-    expect(service.getIdToken()).toEqual(loginResult.idToken);
-    expect(service.getAccessToken()).toEqual(loginResult.accessToken);
-    expect(isLoggedIn).toBeTrue
-    expect(userInfo).toEqual(loginResult.userInfo);
-    expect(oidcService.login).toHaveBeenCalledTimes(1);
-    expect(oidcService.login).toHaveBeenCalledWith({finalUrl: undefined});
-    expect(config.sessionHandler!.startWatching).toHaveBeenCalledTimes(1);
-    expect(localStorage.setItem).toHaveBeenCalledTimes(4);
-    expect(localStorage.setItem).toHaveBeenCalledWith('auth.idToken', loginResult.idToken!);    
-    expect(localStorage.setItem).toHaveBeenCalledWith('auth.accessToken', loginResult.accessToken!);    
-    expect(localStorage.setItem).toHaveBeenCalledWith('auth.userInfo', JSON.stringify(loginResult.userInfo));    
-    expect(localStorage.setItem).toHaveBeenCalledWith('auth.isLoggedIn', JSON.stringify(loginResult.isLoggedIn));
-  });
 
-  it("Silent Login", async () => {
-    oidcService.silentLogin = jasmine.createSpy().and.returnValue(Promise.resolve(loginResult));
-    service.initialize();
-
-    let isLoggedIn: boolean | undefined;
-    let userInfo: UserInfo | undefined;
-    service.isLoggedIn$.subscribe(x => isLoggedIn = x);
-    service.userInfo$.subscribe(x => userInfo = x);
-    await service.initialSetupFinished$;
-    await service.silentLogin();
-    
-    expect(service.isLoggedIn()).toBeTrue();
-    expect(service.getUserInfo()).toEqual(loginResult.userInfo);
-    expect(service.getIdToken()).toEqual(loginResult.idToken);
     expect(service.getAccessToken()).toEqual(loginResult.accessToken);
-    expect(isLoggedIn).toBeTrue
-    expect(userInfo).toEqual(loginResult.userInfo);
-    expect(oidcService.silentLogin).toHaveBeenCalledTimes(1);
-    expect(oidcService.silentLogin).toHaveBeenCalledWith({});
-    expect(config.sessionHandler!.startWatching).toHaveBeenCalledTimes(1);
-    expect(localStorage.setItem).toHaveBeenCalledTimes(4);
-    expect(localStorage.setItem).toHaveBeenCalledWith('auth.idToken', loginResult.idToken!);    
-    expect(localStorage.setItem).toHaveBeenCalledWith('auth.accessToken', loginResult.accessToken!);    
-    expect(localStorage.setItem).toHaveBeenCalledWith('auth.userInfo', JSON.stringify(loginResult.userInfo));    
-    expect(localStorage.setItem).toHaveBeenCalledWith('auth.isLoggedIn', JSON.stringify(loginResult.isLoggedIn));
+    expect(service.getIdToken()).toEqual(loginResult.idToken);
+    expect(service.getUserInfo()).toEqual(loginResult.userInfo);
+    expect(service.isLoggedIn()).toEqual(true);
   });
 
   it("Login Failed", async () => {
-    oidcService.login = jasmine.createSpy().and.returnValue(Promise.resolve(failedLoginResult));
+    login.and.returnValue(Promise.resolve(failedLoginResult))
+    discovery.and.returnValue(Promise.resolve());
+    initializer.and.returnValue(Promise.resolve(failedLoginResult));
     service.initialize();
-
-    let isLoggedIn: boolean | undefined;
-    let userInfo: UserInfo | undefined;
-    service.isLoggedIn$.subscribe(x => isLoggedIn = x);
-    service.userInfo$.subscribe(x => userInfo = x);
     await service.initialSetupFinished$;
+
     await service.login();
-    
-    expect(service.isLoggedIn()).toBeFalse();
-    expect(service.getUserInfo()).toBeUndefined()
-    expect(service.getIdToken()).toBeUndefined();
-    expect(service.getAccessToken()).toBeUndefined();
-    expect(isLoggedIn).toBeFalse
-    expect(userInfo).toBeUndefined();
-    expect(oidcService.login).toHaveBeenCalledTimes(1);
-    expect(oidcService.login).toHaveBeenCalledWith({finalUrl: undefined});
-    expect(config.sessionHandler!.startWatching).toHaveBeenCalledTimes(0);
-    expect(localStorage.setItem).toHaveBeenCalledTimes(0);    
-  });  
+
+    expect(service.getAccessToken()).toEqual(undefined);
+    expect(service.getIdToken()).toEqual(undefined);
+    expect(service.getUserInfo()).toEqual(undefined);
+    expect(service.isLoggedIn()).toEqual(false);
+  });
+
+  it("Silent Login", async () => {
+    silentLogin.and.returnValue(Promise.resolve(loginResult))
+    discovery.and.returnValue(Promise.resolve());
+    initializer.and.returnValue(Promise.resolve(failedLoginResult));
+    service.initialize();
+    await service.initialSetupFinished$;
+
+    await service.silentLogin();
+
+    expect(service.getAccessToken()).toEqual(loginResult.accessToken);
+    expect(service.getIdToken()).toEqual(loginResult.idToken);
+    expect(service.getUserInfo()).toEqual(loginResult.userInfo);
+    expect(service.isLoggedIn()).toEqual(true);
+  });
+
+  it("Silent Login Failed", async () => {
+    silentLogin.and.returnValue(Promise.resolve(failedLoginResult))
+    discovery.and.returnValue(Promise.resolve());
+    initializer.and.returnValue(Promise.resolve(failedLoginResult));
+    service.initialize();
+    await service.initialSetupFinished$;
+
+    await service.silentLogin();
+
+    expect(service.getAccessToken()).toEqual(undefined);
+    expect(service.getIdToken()).toEqual(undefined);
+    expect(service.getUserInfo()).toEqual(undefined);
+    expect(service.isLoggedIn()).toEqual(false);
+  });
 
   it("Logout", async () => {
-    config.initializer = jasmine.createSpy().and.returnValue(Promise.resolve(loginResult));
+    const navigateSpy = spyOn(router, 'navigateByUrl');
+    discovery.and.returnValue(Promise.resolve());
+    initializer.and.returnValue(Promise.resolve(loginResult));
     service.initialize();
-
     await service.initialSetupFinished$;
 
-    let isLoggedIn: boolean | undefined;
-    let userInfo: UserInfo | undefined;
-    service.isLoggedIn$.subscribe(x => isLoggedIn = x);
-    service.userInfo$.subscribe(x => userInfo = x);
-    (localStorage.setItem as any).calls.reset();    
-    (localStorage.removeItem as any).calls.reset();    
     await service.logout();
 
-    expect(service.isLoggedIn()).toBeFalse();
-    expect(service.getUserInfo()).toBeUndefined();
-    expect(service.getIdToken()).toBeUndefined();
-    expect(service.getAccessToken()).toBeUndefined();
-    expect(isLoggedIn).toBeFalse();
-    expect(userInfo).toBeUndefined();
-    expect(oidcService.logout).toHaveBeenCalledTimes(1);
-    expect(config.sessionHandler!.stopWatching).toHaveBeenCalledTimes(1);
-    expect(localStorage.removeItem).toHaveBeenCalledWith('auth.idToken');    
-    expect(localStorage.removeItem).toHaveBeenCalledWith('auth.accessToken');
-    expect(localStorage.removeItem).toHaveBeenCalledWith('auth.userInfo');    
-    expect(localStorage.removeItem).toHaveBeenCalledWith('auth.isLoggedIn');
-    expect(localStorage.setItem).toHaveBeenCalledTimes(0);
+    expect(navigateSpy).toHaveBeenCalledWith('auth/logout');
+    expect(service.getAccessToken()).toEqual(undefined);
+    expect(service.getIdToken()).toEqual(undefined);
+    expect(service.getUserInfo()).toEqual(undefined);
+    expect(service.isLoggedIn()).toEqual(false);
   });
 });

@@ -21,6 +21,6 @@
 <div class="content">
   <router-outlet *ngIf="(auth.initialSetupFinished$ | async); else loginInProgress"></router-outlet>
   <ng-template #loginInProgress>
-    <img src="assets/spinner.gif"/>
+    <img src="assets/spinner.gif" width="100px" height="100px" alt="loading animation"/>
   </ng-template>
 </div>

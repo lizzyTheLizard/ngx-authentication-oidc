@@ -1,7 +1,5 @@
 import { Injectable } from "@angular/core";
 import { AuthConfigService } from "../auth-config.service";
-import { ClientConfig } from "../configuration/client-config";
-import { ProviderConfig } from "../configuration/provider-config";
 
 interface Claims {
   iss?: string;
@@ -17,17 +15,11 @@ interface Header {
 }
 
 @Injectable()
-export class ValidatorService {
-  private readonly clientConfig: ClientConfig;
-  private providerConfig?: ProviderConfig;
+export class OidcValidator {
+  constructor(
+    private readonly config: AuthConfigService){
 
-  constructor(config: AuthConfigService) { 
-    this.clientConfig = config.client;
   }
-
-  public setProviderConfig(providerConfig: ProviderConfig) {
-    this.providerConfig = providerConfig;
-  }    
           
   public validate(claims?: Claims, headers?: Header, nonce?: string){
     if(!claims) {
@@ -57,7 +49,8 @@ export class ValidatorService {
     if(!claims.iss){
       throw new Error('ID-Token contains invalid iss claim')
     }
-    if(claims.iss !== this.providerConfig!.issuer) {
+    const issuer = this.config.getProviderConfiguration().issuer;
+    if(claims.iss !== issuer) {
       throw new Error('ID-Token contains invalid iss claim')
     }
   }
@@ -68,11 +61,11 @@ export class ValidatorService {
     }
 
     if(typeof(claims.aud) === 'string') {
-      if(claims.aud !== this.clientConfig.clientId) {
+      if(claims.aud !== this.config.client.clientId) {
         throw new Error('ID-Token does not contain valid aud claim');
       }
     } else if(Array.isArray(claims.aud)){
-      if(!(claims.aud as string[]).includes(this.clientConfig.clientId)) {
+      if(!(claims.aud as string[]).includes(this.config.client.clientId)) {
         throw new Error('ID-Token does not contain correct aud claim');
       }
     } else {
@@ -81,23 +74,24 @@ export class ValidatorService {
   }
 
   private validateAlgorithm(headers: Header) {
-    if(!this.providerConfig!.alg && headers.alg !== "RS256") {
+    const alg = this.config.getProviderConfiguration().alg;
+    if(!alg && headers.alg !== "RS256") {
       throw Error('Wrong ID-Token algorithm')
     }
     if(!headers.alg) {
       throw Error('No algorithm defined')
     }
-    if(this.providerConfig!.alg && !this.providerConfig!.alg.includes(headers.alg)) {
+    if(alg && !alg.includes(headers.alg)) {
       throw Error('Wrong ID-Token algorithm')
     }
-    if(!this.providerConfig!.alg && headers.alg !== "RS256") {
+    if(!alg && headers.alg !== "RS256") {
       throw Error('Wrong ID-Token algorithm')
     }
     return;
   }
 
   private validateTime(claims: Claims) {
-    const actualTime = Date.now();
+    const actualTime = Math.floor(Date.now()/1000);
     if(!claims.exp) {
       throw new Error('exp claim required');
     }
@@ -107,14 +101,15 @@ export class ValidatorService {
     if(!claims.iat) {
       throw new Error('iat claim required');
     }
-    if(claims.iat >= actualTime) {
-      throw new Error('iat claim is ' + claims.nbf + ' which is in the future. Current time is ' + actualTime);
+    if(claims.iat > actualTime) {
+      throw new Error('iat claim is ' + claims.iat + ' which is in the future. Current time is ' + actualTime);
+    }
+    const maxAge = this.config.getProviderConfiguration().maxAge;
+    if(maxAge && claims.iat < actualTime - maxAge) {
+      throw new Error('iat claim is ' + claims.iat + ' which is too old. Current time is ' + actualTime + ' and max age is ' + maxAge);
     }
     if(claims.nbf && claims.nbf >= actualTime) {
       throw new Error('nbf claim is ' + claims.nbf + ' which is in the future. Current time is ' + actualTime);
-    }
-    if(this.providerConfig!.maxAge && claims.iat < actualTime - this.providerConfig!.maxAge) {
-      throw new Error('iat claim is ' + claims.iat + ' which is too old. Current time is ' + actualTime + ' and max age is ' + this.providerConfig!.maxAge);
     }
     return;
   }

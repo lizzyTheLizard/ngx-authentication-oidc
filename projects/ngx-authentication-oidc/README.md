@@ -1,5 +1,27 @@
 # NgxAuthenticationOidc
 
+The following parts of OIDC are supported:
+* OpenID-Connect Core (https://openid.net/specs/openid-connect-core-1_0.html)
+* Discovery (https://openid.net/specs/openid-connect-discovery-1_0.html)
+* RP-Initiated Logout (https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
+* Session Management (https://openid.net/specs/openid-connect-session-1_0.html)
+
+
+The following parts are not supported:
+ * Initiating Login from a Third Party (Chapter 4)
+ * Requesting Claims using the "claims" Request Parameter (Chapter 5.5)
+ * Passing Request Parameters as JWTs (Chapter 6)
+ * Support for Self-Issued OpenID Provider (Chapter 7)
+ * Client Authentication (Chapter 9)
+ * Offline Access (Chapter 11)
+ * Form Post Response (https://openid.net/specs/oauth-v2-form-post-response-mode-1_0.html)
+ * Dynamic Client Registration (https://openid.net/specs/openid-connect-registration-1_0.html)
+ * Back-Channel Logout (https://openid.net/specs/openid-connect-backchannel-1_0.html)
+ * Front-Channel Logout (https://openid.net/specs/openid-connect-frontchannel-1_0.html)
+
+
+
+
 This library was generated with [Angular CLI](https://github.com/angular/angular-cli) version 13.0.0.
 
 ## Code scaffolding

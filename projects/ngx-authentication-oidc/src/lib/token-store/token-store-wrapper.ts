@@ -1,10 +1,14 @@
-import { LoginResult } from "../oidc/oidc.service";
+import { Inject, Injectable } from "@angular/core";
+import { TokenStoreToken } from "../authentication-module";
+import { LoginResult } from "../login-result";
 import { TokenStore } from "./token-store";
 
 const prefix: string = "auth.";
 
+@Injectable()
 export class TokenStoreWrapper {
-  constructor(private readonly tokenStore: TokenStore) {}
+  constructor(
+    @Inject(TokenStoreToken) private readonly tokenStore: TokenStore) {}
 
   public getString(name: string) : string | undefined {
     return this.tokenStore.getItem(prefix + name) ?? undefined;
