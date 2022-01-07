@@ -1,3 +1,4 @@
+import { LoginOptions } from "../configuration/login-options";
 import { Logger } from "../logger/logger";
 import { LoginResult } from "../login-result";
 import { OidcLogin } from "../oidc/oidc-login";
@@ -11,7 +12,7 @@ export type Initializer = (input: InitializerInput, initialLoginResult: LoginRes
 export async function loginResponseCheck(input: InitializerInput, initialLoginResult: LoginResult) {
   const logger = input.loggerFactory('LoginResponseInitializer');
   const loginResult = initialLoginResult;
-  if(input.oidcResponse.isResponse()) {
+  if(!input.oidcResponse.isResponse()) {
     return loginResult;
   }
   const responseParams = input.oidcResponse.getResponseParamsFromQueryString();
@@ -34,7 +35,7 @@ export async function silentLoginCheck(input: InitializerInput, initialLoginResu
   }
 
   logger.debug('Try login without user interaction');
-  return login(logger, input.oidcSilentLogin).then(lr => {
+  return login(logger, input.oidcSilentLogin, input.router.url).then(lr => {
     logger.info('User is silently logged in', loginResult);
     return lr;
   }).catch(e => {
@@ -52,7 +53,7 @@ export async function enforceLogin(input: InitializerInput, initialLoginResult: 
   }
 
   logger.debug('Try login with user interaction');
-  loginResult = await login(logger, input.oidcLogin);
+  loginResult = await login(logger, input.oidcLogin, input.router.url);
   if(!loginResult.isLoggedIn) {
     throw new Error('Cannot log in user');
   }
@@ -69,7 +70,7 @@ export async function silentCheckAndThenEnforce(input: InitializerInput, initial
   }
 
   logger.debug('Try login with user interaction');
-  loginResult = await login(logger, input.oidcLogin);
+  loginResult = await login(logger, input.oidcLogin, input.router.url);
   if(!loginResult.isLoggedIn) {
     throw new Error('Cannot log in user');
   }
@@ -77,8 +78,8 @@ export async function silentCheckAndThenEnforce(input: InitializerInput, initial
   return loginResult
 }
 
-async function login(logger: Logger, oidcLogin: OidcLogin | OidcSilentLogin): Promise<LoginResult> {
-  const loginOptions = {};
+async function login(logger: Logger, oidcLogin: OidcLogin | OidcSilentLogin, finalUrl: string): Promise<LoginResult> {
+  const loginOptions: LoginOptions = { finalUrl: finalUrl};
   const loginResult = await oidcLogin.login(loginOptions);
   if(!loginResult.isLoggedIn) {
     logger.debug('Login was not successful, user is not logged in')

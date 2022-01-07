@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@angular/core"
+import { Router } from "@angular/router";
 import { LoggerFactoryToken } from "../authentication-module";
 import { LoggerFactory } from "../logger/logger";
 import { OidcLogin } from "../oidc/oidc-login";
@@ -12,5 +13,6 @@ export class InitializerInput {
       public readonly oidcResponse: OidcResponse,
       public readonly oidcSilentLogin: OidcSilentLogin,
       public readonly oidcLogin: OidcLogin,
+      public readonly router: Router,
   ){}
 }

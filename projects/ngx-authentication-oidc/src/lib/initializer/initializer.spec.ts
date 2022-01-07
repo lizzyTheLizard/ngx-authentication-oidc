@@ -1,3 +1,4 @@
+import { Router } from "@angular/router";
 import { LoginResult } from "../login-result";
 import { enforceLogin, loginResponseCheck, silentCheckAndThenEnforce, silentLoginCheck } from "./initializer";
 import { InitializerInput } from "./initializer-input";
@@ -13,12 +14,13 @@ describe('loginResponseCheck', async () => {
       loggerFactory: () => console,
       oidcLogin: jasmine.createSpyObj('oidcLogin', ['login']),
       oidcResponse: jasmine.createSpyObj('oidcResponse', ['handleResponse', 'isResponse', 'getResponseParamsFromQueryString']),
-      oidcSilentLogin: jasmine.createSpyObj('oidcSilentLogin',['login'])
+      oidcSilentLogin: jasmine.createSpyObj('oidcSilentLogin',['login']),
+      router: {url: "https://example.com/current"} as Router
     }
   });
 
   it("No login response", async () => {
-    input.oidcResponse.handleResponse = jasmine.createSpy('processLoginResponse').and.returnValue(failedLoginResult);
+    input.oidcResponse.isResponse = jasmine.createSpy('isResponse').and.returnValue(false);
 
     const result = await loginResponseCheck(input, failedLoginResult);
 
@@ -26,7 +28,7 @@ describe('loginResponseCheck', async () => {
   });
 
   it("No login response but already logged in", async () => {
-    input.oidcResponse.handleResponse = jasmine.createSpy('processLoginResponse').and.returnValue(failedLoginResult);
+    input.oidcResponse.isResponse = jasmine.createSpy('isResponse').and.returnValue(false);
 
     const result = await loginResponseCheck(input, successfulLoginResult);
 
@@ -34,6 +36,7 @@ describe('loginResponseCheck', async () => {
   });
 
   it("Successful login", async () => {
+    input.oidcResponse.isResponse = jasmine.createSpy('isResponse').and.returnValue(true);
     input.oidcResponse.handleResponse = jasmine.createSpy('processLoginResponse').and.returnValue(successfulLoginResult);
 
     const result = await loginResponseCheck(input, failedLoginResult);
@@ -42,6 +45,7 @@ describe('loginResponseCheck', async () => {
   });
 
   it("Successful login and already logged in", async () => {
+    input.oidcResponse.isResponse = jasmine.createSpy('isResponse').and.returnValue(true);
     input.oidcResponse.handleResponse = jasmine.createSpy('processLoginResponse').and.returnValue(successfulLoginResult);
 
     const result = await loginResponseCheck(input, { isLoggedIn: true, userInfo: {sub: 'other'}});
@@ -57,7 +61,8 @@ describe('silentLoginCheck', () => {
       loggerFactory: () => console,
       oidcLogin: jasmine.createSpyObj('oidcLogin', ['login']),
       oidcResponse: jasmine.createSpyObj('oidcResponse', ['handleResponse', 'isResponse', 'getResponseParamsFromQueryString']),
-      oidcSilentLogin: jasmine.createSpyObj('oidcSilentLogin',['login'])
+      oidcSilentLogin: jasmine.createSpyObj('oidcSilentLogin',['login']),
+      router: {url: "https://example.com/current"} as Router
     }
     input.oidcLogin.login = jasmine.createSpy('login').and.returnValue(Promise.reject());
     input.oidcSilentLogin.login = jasmine.createSpy('login').and.returnValue(Promise.reject());
@@ -71,7 +76,7 @@ describe('silentLoginCheck', () => {
 
     expect(result).toEqual(failedLoginResult);
     expect(input.oidcSilentLogin.login).toHaveBeenCalledTimes(1);
-    expect(input.oidcSilentLogin.login).toHaveBeenCalledWith({});
+    expect(input.oidcSilentLogin.login).toHaveBeenCalledWith({finalUrl: "https://example.com/current"});
   });
 
   it("Already logged in", async () => {
@@ -88,7 +93,7 @@ describe('silentLoginCheck', () => {
 
     expect(result).toEqual(successfulLoginResult);
     expect(input.oidcSilentLogin.login).toHaveBeenCalledTimes(1);
-    expect(input.oidcSilentLogin.login).toHaveBeenCalledWith({});
+    expect(input.oidcSilentLogin.login).toHaveBeenCalledWith({finalUrl: "https://example.com/current"});
   });
 });
 
@@ -98,7 +103,8 @@ describe('enforceLogin', () => {
       loggerFactory: () => console,
       oidcLogin: jasmine.createSpyObj('oidcLogin', ['login']),
       oidcResponse: jasmine.createSpyObj('oidcResponse', ['handleResponse', 'isResponse', 'getResponseParamsFromQueryString']),
-      oidcSilentLogin: jasmine.createSpyObj('oidcSilentLogin',['login'])
+      oidcSilentLogin: jasmine.createSpyObj('oidcSilentLogin',['login']),
+      router: {url: "https://example.com/current"} as Router
     }
     input.oidcLogin.login = jasmine.createSpy('login').and.returnValue(Promise.reject());
     input.oidcSilentLogin.login = jasmine.createSpy('login').and.returnValue(Promise.reject());
@@ -130,7 +136,7 @@ describe('enforceLogin', () => {
 
     expect(result).toEqual(successfulLoginResult);
     expect(input.oidcLogin.login).toHaveBeenCalledTimes(1);
-    expect(input.oidcLogin.login).toHaveBeenCalledWith({});
+    expect(input.oidcLogin.login).toHaveBeenCalledWith({finalUrl: "https://example.com/current"});
   });
 });
 
@@ -140,7 +146,8 @@ describe('silentLoginAndThenEnforce', () => {
       loggerFactory: () => console,
       oidcLogin: jasmine.createSpyObj('oidcLogin', ['login']),
       oidcResponse: jasmine.createSpyObj('oidcResponse', ['handleResponse', 'isResponse', 'getResponseParamsFromQueryString']),
-      oidcSilentLogin: jasmine.createSpyObj('oidcSilentLogin',['login'])
+      oidcSilentLogin: jasmine.createSpyObj('oidcSilentLogin',['login']),
+      router: {url: "https://example.com/current"} as Router
     }
     input.oidcLogin.login = jasmine.createSpy('login').and.returnValue(Promise.reject());
     input.oidcSilentLogin.login = jasmine.createSpy('login').and.returnValue(Promise.reject());
@@ -154,7 +161,7 @@ describe('silentLoginAndThenEnforce', () => {
 
     expect(result).toEqual(successfulLoginResult);
     expect(input.oidcSilentLogin.login).toHaveBeenCalledTimes(1);
-    expect(input.oidcSilentLogin.login).toHaveBeenCalledWith({});
+    expect(input.oidcSilentLogin.login).toHaveBeenCalledWith({finalUrl: "https://example.com/current"});
     expect(input.oidcLogin.login).toHaveBeenCalledTimes(0);
   });
 
@@ -166,9 +173,9 @@ describe('silentLoginAndThenEnforce', () => {
 
     expect(result).toEqual(successfulLoginResult);
     expect(input.oidcSilentLogin.login).toHaveBeenCalledTimes(1);
-    expect(input.oidcSilentLogin.login).toHaveBeenCalledWith({});
+    expect(input.oidcSilentLogin.login).toHaveBeenCalledWith({finalUrl: "https://example.com/current"});
     expect(input.oidcLogin.login).toHaveBeenCalledTimes(1);
-    expect(input.oidcLogin.login).toHaveBeenCalledWith({});
+    expect(input.oidcLogin.login).toHaveBeenCalledWith({finalUrl: "https://example.com/current"});
   });
 
   it("Both Failed", (done) => {

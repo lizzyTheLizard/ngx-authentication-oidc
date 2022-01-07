@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { AuthenticationModule, OauthConfig, silentLoginCheck } from 'ngx-authentication-oidc';
+import { AuthenticationModule, enforceLogin, InitializerToken, OauthConfig } from 'ngx-authentication-oidc';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -16,7 +16,8 @@ const config: OauthConfig = {
     redirectUri: 'http://localhost:4200/'
   },
   provider: "http://localhost:8080/auth/realms/Test-Application",
-  initializer: silentLoginCheck,
+  logoutUrl: 'public',
+  errorUrl: 'auth/error'
 }
 
 @NgModule({
@@ -33,7 +34,9 @@ const config: OauthConfig = {
     AppRoutingModule,
     AuthenticationModule.forRoot(config),
   ],
-  providers: [],
+  providers: [
+    { provide: InitializerToken, useValue: enforceLogin },
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
