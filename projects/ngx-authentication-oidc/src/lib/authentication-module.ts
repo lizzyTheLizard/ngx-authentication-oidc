@@ -53,7 +53,6 @@ export class AuthenticationModule {
         OidcSilentLogin,
         OidcValidator,
         TokenStoreWrapper,
-        InitializerInput
       ],
     };
   }

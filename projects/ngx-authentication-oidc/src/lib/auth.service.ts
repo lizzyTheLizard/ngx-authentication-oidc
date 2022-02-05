@@ -14,6 +14,7 @@ import { OidcLogout } from './oidc/oidc-logout';
 import { OidcSilentLogin } from './oidc/oidc-silent-login';
 import { TokenStoreWrapper } from './token-store/token-store-wrapper';
 import { SessionHandler } from './session-handler/session-handler';
+import { OidcResponse } from './oidc/oidc-response';
 
 /**
  * Main facade of the library, can be used to check and perform logins. Is available if you import {@link AuthenticationModule}.
@@ -36,13 +37,13 @@ export class AuthService {
       private readonly oidcSilentLogin: OidcSilentLogin,
       private readonly oidcDiscovery: OidcDiscovery,
       private readonly oidcLogout: OidcLogout,
+      private readonly oidcResponse: OidcResponse,
       private readonly config: AuthConfigService, 
       private readonly router: Router,
       private readonly tokenStore: TokenStoreWrapper,
-      private readonly initializerInput: InitializerInput,
+      @Inject(LoggerFactoryToken) private readonly loggerFactory: LoggerFactory,
       @Inject(SessionHandlerToken) private readonly sessionHandler: SessionHandler,
-      @Inject(InitializerToken) private readonly initializer: Initializer,
-      @Inject(LoggerFactoryToken) loggerFactory: LoggerFactory) {
+      @Inject(InitializerToken) private readonly initializer: Initializer) {
     this.logger = loggerFactory('AuthService');
 
     //Set up initialSetupFinished promise
@@ -63,8 +64,15 @@ export class AuthService {
     try {
       this.logger.debug('Start authentication module');
       await this.oidcDiscovery.discover();
-      const initialLoginResult = this.tokenStore.readTokenStore() ?? { isLoggedIn: false}
-      const loginResult = await this.initializer(this.initializerInput, initialLoginResult);
+      const initializerInput: InitializerInput = {
+        loggerFactory: this.loggerFactory,
+        initialLoginResult: this.tokenStore.readTokenStore() ?? { isLoggedIn: false},
+        isResponse: () => this.oidcResponse.isResponse(),
+        login: options => this.oidcLogin.login({ ... options, finalUrl: this.router.url}),
+        silentLogin: options => this.oidcSilentLogin.login({ ... options, finalUrl: this.router.url}),
+        handleResponse: () => this.oidcResponse.handleResponse(this.oidcResponse.getResponseParamsFromQueryString()),
+      }
+      const loginResult = await this.initializer(initializerInput);
       if(loginResult.isLoggedIn) {
         this.handleSuccessfulLoginResult(loginResult);
       }
