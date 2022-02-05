@@ -16,7 +16,7 @@ const silentRefreshIFrameName = 'silent-refresh-iframe';
 export class OidcSilentLogin {
   private readonly timeoutOptions: TimeoutConfig<LoginResult,Observable<LoginResult>,LoginResult>;
   private logger: Logger;
-  private silentRefreshPostMessageEventListener?: (e: MessageEvent) => void;
+  private loginEventListener?: (e: MessageEvent) => void;
 
   constructor(
       private readonly location: Location,
@@ -41,7 +41,7 @@ export class OidcSilentLogin {
     const silentLoginOptions = { ... loginOptions, prompt: "none"};
     const url = this.oidcLogin.createAuthenticationRequest(silentLoginOptions, redirectUrl);
     const iframe = this.createIFrame(url);
-    const result = this.setupSilentLoginEventListener(iframe);
+    const result = this.setupLoginEventListener(iframe);
     this.document.body.appendChild(iframe);
     return firstValueFrom(result.pipe(timeout(this.timeoutOptions)));
   }
@@ -70,17 +70,17 @@ export class OidcSilentLogin {
     return iframe;
   }
 
-  private setupSilentLoginEventListener(iframe: HTMLIFrameElement) : Observable<LoginResult> {
-    if (this.silentRefreshPostMessageEventListener) {
-      this.window.removeEventListener('message',this.silentRefreshPostMessageEventListener);
+  private setupLoginEventListener(iframe: HTMLIFrameElement) : Observable<LoginResult> {
+    if (this.loginEventListener) {
+      this.window.removeEventListener('message',this.loginEventListener);
     }
     const subject = new Subject<LoginResult>();
-    this.silentRefreshPostMessageEventListener = e => this.silentLoginEventListener(subject, iframe, e);
-    this.window.addEventListener('message',this.silentRefreshPostMessageEventListener);
+    this.loginEventListener = e => this.handleLoginEvent(subject, iframe, e);
+    this.window.addEventListener('message',this.loginEventListener);
     return subject;
   }
 
-  private silentLoginEventListener(subject: Subject<LoginResult>, iframe: HTMLIFrameElement, e: MessageEvent){
+  private handleLoginEvent(subject: Subject<LoginResult>, iframe: HTMLIFrameElement, e: MessageEvent){
     if(e.origin !== this.window.location.origin) {
       return;
     }
@@ -90,7 +90,7 @@ export class OidcSilentLogin {
     if(!e.source || (e.source as any !== iframe && (e.source as any).parent !== this.window)) {
       return;
     }
-    this.window.removeEventListener("message", this.silentRefreshPostMessageEventListener!);
+    this.window.removeEventListener("message", this.loginEventListener!);
     const params = this.oidcResponse.parseResponseParams(e.data);
     this.logger.debug('Got silent refresh response', params);
     const redirectUrl = this.getSilentRefreshUrl();
