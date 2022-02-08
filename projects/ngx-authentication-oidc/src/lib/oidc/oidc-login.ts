@@ -36,6 +36,7 @@ export class OidcLogin {
   }
 
   public async login(loginOptions: LoginOptions): Promise<LoginResult> {
+    console.info('Perform login');
     const redirectUri = this.config.client.redirectUri
     const url = this.createAuthenticationRequest(loginOptions, redirectUri);
     this.logger.info('Start a login request to', url);

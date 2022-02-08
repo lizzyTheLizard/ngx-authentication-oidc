@@ -190,7 +190,7 @@ export class OidcResponse {
     const error = params.error!;
     const description = params.error_description;
     const uri = params.error_uri;
-    this.logger.info('Login failed',error, description, uri);
-    throw new Error("Login failed: " + error);
+    this.logger.debug('Login failed',error, description, uri);
+    return Promise.reject("Login failed: " + error);
   }
 }
