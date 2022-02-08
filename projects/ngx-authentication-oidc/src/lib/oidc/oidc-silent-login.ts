@@ -3,7 +3,8 @@ import { Inject, Injectable } from "@angular/core";
 import { firstValueFrom, Observable, of, Subject, timeout } from "rxjs";
 import { TimeoutConfig } from "rxjs/internal/operators/timeout";
 import { AuthConfigService } from "../auth-config.service";
-import { DocumentToken, LoggerFactoryToken, WindowToken } from "../authentication-module";
+import { DocumentToken, WindowToken } from "../authentication-module.tokens";
+import { LoggerFactoryToken } from "../logger/logger";
 import { LoginOptions } from "../configuration/login-options";
 import { Logger, LoggerFactory } from "../logger/logger";
 import { LoginResult } from "../login-result";
@@ -103,6 +104,5 @@ export class OidcSilentLogin {
         this.logger.info('Could not silently log in: ', error);
         subject.next({isLoggedIn: false});
       });
-    }
   }
 }

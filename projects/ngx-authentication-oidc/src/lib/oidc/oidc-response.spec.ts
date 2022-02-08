@@ -4,10 +4,12 @@ import { TestBed } from "@angular/core/testing";
 import { Validator } from "@angular/forms";
 import { RouterTestingModule } from "@angular/router/testing";
 import { AuthConfigService } from "../auth-config.service";
-import { AuthenticationModule, LoggerFactoryToken, WindowToken } from "../authentication-module";
+import { AuthenticationModule } from "../authentication-module";
+import { LoggerFactoryToken } from "../logger/logger";
 import { ClientConfig, OauthConfig, ProviderConfig } from "../configuration/oauth-config";
 import { OidcResponse, ResponseParams } from "./oidc-response";
 import { OidcValidator } from "./oidc-validator";
+import { WindowToken } from "../authentication-module.tokens";
 
 const pc: ProviderConfig = {
   authEndpoint: "http://xx",

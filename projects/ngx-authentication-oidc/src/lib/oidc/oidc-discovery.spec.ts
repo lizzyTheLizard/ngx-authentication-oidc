@@ -3,8 +3,9 @@ import { TestBed } from "@angular/core/testing";
 import { RouterTestingModule } from "@angular/router/testing";
 import { AuthConfigService } from "../auth-config.service";
 import { AuthService } from "../auth.service";
-import { AuthenticationModule, LoggerFactoryToken } from "../authentication-module";
+import { AuthenticationModule } from "../authentication-module";
 import { OauthConfig } from "../configuration/oauth-config";
+import { LoggerFactoryToken } from "../logger/logger";
 import { AuthTestingService } from "../testing/auth-testing.service";
 import { OidcDiscovery } from "./oidc-discovery";
 

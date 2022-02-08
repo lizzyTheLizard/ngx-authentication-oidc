@@ -3,6 +3,7 @@
  */
 
 export * from './lib/authentication-module';
+export * from './lib/authentication-module.tokens';
 export * from './lib/auth.service';
 export * from './lib/configuration/login-options';
 export * from './lib/configuration/oauth-config';

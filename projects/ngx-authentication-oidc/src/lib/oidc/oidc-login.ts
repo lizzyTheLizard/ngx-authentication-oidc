@@ -1,9 +1,10 @@
 import { Inject, Injectable } from "@angular/core";
 import { AuthConfigService } from "../auth-config.service";
-import { LoggerFactoryToken, WindowToken } from "../authentication-module";
+import { LoggerFactoryToken } from "../logger/logger";
 import { LoginOptions, ResponseType } from "../configuration/login-options";
 import { Logger, LoggerFactory } from "../logger/logger";
 import { LoginResult } from "../login-result";
+import { WindowToken } from "../authentication-module.tokens";
 
 export interface State {
   stateMessage?: string;

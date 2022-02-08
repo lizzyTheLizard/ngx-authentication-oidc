@@ -1,9 +1,8 @@
-import { Inject, Injectable } from '@angular/core';
+import { Inject, Injectable, InjectionToken } from '@angular/core';
 import { Router } from '@angular/router';
 import { map, Observable, Subject } from 'rxjs';
 import { Initializer } from './initializer/initializer';
 import { AuthConfigService } from './auth-config.service';
-import { InitializerToken, LoggerFactoryToken, SessionHandlerToken } from './authentication-module';
 import { LoginOptions } from './configuration/login-options';
 import { InitializerInput } from './initializer/initializer-input';
 import { Logger, LoggerFactory } from './logger/logger';
@@ -16,6 +15,10 @@ import { TokenStoreWrapper } from './token-store/token-store-wrapper';
 import { SessionHandler } from './session-handler/session-handler';
 import { OidcResponse } from './oidc/oidc-response';
 import { OidcSessionManagement } from './oidc/oidc-session-management';
+import { LoggerFactoryToken } from './logger/logger';
+import { InitializerToken } from './initializer/initializer';
+
+export const SessionHandlerToken = new InjectionToken('SessionHandler');
 
 /**
  * Main facade of the library, can be used to check and perform logins. Is available if you import {@link AuthenticationModule}.

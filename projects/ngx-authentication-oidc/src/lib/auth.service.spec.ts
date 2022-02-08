@@ -1,9 +1,9 @@
-import { AuthService } from './auth.service';
+import { AuthService, SessionHandlerToken } from './auth.service';
 import { TokenStore } from './token-store/token-store';
 import { LoginResult } from './login-result';
 import { Initializer, LoginOptions, OauthConfig } from '../public-api';
 import { TestBed } from '@angular/core/testing';
-import { AuthenticationModule, InitializerToken, LoggerFactoryToken, SessionHandlerToken } from './authentication-module';
+import { AuthenticationModule } from './authentication-module';
 import { RouterTestingModule } from '@angular/router/testing';
 import { OidcDiscovery } from './oidc/oidc-discovery';
 import { OidcLogin } from './oidc/oidc-login';
@@ -12,6 +12,8 @@ import { OidcLogout } from './oidc/oidc-logout';
 import { Router } from '@angular/router';
 import { OidcSessionManagement } from './oidc/oidc-session-management';
 import { firstValueFrom, Subject } from 'rxjs';
+import { LoggerFactoryToken } from './logger/logger';
+import { InitializerToken } from './initializer/initializer';
 
 const loginResult: LoginResult = {isLoggedIn: true, idToken: 'at', accessToken: 'id', userInfo: {sub: 'name'}};
 const failedLoginResult: LoginResult = {isLoggedIn: false};

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@angular/core";
 import { AuthConfigService } from "../auth-config.service";
-import { LoggerFactoryToken } from "../authentication-module";
+import { LoggerFactoryToken } from "../logger/logger";
 import { Logger, LoggerFactory } from "../logger/logger";
   
 @Injectable()

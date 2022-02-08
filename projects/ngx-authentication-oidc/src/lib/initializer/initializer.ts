@@ -1,5 +1,8 @@
+import { InjectionToken } from "@angular/core";
 import { LoginResult } from "../login-result";
 import { InitializerInput } from "./initializer-input";
+
+export const InitializerToken = new InjectionToken('Initializer');
 
 export type Initializer = (input: InitializerInput) => Promise<LoginResult>;
 

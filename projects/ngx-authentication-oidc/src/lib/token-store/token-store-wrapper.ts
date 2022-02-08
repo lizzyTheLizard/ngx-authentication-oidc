@@ -1,7 +1,8 @@
-import { Inject, Injectable } from "@angular/core";
-import { TokenStoreToken } from "../authentication-module";
+import { Inject, Injectable, InjectionToken } from "@angular/core";
 import { LoginResult } from "../login-result";
 import { TokenStore } from "./token-store";
+
+export const TokenStoreToken = new InjectionToken('TokenStore');
 
 const prefix: string = "auth.";
 

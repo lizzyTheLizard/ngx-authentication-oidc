@@ -3,7 +3,7 @@ import { Inject, Injectable } from "@angular/core";
 import { JWK } from "jose";
 import { firstValueFrom } from "rxjs";
 import { AuthConfigService } from "../auth-config.service";
-import { LoggerFactoryToken } from "../authentication-module";
+import { LoggerFactoryToken } from "../logger/logger";
 import { Logger, LoggerFactory } from "../logger/logger";
 
 interface Metadata {

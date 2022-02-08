@@ -1,3 +1,7 @@
+import { InjectionToken } from "@angular/core";
+
+export const LoggerFactoryToken = new InjectionToken('LoggerFactory');
+
 export interface Logger {
   debug(message: string, ...optionalParams: any[]): void;
   info(message: string, ...optionalParams: any[]): void;

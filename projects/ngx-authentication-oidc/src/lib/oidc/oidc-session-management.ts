@@ -1,7 +1,8 @@
 import { Inject, Injectable } from "@angular/core";
 import { Observable, Subject } from "rxjs";
 import { AuthConfigService } from "../auth-config.service";
-import { DocumentToken, LoggerFactoryToken, WindowToken } from "../authentication-module";
+import { DocumentToken, WindowToken } from "../authentication-module.tokens";
+import { LoggerFactoryToken } from "../logger/logger";
 import { Logger, LoggerFactory } from "../logger/logger";
 import { LoginResult } from "../login-result";
 

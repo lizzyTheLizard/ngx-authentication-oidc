@@ -1,9 +1,10 @@
 import { Location, LocationStrategy, PathLocationStrategy } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
-import { InjectionToken, ModuleWithProviders, NgModule } from '@angular/core';
-import { loginResponseCheck, silentLoginCheck } from '../public-api';
+import { ModuleWithProviders, NgModule } from '@angular/core';
+import { loginResponseCheck, silentLoginCheck } from './initializer/initializer';
 import { AuthConfigService } from './auth-config.service';
-import { AuthService } from './auth.service';
+import { AuthService, SessionHandlerToken } from './auth.service';
+import { WindowToken, DocumentToken } from './authentication-module.tokens';
 import { OauthConfig } from './configuration/oauth-config';
 import { consoleLoggerFactory } from './logger/console-logger';
 import { OidcDiscovery } from './oidc/oidc-discovery';
@@ -14,14 +15,10 @@ import { OidcSessionManagement } from './oidc/oidc-session-management';
 import { OidcSilentLogin } from './oidc/oidc-silent-login';
 import { OidcValidator } from './oidc/oidc-validator';
 import { DefaultSessionHandler } from './session-handler/default-session-handler';
-import { TokenStoreWrapper } from './token-store/token-store-wrapper';
+import { TokenStoreToken, TokenStoreWrapper } from './token-store/token-store-wrapper';
+import { LoggerFactoryToken } from './logger/logger';
+import { InitializerToken } from './initializer/initializer';
 
-export const WindowToken = new InjectionToken('Window');
-export const DocumentToken = new InjectionToken('Document');
-export const InitializerToken = new InjectionToken('Initializer');
-export const LoggerFactoryToken = new InjectionToken('LoggerFactory');
-export const TokenStoreToken = new InjectionToken('TokenStore');
-export const SessionHandlerToken = new InjectionToken('SessionHandler');
 
 /**
  * Main module of the library, has to be imported into our application. The configuration
