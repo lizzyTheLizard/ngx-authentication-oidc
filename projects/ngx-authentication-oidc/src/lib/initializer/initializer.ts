@@ -3,9 +3,9 @@ import { InitializerInput } from "./initializer-input";
 
 export type Initializer = (input: InitializerInput) => Promise<LoginResult>;
 
-export async function loginResponseCheck(input: InitializerInput, initialLoginResult: LoginResult) {
+export async function loginResponseCheck(input: InitializerInput) {
   const logger = input.loggerFactory('LoginResponseInitializer');
-  const loginResult = initialLoginResult;
+  const loginResult = input.initialLoginResult;
   if(!input.isResponse()) {
     return loginResult;
   }
@@ -19,9 +19,9 @@ export async function loginResponseCheck(input: InitializerInput, initialLoginRe
   return loginResult;
 }
 
-export async function silentLoginCheck(input: InitializerInput, initialLoginResult: LoginResult) : Promise<LoginResult> {
+export async function silentLoginCheck(input: InitializerInput) : Promise<LoginResult> {
   const logger = input.loggerFactory('SilentLoginCheckInitializer');
-  let loginResult = await loginResponseCheck(input, initialLoginResult);
+  let loginResult = await loginResponseCheck(input);
 
   if(loginResult.isLoggedIn) {
     return loginResult;
@@ -41,9 +41,9 @@ export async function silentLoginCheck(input: InitializerInput, initialLoginResu
   });
 }
 
-export async function enforceLogin(input: InitializerInput, initialLoginResult: LoginResult): Promise<LoginResult> {
+export async function enforceLogin(input: InitializerInput): Promise<LoginResult> {
   const logger = input.loggerFactory('EnforceLoginInitializer');
-  let loginResult = await loginResponseCheck(input, initialLoginResult);
+  let loginResult = await loginResponseCheck(input);
 
   if(loginResult.isLoggedIn) {
     return loginResult;
@@ -60,9 +60,9 @@ export async function enforceLogin(input: InitializerInput, initialLoginResult: 
   });
 }
 
-export async function silentCheckAndThenEnforce(input: InitializerInput, initialLoginResult: LoginResult) {
+export async function silentCheckAndThenEnforce(input: InitializerInput) {
   const logger = input.loggerFactory('EnforceLoginInitializer');
-  let loginResult = await silentLoginCheck(input, initialLoginResult);
+  let loginResult = await silentLoginCheck(input);
 
   if(loginResult.isLoggedIn) {
     return loginResult;

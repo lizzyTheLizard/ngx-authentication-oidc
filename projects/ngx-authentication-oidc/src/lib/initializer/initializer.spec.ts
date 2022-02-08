@@ -15,16 +15,18 @@ describe('loginResponseCheck', async () => {
 
   it("No login response", async () => {
     input.isResponse = jasmine.createSpy('isResponse').and.returnValue(false);
+    input.initialLoginResult = failedLoginResult;
 
-    const result = await loginResponseCheck(input, failedLoginResult);
+    const result = await loginResponseCheck(input);
 
     expect(result).toEqual(failedLoginResult);
   });
 
   it("No login response but already logged in", async () => {
     input.isResponse = jasmine.createSpy('isResponse').and.returnValue(false);
+    input.initialLoginResult = successfulLoginResult;
 
-    const result = await loginResponseCheck(input, successfulLoginResult);
+    const result = await loginResponseCheck(input);
 
     expect(result).toEqual(successfulLoginResult);
   });
@@ -32,8 +34,9 @@ describe('loginResponseCheck', async () => {
   it("Successful login", async () => {
     input.isResponse = jasmine.createSpy('isResponse').and.returnValue(true);
     input.handleResponse = jasmine.createSpy('processLoginResponse').and.returnValue(successfulLoginResult);
+    input.initialLoginResult = failedLoginResult;
 
-    const result = await loginResponseCheck(input, failedLoginResult);
+    const result = await loginResponseCheck(input);
 
     expect(result).toEqual(successfulLoginResult);
   });
@@ -41,8 +44,9 @@ describe('loginResponseCheck', async () => {
   it("Successful login and already logged in", async () => {
     input.isResponse = jasmine.createSpy('isResponse').and.returnValue(true);
     input.handleResponse = jasmine.createSpy('processLoginResponse').and.returnValue(successfulLoginResult);
+    input.initialLoginResult = { isLoggedIn: true, userInfo: {sub: 'other'}};
 
-    const result = await loginResponseCheck(input, { isLoggedIn: true, userInfo: {sub: 'other'}});
+    const result = await loginResponseCheck(input);
 
     expect(result).toEqual(successfulLoginResult);
   });
@@ -60,8 +64,9 @@ describe('silentLoginCheck', () => {
 
   it("Silent login failed", async () => {
     input.silentLogin = jasmine.createSpy('silentLogin').and.returnValue(Promise.resolve(failedLoginResult));
+    input.initialLoginResult = failedLoginResult;
 
-    const result = await silentLoginCheck(input, failedLoginResult);
+    const result = await silentLoginCheck(input);
 
     expect(result).toEqual(failedLoginResult);
     expect(input.silentLogin).toHaveBeenCalledTimes(1);
@@ -69,7 +74,9 @@ describe('silentLoginCheck', () => {
   });
 
   it("Already logged in", async () => {
-    const result = await silentLoginCheck(input, successfulLoginResult);
+    input.initialLoginResult = successfulLoginResult;
+
+    const result = await silentLoginCheck(input);
 
     expect(result).toEqual(successfulLoginResult);
     expect(input.login).toHaveBeenCalledTimes(0);
@@ -77,8 +84,9 @@ describe('silentLoginCheck', () => {
 
   it("Silent login success", async () => {
     input.silentLogin = jasmine.createSpy('silentLogin').and.returnValue(Promise.resolve(successfulLoginResult));
+    input.initialLoginResult = failedLoginResult;
 
-    const result = await silentLoginCheck(input, failedLoginResult);
+    const result = await silentLoginCheck(input);
 
     expect(result).toEqual(successfulLoginResult);
     expect(input.silentLogin).toHaveBeenCalledTimes(1);
@@ -97,8 +105,9 @@ describe('enforceLogin', () => {
 
   it("Login failed", done => {
     input.login = jasmine.createSpy('login').and.returnValue(Promise.resolve(failedLoginResult));
+    input.initialLoginResult = failedLoginResult;
 
-    enforceLogin(input, failedLoginResult).then(() => {
+    enforceLogin(input).then(() => {
       done.fail('Should not be possible');
     }).catch(e => {
       expect(e.message).toEqual('Cannot log in user');
@@ -107,7 +116,9 @@ describe('enforceLogin', () => {
   });
 
   it("Already logged in", async () => {
-    const result = await enforceLogin(input, successfulLoginResult);
+    input.initialLoginResult = successfulLoginResult;
+
+    const result = await enforceLogin(input);
 
     expect(result).toEqual(successfulLoginResult);
     expect(input.login).toHaveBeenCalledTimes(0);
@@ -115,8 +126,9 @@ describe('enforceLogin', () => {
 
   it("Login success", async () => {
     input.login = jasmine.createSpy('login').and.returnValue(Promise.resolve(successfulLoginResult));
+    input.initialLoginResult = failedLoginResult;
 
-    const result = await enforceLogin(input, failedLoginResult);
+    const result = await enforceLogin(input);
 
     expect(result).toEqual(successfulLoginResult);
     expect(input.login).toHaveBeenCalledTimes(1);
@@ -135,8 +147,9 @@ describe('silentLoginAndThenEnforce', () => {
 
   it("Silent Login success", async () => {
     input.silentLogin = jasmine.createSpy('silentLogin').and.returnValue(Promise.resolve(successfulLoginResult));
+    input.initialLoginResult = failedLoginResult;
 
-    const result = await silentCheckAndThenEnforce(input, failedLoginResult);
+    const result = await silentCheckAndThenEnforce(input);
 
     expect(result).toEqual(successfulLoginResult);
     expect(input.silentLogin).toHaveBeenCalledTimes(1);
@@ -147,8 +160,9 @@ describe('silentLoginAndThenEnforce', () => {
   it("Silent Login Failed", async () => {
     input.silentLogin = jasmine.createSpy('silentLogin').and.returnValue(Promise.resolve(failedLoginResult));
     input.login = jasmine.createSpy('login').and.returnValue(Promise.resolve(successfulLoginResult));
+    input.initialLoginResult = failedLoginResult;
 
-    const result = await silentCheckAndThenEnforce(input, failedLoginResult);
+    const result = await silentCheckAndThenEnforce(input);
 
     expect(result).toEqual(successfulLoginResult);
     expect(input.silentLogin).toHaveBeenCalledTimes(1);
@@ -160,8 +174,9 @@ describe('silentLoginAndThenEnforce', () => {
   it("Both Failed", (done) => {
     input.silentLogin = jasmine.createSpy('silentLogin').and.returnValue(Promise.resolve(failedLoginResult));
     input.login = jasmine.createSpy('login').and.returnValue(Promise.resolve(failedLoginResult));
+    input.initialLoginResult = failedLoginResult;
 
-    silentCheckAndThenEnforce(input, failedLoginResult).then(() => {
+    silentCheckAndThenEnforce(input).then(() => {
       done.fail('Should not be possible');
     }).catch(e => {
       expect(e.message).toEqual('Cannot log in user');
