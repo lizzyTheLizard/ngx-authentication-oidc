@@ -15,6 +15,7 @@ import { OidcSilentLogin } from './oidc/oidc-silent-login';
 import { TokenStoreWrapper } from './token-store/token-store-wrapper';
 import { SessionHandler } from './session-handler/session-handler';
 import { OidcResponse } from './oidc/oidc-response';
+import { OidcSessionManagement } from './oidc/oidc-session-management';
 
 /**
  * Main facade of the library, can be used to check and perform logins. Is available if you import {@link AuthenticationModule}.
@@ -38,6 +39,7 @@ export class AuthService {
       private readonly oidcDiscovery: OidcDiscovery,
       private readonly oidcLogout: OidcLogout,
       private readonly oidcResponse: OidcResponse,
+      private readonly oidcSessionManagement: OidcSessionManagement,
       private readonly config: AuthConfigService, 
       private readonly router: Router,
       private readonly tokenStore: TokenStoreWrapper,
@@ -45,7 +47,6 @@ export class AuthService {
       @Inject(SessionHandlerToken) private readonly sessionHandler: SessionHandler,
       @Inject(InitializerToken) private readonly initializer: Initializer) {
     this.logger = loggerFactory('AuthService');
-
     //Set up initialSetupFinished promise
     this.initialSetupFinished$ = new Promise((resolve) => {
       this.initialSetupFinishedResolve = resolve;
@@ -55,7 +56,7 @@ export class AuthService {
     this.loginResult$ = new Subject();
     this.isLoggedIn$ = this.loginResult$.pipe(map(t => t.isLoggedIn));
     this.userInfo$ = this.loginResult$.pipe(map(t => t.userInfo));
-  }
+    this.oidcSessionManagement.sessionChanged$.subscribe(() => this.sessionHasChanged());  }
 
   /**
    * Initialize the library, is called by {@link AuthenticationModule} and must not be called manually
@@ -83,6 +84,27 @@ export class AuthService {
       this.router.navigateByUrl(this.config.errorUrl);
       this.initialSetupFinishedResolve(true);
     }
+  }
+
+  private async sessionHasChanged(){
+    if(!this.isLoggedIn) {
+      return;
+    }
+    this.logger.info('Session change detected');
+    const oldUserInfo = this.getUserInfo()!;
+    const loginResult = await this.oidcSilentLogin.login({});
+    if(!loginResult.isLoggedIn) {
+      this.logger.debug('The user is not logged in any more');
+      this.logout();
+      return;
+    }
+    if(oldUserInfo.sub !== loginResult.userInfo?.sub) {
+      this.logger.debug('The user information has changed, the user needs to be logged out')
+      this.logout();
+      return;
+    }
+    this.logger.debug('The session has changed, but the user is still logged in');
+    this.handleSuccessfulLoginResult(loginResult);
   }
 
   /**
@@ -119,7 +141,8 @@ export class AuthService {
   private handleSuccessfulLoginResult(loginResult: LoginResult): void{
     this.tokenStore.writeTokenStore(loginResult);
     this.loginResult$.next(loginResult);
-    this.sessionHandler.startWatching();
+    this.oidcSessionManagement.startWatching(loginResult);
+    this.sessionHandler.startWatching()
     const userInfo = this.getUserInfo();
     this.logger.info('Login was successful, user is logged in', userInfo);
     if(loginResult.redirectPath) {
@@ -142,6 +165,7 @@ export class AuthService {
     const token = {isLoggedIn: false};
     this.tokenStore.cleanTokenStore();
     this.loginResult$.next(token)
+    this.oidcSessionManagement.stopWatching();
     this.sessionHandler.stopWatching();
     if(this.config.logoutUrl) {
       this.logger.info('Redirect to', this.config.logoutUrl)

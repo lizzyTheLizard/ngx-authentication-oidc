@@ -5,12 +5,12 @@ import { loginResponseCheck, silentLoginCheck } from '../public-api';
 import { AuthConfigService } from './auth-config.service';
 import { AuthService } from './auth.service';
 import { OauthConfig } from './configuration/oauth-config';
-import { InitializerInput } from './initializer/initializer-input';
 import { consoleLoggerFactory } from './logger/console-logger';
 import { OidcDiscovery } from './oidc/oidc-discovery';
 import { OidcLogin } from './oidc/oidc-login';
 import { OidcLogout } from './oidc/oidc-logout';
 import { OidcResponse } from './oidc/oidc-response';
+import { OidcSessionManagement } from './oidc/oidc-session-management';
 import { OidcSilentLogin } from './oidc/oidc-silent-login';
 import { OidcValidator } from './oidc/oidc-validator';
 import { DefaultSessionHandler } from './session-handler/default-session-handler';
@@ -52,6 +52,7 @@ export class AuthenticationModule {
         OidcLogout,
         OidcSilentLogin,
         OidcValidator,
+        OidcSessionManagement,
         TokenStoreWrapper,
       ],
     };

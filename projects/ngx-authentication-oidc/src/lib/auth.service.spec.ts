@@ -10,6 +10,8 @@ import { OidcLogin } from './oidc/oidc-login';
 import { OidcSilentLogin } from './oidc/oidc-silent-login';
 import { OidcLogout } from './oidc/oidc-logout';
 import { Router } from '@angular/router';
+import { OidcSessionManagement } from './oidc/oidc-session-management';
+import { firstValueFrom, Subject } from 'rxjs';
 
 const loginResult: LoginResult = {isLoggedIn: true, idToken: 'at', accessToken: 'id', userInfo: {sub: 'name'}};
 const failedLoginResult: LoginResult = {isLoggedIn: false};
@@ -27,6 +29,7 @@ let initializer: jasmine.Spy<Initializer>;
 let discovery: jasmine.Spy<() => Promise<void>>;
 let login: jasmine.Spy<(options: LoginOptions) => Promise<LoginResult>>;
 let silentLogin: jasmine.Spy<(options: LoginOptions) => Promise<LoginResult>>;
+let oidcSessionManagementChange = new Subject<void>();
 
 describe('AuthService', () => {
   beforeEach(() => {  
@@ -39,7 +42,9 @@ describe('AuthService', () => {
     discovery = oidcDiscovery.discover as jasmine.Spy<() => Promise<void>>;
     let oidcLogout: OidcLogout = jasmine.createSpyObj('oidcLogout', [ 'logout']);
     let sessionHandler = jasmine.createSpyObj('sessionHandler', ["startWatching", 'stopWatching']);
-
+    oidcSessionManagementChange = new Subject();
+    let oidcSessionManagement = jasmine.createSpyObj('oidcSessionManagement', ["startWatching", 'stopWatching']);
+    oidcSessionManagement.sessionChanged$ = oidcSessionManagementChange;
     TestBed.configureTestingModule({
       imports: [
         AuthenticationModule.forRoot(config as OauthConfig),
@@ -53,6 +58,7 @@ describe('AuthService', () => {
         { provide: OidcSilentLogin, useValue: oidcSilentLogin},
         { provide: OidcDiscovery, useValue: oidcDiscovery},
         { provide: OidcLogout, useValue: oidcLogout},
+        { provide: OidcSessionManagement, useValue: oidcSessionManagement},
       ],
     });
     service = TestBed.inject(AuthService);
@@ -193,4 +199,60 @@ describe('AuthService', () => {
     expect(service.getUserInfo()).toEqual(undefined);
     expect(service.isLoggedIn()).toEqual(false);
   });
+
+  it("Session Changed, SilentLogin Failed", async () => {
+    silentLogin.and.returnValue(Promise.resolve(failedLoginResult))
+    discovery.and.returnValue(Promise.resolve());
+    initializer.and.returnValue(Promise.resolve(loginResult));
+
+    service.initialize();
+    await service.initialSetupFinished$;
+    const userInfoChangedPromise = firstValueFrom(service.userInfo$);
+
+    oidcSessionManagementChange.next();
+
+    await userInfoChangedPromise;
+
+    expect(service.getAccessToken()).toEqual(undefined);
+    expect(service.getIdToken()).toEqual(undefined);
+    expect(service.getUserInfo()).toEqual(undefined);
+    expect(service.isLoggedIn()).toEqual(false);
+  });
+
+
+  it("Session Changed, SilentLogin returns different user", async () => {
+    silentLogin.and.returnValue(Promise.resolve({...loginResult, userInfo: {sub: 'name2'}}))
+    discovery.and.returnValue(Promise.resolve());
+    initializer.and.returnValue(Promise.resolve(loginResult));
+
+    service.initialize();
+    await service.initialSetupFinished$;
+    const userInfoChangedPromise = firstValueFrom(service.userInfo$);
+    oidcSessionManagementChange.next();
+    await userInfoChangedPromise;
+
+    expect(service.getAccessToken()).toEqual(undefined);
+    expect(service.getIdToken()).toEqual(undefined);
+    expect(service.getUserInfo()).toEqual(undefined);
+    expect(service.isLoggedIn()).toEqual(false);
+  });
+
+  it("Session Changed, SilentLogin returns same user", async () => {
+    discovery.and.returnValue(Promise.resolve());
+    initializer.and.returnValue(Promise.resolve(loginResult));
+    silentLogin.and.returnValue(Promise.resolve(loginResult));
+
+    service.initialize();
+    await service.initialSetupFinished$;
+    const userInfoChangedPromise = firstValueFrom(service.userInfo$);
+    oidcSessionManagementChange.next();
+    await userInfoChangedPromise;
+
+    expect(service.getAccessToken()).toEqual(loginResult.accessToken);
+    expect(service.getIdToken()).toEqual(loginResult.idToken);
+    expect(service.getUserInfo()).toEqual(loginResult.userInfo);
+    expect(service.isLoggedIn()).toEqual(true);
+  });
+
+
 });

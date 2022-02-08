@@ -6,6 +6,7 @@ export interface LoginResult {
   userInfo?: UserInfo;
   expiresAt?: Date;
   stateMessage?: string;
+  sessionState?: string;
 }
 
 export interface UserInfo {

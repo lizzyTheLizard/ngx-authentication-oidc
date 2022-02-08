@@ -45,6 +45,7 @@ export class TokenStoreWrapper {
     this.setString('accessToken', loginResult.accessToken);
     this.setString('idToken', loginResult.idToken);
     this.setObject('userInfo', loginResult.userInfo);
+    this.setObject('sessionState', loginResult.sessionState);
   }
     
   public readTokenStore(): LoginResult {
@@ -53,6 +54,7 @@ export class TokenStoreWrapper {
       idToken: this.getString('idToken'),
       accessToken: this.getString('accessToken'),
       userInfo: this.getObject('userInfo'),
+      sessionState: this.getObject('sessionState')
     }
   }   
 }

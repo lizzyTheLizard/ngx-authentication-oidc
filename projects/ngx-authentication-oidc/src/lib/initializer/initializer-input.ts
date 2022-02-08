@@ -1,4 +1,4 @@
-import { LoggerFactory } from "ngx-authentication-oidc";
+import { LoggerFactory } from "../logger/logger";
 import { LoginOptions } from "../configuration/login-options";
 import { LoginResult } from "../login-result";
 

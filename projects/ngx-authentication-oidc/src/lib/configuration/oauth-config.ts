@@ -9,7 +9,8 @@ export interface ProviderConfig {
   maxAge?: number;
   tokenEndpoint: string;
   authEndpoint: string;
-  publicKeys: JWK[]
+  publicKeys: JWK[];
+  checkSessionIframe?: string;
 }
 
 export interface ClientConfig {

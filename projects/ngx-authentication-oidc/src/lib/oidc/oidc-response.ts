@@ -17,6 +17,7 @@ export interface ResponseParams extends State {
   code?: string;
   id_token?: string;
   access_token?: string;
+  session_state?: string;
 }
 
 class CustomHttpParamEncoder implements HttpParameterCodec {
@@ -74,6 +75,7 @@ export class OidcResponse {
     this.addIfGiven(ret, 'code', urlSearchParams);
     this.addIfGiven(ret, 'id_token', urlSearchParams);
     this.addIfGiven(ret, 'access_token', urlSearchParams);
+    this.addIfGiven(ret, 'session_state', urlSearchParams);
     return ret;
   }
 
@@ -153,7 +155,8 @@ export class OidcResponse {
       expiresAt: expiresAt,
       userInfo: userInfo as UserInfo,
       redirectPath: response.finalUrl,
-      stateMessage: response.stateMessage
+      stateMessage: response.stateMessage,
+      sessionState: response.session_state,
     }
     return result;
   }
