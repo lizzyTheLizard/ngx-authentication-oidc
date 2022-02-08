@@ -8,7 +8,7 @@ import { OidcSessionManagement } from "./oidc-session-management";
 
 
 const pc: ProviderConfig = {
-  checkSessionIframe: "https:/example.com/sc"
+  checkSessionIframe: "https://example.com/sc"
 } as any;
 
 const cc : ClientConfig = {
@@ -28,6 +28,7 @@ const windowMock = {
   postMessage: jasmine.createSpy('postMessage'),
   setInterval: (a: () => void,b: number) => setInterval(a,b),
   clearInterval: (a: number) => clearInterval(a),
+  location: { href: 'http://localhost', origin: "http://localhost"}
 };
 
 const iframeMock = {
@@ -70,7 +71,7 @@ describe('OidcSessionManagement', () => {
     service.startWatching({ isLoggedIn: true, sessionState: '123-123'});
     tick(6000)
     expect(iframeMock.contentWindow.postMessage).toHaveBeenCalledTimes(1);
-    expect(iframeMock.contentWindow.postMessage).toHaveBeenCalledWith(cc.clientId + " " + "123-123", pc.checkSessionIframe);
+    expect(iframeMock.contentWindow.postMessage).toHaveBeenCalledWith(cc.clientId + " " + "123-123", "https://example.com");
     service.stopWatching();
     tick(6000)
     expect(iframeMock.contentWindow.postMessage).toHaveBeenCalledTimes(1);
@@ -80,7 +81,7 @@ describe('OidcSessionManagement', () => {
     service.startWatching({ isLoggedIn: true, sessionState: '123-123'});
     let changes = 0;
     service.sessionChanged$.subscribe(() => changes++);
-    eventListener(new MessageEvent("message", {origin: pc.checkSessionIframe, data: "changed"}));
+    eventListener(new MessageEvent("message", {origin: "https://example.com", data: "changed"}));
     expect(changes).toEqual(1);
   })
 
@@ -89,7 +90,7 @@ describe('OidcSessionManagement', () => {
     let changes = 0;
     let errors = 0;
     service.sessionChanged$.subscribe({ error: () => errors++, next: () => changes++});
-    eventListener(new MessageEvent("message", {origin: pc.checkSessionIframe, data: "error"}));
+    eventListener(new MessageEvent("message", {origin: "https://example.com", data: "error"}));
     expect(changes).toEqual(0);
     expect(errors).toEqual(1);
   })
@@ -102,7 +103,7 @@ describe('OidcSessionManagement', () => {
     expect(iframeMock.contentWindow.postMessage).toHaveBeenCalledTimes(0);
     let changes = 0;
     service.sessionChanged$.subscribe(() => changes++);
-    eventListener(new MessageEvent("message", {origin: pc.checkSessionIframe, data: "changed"}));
+    eventListener(new MessageEvent("message", {origin: "https:/example.com", data: "changed"}));
     expect(changes).toEqual(0);
   }))  
 });
