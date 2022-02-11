@@ -1,4 +1,4 @@
-import { AuthService, SessionHandlerToken } from './auth.service';
+import { AuthService } from './auth.service';
 import { TokenStore } from './token-store/token-store';
 import { LoginResult } from './login-result';
 import { Initializer, LoginOptions, OauthConfig } from '../public-api';
@@ -14,6 +14,8 @@ import { OidcSessionManagement } from './oidc/oidc-session-management';
 import { firstValueFrom, Subject } from 'rxjs';
 import { LoggerFactoryToken } from './logger/logger';
 import { InitializerToken } from './initializer/initializer';
+import { WindowToken } from './authentication-module.tokens';
+import { TimeoutHandlerToken } from './timeout-handler/timeout-handler';
 
 const loginResult: LoginResult = {isLoggedIn: true, idToken: 'at', accessToken: 'id', userInfo: {sub: 'name'}};
 const failedLoginResult: LoginResult = {isLoggedIn: false};
@@ -25,6 +27,8 @@ const config: OauthConfig = {
   silentLoginEnabled: true      
 };
 
+const windowMock = jasmine.createSpyObj('window', ['setInterval', 'clearInterval']);
+
 let service: AuthService;
 let router: Router;
 let initializer: jasmine.Spy<Initializer>;
@@ -32,6 +36,8 @@ let discovery: jasmine.Spy<() => Promise<void>>;
 let login: jasmine.Spy<(options: LoginOptions) => Promise<LoginResult>>;
 let silentLogin: jasmine.Spy<(options: LoginOptions) => Promise<LoginResult>>;
 let oidcSessionManagementChange = new Subject<void>();
+let sessionHandlerTimeout = new Subject<void>();
+let sessionHandlerTimeoutWarning = new Subject<void>();
 
 describe('AuthService', () => {
   beforeEach(() => {  
@@ -43,7 +49,10 @@ describe('AuthService', () => {
     let oidcDiscovery: OidcDiscovery = jasmine.createSpyObj('oidcDiscovery', [ 'discover']);
     discovery = oidcDiscovery.discover as jasmine.Spy<() => Promise<void>>;
     let oidcLogout: OidcLogout = jasmine.createSpyObj('oidcLogout', [ 'logout']);
-    let sessionHandler = jasmine.createSpyObj('sessionHandler', ["startWatching", 'stopWatching']);
+    let timeoutHandler = jasmine.createSpyObj('timeoutHandler', ["start", 'stop']);
+    timeoutHandler.timeout$ = sessionHandlerTimeout;
+    timeoutHandler.timeoutWarning$ = sessionHandlerTimeoutWarning;
+
     oidcSessionManagementChange = new Subject();
     let oidcSessionManagement = jasmine.createSpyObj('oidcSessionManagement', ["startWatching", 'stopWatching']);
     oidcSessionManagement.sessionChanged$ = oidcSessionManagementChange;
@@ -55,7 +64,8 @@ describe('AuthService', () => {
       providers:[
         { provide: LoggerFactoryToken, useValue: () => console },
         { provide: InitializerToken, useValue: initializer },
-        { provide: SessionHandlerToken, useValue: sessionHandler },
+        { provide: TimeoutHandlerToken, useValue: timeoutHandler },
+        { provide: WindowToken, useFactory: () => windowMock },
         { provide: OidcLogin, useValue: oidcLogin},
         { provide: OidcSilentLogin, useValue: oidcSilentLogin},
         { provide: OidcDiscovery, useValue: oidcDiscovery},
@@ -221,7 +231,6 @@ describe('AuthService', () => {
     expect(service.isLoggedIn()).toEqual(false);
   });
 
-
   it("Session Changed, SilentLogin returns different user", async () => {
     silentLogin.and.returnValue(Promise.resolve({...loginResult, userInfo: {sub: 'name2'}}))
     discovery.and.returnValue(Promise.resolve());
@@ -256,5 +265,77 @@ describe('AuthService', () => {
     expect(service.isLoggedIn()).toEqual(true);
   });
 
+  it("Timeout", async () => {
+    discovery.and.returnValue(Promise.resolve());
+    initializer.and.returnValue(Promise.resolve(loginResult));
+    silentLogin.and.returnValue(Promise.resolve(loginResult));
 
+    service.initialize();
+    await service.initialSetupFinished$;
+    const userInfoChangedPromise = firstValueFrom(service.userInfo$);
+    sessionHandlerTimeout.next();
+    await userInfoChangedPromise;
+
+    expect(service.getAccessToken()).toEqual(undefined);
+    expect(service.getIdToken()).toEqual(undefined);
+    expect(service.getUserInfo()).toEqual(undefined);
+    expect(service.isLoggedIn()).toEqual(false);
+  });
+
+  it("Ping, SilentLogin returns fails", async () => {
+    let timeoutHandler: Function;
+    windowMock.setInterval.and.callFake((handler: Function) => timeoutHandler = handler);
+    silentLogin.and.returnValue(Promise.resolve(failedLoginResult));
+    discovery.and.returnValue(Promise.resolve());
+    initializer.and.returnValue(Promise.resolve(loginResult));
+
+    service.initialize();
+    await service.initialSetupFinished$;
+    const userInfoChangedPromise = firstValueFrom(service.userInfo$);
+    timeoutHandler!();
+    await userInfoChangedPromise;
+
+    expect(service.getAccessToken()).toEqual(undefined);
+    expect(service.getIdToken()).toEqual(undefined);
+    expect(service.getUserInfo()).toEqual(undefined);
+    expect(service.isLoggedIn()).toEqual(false);
+  });
+
+  it("Ping, SilentLogin returns different user", async () => {
+    let timeoutHandler: Function;
+    windowMock.setInterval.and.callFake((handler: Function) => timeoutHandler = handler);
+    silentLogin.and.returnValue(Promise.resolve({...loginResult, userInfo: {sub: 'name2'}}))
+    discovery.and.returnValue(Promise.resolve());
+    initializer.and.returnValue(Promise.resolve(loginResult));
+
+    service.initialize();
+    await service.initialSetupFinished$;
+    const userInfoChangedPromise = firstValueFrom(service.userInfo$);
+    timeoutHandler!();
+    await userInfoChangedPromise;
+
+    expect(service.getAccessToken()).toEqual(undefined);
+    expect(service.getIdToken()).toEqual(undefined);
+    expect(service.getUserInfo()).toEqual(undefined);
+    expect(service.isLoggedIn()).toEqual(false);
+  });
+
+  it("Ping, SilentLogin returns same user", async () => {
+    let timeoutHandler: Function;
+    windowMock.setInterval.and.callFake((handler: Function) => timeoutHandler = handler);
+    discovery.and.returnValue(Promise.resolve());
+    initializer.and.returnValue(Promise.resolve(loginResult));
+    silentLogin.and.returnValue(Promise.resolve({...loginResult, accessToken: "at2"}));
+
+    service.initialize();
+    await service.initialSetupFinished$;
+    const userInfoChangedPromise = firstValueFrom(service.userInfo$);
+    timeoutHandler!();
+    await userInfoChangedPromise;
+
+    expect(service.getAccessToken()).toEqual("at2");
+    expect(service.getIdToken()).toEqual(loginResult.idToken);
+    expect(service.getUserInfo()).toEqual(loginResult.userInfo);
+    expect(service.isLoggedIn()).toEqual(true);
+  });
 });

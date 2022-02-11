@@ -18,6 +18,7 @@ export interface ResponseParams extends State {
   code?: string;
   id_token?: string;
   access_token?: string;
+  refresh_token?: string;
   session_state?: string;
 }
 
@@ -76,6 +77,7 @@ export class OidcResponse {
     this.addIfGiven(ret, 'code', urlSearchParams);
     this.addIfGiven(ret, 'id_token', urlSearchParams);
     this.addIfGiven(ret, 'access_token', urlSearchParams);
+    this.addIfGiven(ret, 'refresh_token', urlSearchParams);
     this.addIfGiven(ret, 'session_state', urlSearchParams);
     return ret;
   }
@@ -142,19 +144,18 @@ export class OidcResponse {
     
   //TODO: UserInfo Endpoint (Chapter 5.3, https://openid.net/specs/openid-connect-core-1_0.html)
   private async handleTokenResponse(response: ResponseParams): Promise<LoginResult> {
-    const accessToken = response.access_token ?? undefined;
     const idToken = response.id_token ?? undefined;
     const verifyResult = idToken ? await jwtVerify(idToken, header => this.getKey(header), {}) : undefined;
     this.validator.validate(verifyResult?.payload, verifyResult?.protectedHeader);
-    const userInfo = verifyResult?.payload;
     const expiresIn = response.expires_in;
     const expiresAt = expiresIn ? new Date(Date.now() + parseInt(expiresIn)*1000) : undefined;
     const result = {
       isLoggedIn: true,
-      accessToken: accessToken,
+      accessToken: response.access_token,
+      refreshToken: response.refresh_token,
       idToken: idToken,
       expiresAt: expiresAt,
-      userInfo: userInfo as UserInfo,
+      userInfo: verifyResult?.payload as UserInfo,
       redirectPath: response.finalUrl,
       stateMessage: response.stateMessage,
       sessionState: response.session_state,

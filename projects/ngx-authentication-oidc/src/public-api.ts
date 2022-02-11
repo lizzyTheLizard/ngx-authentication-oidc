@@ -12,3 +12,6 @@ export * from './lib/logger/logger';
 export * from './lib/token-store/token-store';
 export * from './lib/testing/authentication-testing-module';
 export * from './lib/testing/auth-testing.service';
+export * from './lib/timeout-handler/inactive-timeout-handler';
+export * from './lib/timeout-handler/no-timeout-handler';
+export * from './lib/timeout-handler/timeout-handler';

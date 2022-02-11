@@ -1,5 +1,6 @@
 import { UrlTree } from "@angular/router";
 import { JWK } from "jose";
+import { IdleConfiguration } from "./idle-configuration";
 
 export type DiscoveryUrl = string;
 
@@ -24,6 +25,10 @@ export interface OauthConfig {
   logoutUrl?: string | UrlTree,
   errorUrl?:string | UrlTree,
   silentLoginEnabled?: boolean;
+  inactiveSessionHandlingEnabled?: boolean;
   silentLoginTimeoutInSecond?: number;
   silentRefreshRedirectUri?: string;
+  tokenUpdateIntervalSeconds?: number;
+  minimalTokenValiditySeconds?: number;
+  idleConfiguration?: Partial<IdleConfiguration>;
 }

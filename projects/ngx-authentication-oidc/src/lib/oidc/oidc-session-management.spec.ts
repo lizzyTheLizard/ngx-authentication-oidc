@@ -5,6 +5,7 @@ import { DocumentToken, WindowToken } from "../authentication-module.tokens";
 import { LoggerFactoryToken } from "../logger/logger";
 import { ClientConfig, OauthConfig, ProviderConfig } from "../configuration/oauth-config";
 import { OidcSessionManagement } from "./oidc-session-management";
+import { TokenStoreWrapper } from "../token-store/token-store-wrapper";
 
 
 const pc: ProviderConfig = {
@@ -44,6 +45,8 @@ const documentMock = {
   createElement: jasmine.createSpy('createElement').and.returnValue(iframeMock),
 };
 
+const tokenStoreMock = jasmine.createSpyObj('tokenStoreMock', ['getLoginResult']);
+
 let service: OidcSessionManagement;
 
 describe('OidcSessionManagement', () => {
@@ -56,6 +59,7 @@ describe('OidcSessionManagement', () => {
       providers:[
         { provide: WindowToken, useFactory: () => windowMock },
         { provide: DocumentToken, useFactory: () => documentMock },
+        { provide: TokenStoreWrapper, useFactory: () => tokenStoreMock },
         { provide: LoggerFactoryToken, useValue: () => console },
       ],
     });
@@ -67,8 +71,9 @@ describe('OidcSessionManagement', () => {
   });
 
   it("Post message to opIframe when watching", fakeAsync(() => {
+    tokenStoreMock.getLoginResult = jasmine.createSpy('getLoginResult').and.returnValue({ isLoggedIn: true, sessionState: '123-123'});
     iframeMock.contentWindow.postMessage.calls.reset();
-    service.startWatching({ isLoggedIn: true, sessionState: '123-123'});
+    service.startWatching();
     tick(6000)
     expect(iframeMock.contentWindow.postMessage).toHaveBeenCalledTimes(1);
     expect(iframeMock.contentWindow.postMessage).toHaveBeenCalledWith(cc.clientId + " " + "123-123", "https://example.com");
@@ -78,7 +83,8 @@ describe('OidcSessionManagement', () => {
   }))  
 
   it("Notification if session changed", async () => {
-    service.startWatching({ isLoggedIn: true, sessionState: '123-123'});
+    tokenStoreMock.getLoginResult = jasmine.createSpy('getLoginResult').and.returnValue({ isLoggedIn: true, sessionState: '123-123'});
+    service.startWatching();
     let changes = 0;
     service.sessionChanged$.subscribe(() => changes++);
     eventListener(new MessageEvent("message", {origin: "https://example.com", data: "changed"}));
@@ -86,7 +92,8 @@ describe('OidcSessionManagement', () => {
   })
 
   it("Notification if error", async () => {
-    service.startWatching({ isLoggedIn: true, sessionState: '123-123'});
+    tokenStoreMock.getLoginResult = jasmine.createSpy('getLoginResult').and.returnValue({ isLoggedIn: true, sessionState: '123-123'});
+    service.startWatching();
     let changes = 0;
     let errors = 0;
     service.sessionChanged$.subscribe({ error: () => errors++, next: () => changes++});
@@ -97,8 +104,9 @@ describe('OidcSessionManagement', () => {
 
 
   it("Ignore if no session state", fakeAsync(() => {
+    tokenStoreMock.getLoginResult = jasmine.createSpy('getLoginResult').and.returnValue({ isLoggedIn: true});
     iframeMock.contentWindow.postMessage.calls.reset();
-    service.startWatching({ isLoggedIn: true});
+    service.startWatching();
     tick(6000)
     expect(iframeMock.contentWindow.postMessage).toHaveBeenCalledTimes(0);
     let changes = 0;

@@ -3,7 +3,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { ModuleWithProviders, NgModule } from '@angular/core';
 import { loginResponseCheck, silentLoginCheck } from './initializer/initializer';
 import { AuthConfigService } from './auth-config.service';
-import { AuthService, SessionHandlerToken } from './auth.service';
+import { AuthService } from './auth.service';
 import { WindowToken, DocumentToken } from './authentication-module.tokens';
 import { OauthConfig } from './configuration/oauth-config';
 import { consoleLoggerFactory } from './logger/console-logger';
@@ -14,10 +14,13 @@ import { OidcResponse } from './oidc/oidc-response';
 import { OidcSessionManagement } from './oidc/oidc-session-management';
 import { OidcSilentLogin } from './oidc/oidc-silent-login';
 import { OidcValidator } from './oidc/oidc-validator';
-import { DefaultSessionHandler } from './session-handler/default-session-handler';
+import { InactiveTimeoutHandler } from './timeout-handler/inactive-timeout-handler';
+import { TimeoutHandlerToken } from './timeout-handler/timeout-handler';
 import { TokenStoreToken, TokenStoreWrapper } from './token-store/token-store-wrapper';
 import { LoggerFactoryToken } from './logger/logger';
 import { InitializerToken } from './initializer/initializer';
+import { NgIdleModule } from '@ng-idle/core';
+import { NoTimeoutHandler } from '../public-api';
 
 
 /**
@@ -25,7 +28,10 @@ import { InitializerToken } from './initializer/initializer';
  * needs to be given as parameter, see {@link OauthConfig}. Provides an instance of {@link AuthService}.
  */
 @NgModule({
-  imports: [ HttpClientModule],
+  imports: [
+    HttpClientModule,
+    NgIdleModule.forRoot(),
+  ],
 })
 export class AuthenticationModule {
   static forRoot(config: OauthConfig): ModuleWithProviders<AuthenticationModule> {
@@ -39,7 +45,7 @@ export class AuthenticationModule {
         { provide: WindowToken, useValue: window },
         { provide: DocumentToken, useValue: document },
         { provide: InitializerToken, useValue: authConfig.silentLoginEnabled ? silentLoginCheck : loginResponseCheck },
-        { provide: SessionHandlerToken, useClass: DefaultSessionHandler },
+        { provide: TimeoutHandlerToken, useClass: authConfig.inactiveSessionHandlingEnabled ? InactiveTimeoutHandler : NoTimeoutHandler },
         { provide: TokenStoreToken, useValue: localStorage },
         { provide: LoggerFactoryToken, useValue: consoleLoggerFactory },
         AuthService,
