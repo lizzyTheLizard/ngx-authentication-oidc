@@ -1,27 +1,28 @@
-import { TestBed } from "@angular/core/testing";
-import { LoginResult } from "../login-result";
-import { TokenStoreToken, TokenStoreWrapper } from "./token-store-wrapper";
+/*global localStorage*/
+
+import { TestBed } from '@angular/core/testing';
+import { LoginResult } from '../login-result';
+import { TokenStoreToken, TokenStoreWrapper } from './token-store-wrapper';
 
 let service: TokenStoreWrapper;
 
 describe('TokenStoreWrapper', () => {
-  beforeEach(() => {  
+  beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [
-      ],
-      providers:[
+      imports: [],
+      providers: [
         { provide: TokenStoreToken, useValue: localStorage },
         TokenStoreWrapper
-      ],
+      ]
     });
     service = TestBed.inject(TokenStoreWrapper);
   });
-    
-  it("Create", () => {
+
+  it('Create', () => {
     expect(service).toBeTruthy();
   });
 
-  it("Empty", () => {
+  it('Empty', () => {
     service.cleanTokenStore();
     expect(service.getLoginResult()).toEqual({
       isLoggedIn: false,
@@ -32,19 +33,19 @@ describe('TokenStoreWrapper', () => {
       userInfo: undefined,
       refreshToken: undefined
     });
-  })
+  });
 
-  it("Store and reset", () => {
+  it('Store and reset', () => {
     const loginResult: LoginResult = {
       isLoggedIn: true,
-      accessToken: "at",
+      accessToken: 'at',
       expiresAt: new Date('2020-01-01T10:39Z'),
       idToken: 'it',
-      sessionState: "ss",
-      userInfo: { sub: "name"},
-      refreshToken: "rt"
+      sessionState: 'ss',
+      userInfo: { sub: 'name' },
+      refreshToken: 'rt'
     };
     service.setLoginResult(loginResult);
     expect(service.getLoginResult()).toEqual(loginResult);
-  })
+  });
 });

@@ -1,15 +1,16 @@
-import { Inject, Injectable } from "@angular/core";
-import { AuthConfigService } from "../auth-config.service";
-import { LoggerFactoryToken } from "../logger/logger";
-import { Logger, LoggerFactory } from "../logger/logger";
-  
+import { Inject, Injectable } from '@angular/core';
+import { AuthConfigService } from '../auth-config.service';
+import { LoggerFactoryToken } from '../logger/logger';
+import { Logger, LoggerFactory } from '../logger/logger';
+
 @Injectable()
 export class OidcLogout {
   private readonly logger: Logger;
 
   constructor(
-      private readonly config: AuthConfigService,
-      @Inject(LoggerFactoryToken) loggerFactory: LoggerFactory){
+    private readonly config: AuthConfigService,
+    @Inject(LoggerFactoryToken) loggerFactory: LoggerFactory
+  ) {
     this.logger = loggerFactory('OidcLogout');
   }
 

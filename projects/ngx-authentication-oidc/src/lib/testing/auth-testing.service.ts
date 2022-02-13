@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, map, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, map } from 'rxjs';
 import { LoginResult, UserInfo } from '../login-result';
 
 @Injectable()
@@ -10,16 +10,16 @@ export class AuthTestingService {
   private readonly loginResult$: BehaviorSubject<LoginResult>;
   private initialSetupFinishedResolve: (e: any) => void = () => {};
 
-  constructor(){
+  constructor() {
     //Set up initialSetupFinished promise
     this.initialSetupFinished$ = new Promise((resolve) => {
       this.initialSetupFinishedResolve = resolve;
     });
 
     //Set up Observables
-    this.loginResult$ = new BehaviorSubject<LoginResult>({isLoggedIn: false});
-    this.isLoggedIn$ = this.loginResult$.pipe(map(t => t.isLoggedIn));
-    this.userInfo$ = this.loginResult$.pipe(map(t => t.userInfo));
+    this.loginResult$ = new BehaviorSubject<LoginResult>({ isLoggedIn: false });
+    this.isLoggedIn$ = this.loginResult$.pipe(map((t) => t.isLoggedIn));
+    this.userInfo$ = this.loginResult$.pipe(map((t) => t.userInfo));
   }
 
   public async fakeLogin(loginResult: LoginResult) {
@@ -27,7 +27,7 @@ export class AuthTestingService {
   }
 
   public async fakeLogout() {
-    this.loginResult$.next({isLoggedIn: false});
+    this.loginResult$.next({ isLoggedIn: false });
   }
 
   public async initialize() {
@@ -44,7 +44,7 @@ export class AuthTestingService {
     return true;
   }
 
-  public async logout(): Promise<void>{
+  public async logout(): Promise<void> {
     //Nothing to do here
   }
 

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { map, Observable, Subject } from 'rxjs';
+import { Observable, Subject, map } from 'rxjs';
 import { Initializer } from './initializer/initializer';
 import { AuthConfigService } from './auth-config.service';
 import { LoginOptions } from './configuration/login-options';
@@ -12,7 +12,10 @@ import { OidcLogin } from './oidc/oidc-login';
 import { OidcLogout } from './oidc/oidc-logout';
 import { OidcSilentLogin } from './oidc/oidc-silent-login';
 import { TokenStoreWrapper } from './token-store/token-store-wrapper';
-import { TimeoutHandler, TimeoutHandlerToken } from './timeout-handler/timeout-handler';
+import {
+  TimeoutHandler,
+  TimeoutHandlerToken
+} from './timeout-handler/timeout-handler';
 import { OidcResponse } from './oidc/oidc-response';
 import { OidcSessionManagement } from './oidc/oidc-session-management';
 import { LoggerFactoryToken } from './logger/logger';
@@ -38,20 +41,22 @@ export class AuthService {
   private initialSetupFinishedResolve: (e: any) => void = () => {};
 
   constructor(
-      private readonly oidcLogin: OidcLogin,
-      private readonly oidcSilentLogin: OidcSilentLogin,
-      private readonly oidcDiscovery: OidcDiscovery,
-      private readonly oidcLogout: OidcLogout,
-      private readonly oidcResponse: OidcResponse,
-      private readonly oidcRefresh: OidcRefresh,
-      private readonly oidcSessionManagement: OidcSessionManagement,
-      private readonly config: AuthConfigService, 
-      private readonly router: Router,
-      private readonly tokenStore: TokenStoreWrapper,
-      @Inject(WindowToken) private readonly window: Window,
-      @Inject(LoggerFactoryToken) private readonly loggerFactory: LoggerFactory,
-      @Inject(TimeoutHandlerToken) private readonly timeoutHandler: TimeoutHandler,
-      @Inject(InitializerToken) private readonly initializer: Initializer) {
+    private readonly oidcLogin: OidcLogin,
+    private readonly oidcSilentLogin: OidcSilentLogin,
+    private readonly oidcDiscovery: OidcDiscovery,
+    private readonly oidcLogout: OidcLogout,
+    private readonly oidcResponse: OidcResponse,
+    private readonly oidcRefresh: OidcRefresh,
+    private readonly oidcSessionManagement: OidcSessionManagement,
+    private readonly config: AuthConfigService,
+    private readonly router: Router,
+    private readonly tokenStore: TokenStoreWrapper,
+    @Inject(WindowToken) private readonly window: Window,
+    @Inject(LoggerFactoryToken) private readonly loggerFactory: LoggerFactory,
+    @Inject(TimeoutHandlerToken)
+    private readonly timeoutHandler: TimeoutHandler,
+    @Inject(InitializerToken) private readonly initializer: Initializer
+  ) {
     this.logger = loggerFactory('AuthService');
     //Set up initialSetupFinished promise
     this.initialSetupFinished$ = new Promise((resolve) => {
@@ -60,9 +65,11 @@ export class AuthService {
 
     //Set up Observables
     this.loginResult$ = new Subject();
-    this.isLoggedIn$ = this.loginResult$.pipe(map(t => t.isLoggedIn));
-    this.userInfo$ = this.loginResult$.pipe(map(t => t.userInfo));
-    this.oidcSessionManagement.sessionChanged$.subscribe(() => this.updateSession(false));
+    this.isLoggedIn$ = this.loginResult$.pipe(map((t) => t.isLoggedIn));
+    this.userInfo$ = this.loginResult$.pipe(map((t) => t.userInfo));
+    this.oidcSessionManagement.sessionChanged$.subscribe(() =>
+      this.updateSession(false)
+    );
     this.timeoutHandler.timeout$.subscribe(() => this.logout());
   }
 
@@ -75,10 +82,14 @@ export class AuthService {
       await this.oidcDiscovery.discover();
       const initializerInput = this.createInitializerInput();
       const loginResult = await this.initializer(initializerInput);
-      if(loginResult.isLoggedIn) {
+      if (loginResult.isLoggedIn) {
         this.handleSuccessfulLoginResult(loginResult);
       }
-      this.logger.debug('Finished initialization of authentication module, user is ' + (!loginResult.isLoggedIn ? "not " : "") + "logged in");
+      this.logger.debug(
+        'Finished initialization of authentication module, user is ' +
+          (!loginResult.isLoggedIn ? 'not ' : '') +
+          'logged in'
+      );
     } catch (e) {
       this.logger.error('Could not initialize authentication module', e);
       this.router.navigateByUrl(this.config.errorUrl);
@@ -86,14 +97,18 @@ export class AuthService {
     this.initialSetupFinishedResolve(true);
   }
 
-  private createInitializerInput(): InitializerInput{
-    return  {
+  private createInitializerInput(): InitializerInput {
+    return {
       loggerFactory: this.loggerFactory,
-      initialLoginResult: this.tokenStore.getLoginResult() ?? { isLoggedIn: false},
-      login: options => this.oidcLogin.login({ ... options, finalUrl: this.router.url}),
-      silentLogin: options => this.oidcSilentLogin.login({ ... options, finalUrl: this.router.url}),
-      handleResponse: () => this.oidcResponse.handleURLResponse(),
-    }
+      initialLoginResult: this.tokenStore.getLoginResult() ?? {
+        isLoggedIn: false
+      },
+      login: (options) =>
+        this.oidcLogin.login({ ...options, finalUrl: this.router.url }),
+      silentLogin: (options) =>
+        this.oidcSilentLogin.login({ ...options, finalUrl: this.router.url }),
+      handleResponse: () => this.oidcResponse.handleURLResponse()
+    };
   }
 
   /**
@@ -103,11 +118,14 @@ export class AuthService {
    */
   public async login(loginOptions: LoginOptions = {}): Promise<boolean> {
     const finalUrl = loginOptions.finalUrl ?? this.router.url;
-    const loginResult = await this.oidcLogin.login({...loginOptions, finalUrl: finalUrl});
-    if(loginResult.isLoggedIn) {
+    const loginResult = await this.oidcLogin.login({
+      ...loginOptions,
+      finalUrl: finalUrl
+    });
+    if (loginResult.isLoggedIn) {
       this.handleSuccessfulLoginResult(loginResult);
     } else {
-      this.logger.info('Login was not successful, user is not logged in')
+      this.logger.info('Login was not successful, user is not logged in');
     }
     return loginResult.isLoggedIn;
   }
@@ -119,10 +137,10 @@ export class AuthService {
    */
   public async silentLogin(loginOptions: LoginOptions = {}): Promise<boolean> {
     const loginResult = await this.oidcSilentLogin.login(loginOptions);
-    if(loginResult.isLoggedIn) {
+    if (loginResult.isLoggedIn) {
       this.handleSuccessfulLoginResult(loginResult);
     } else {
-      this.logger.info('Login was not successful, user is not logged in')
+      this.logger.info('Login was not successful, user is not logged in');
     }
     return loginResult.isLoggedIn;
   }
@@ -132,67 +150,70 @@ export class AuthService {
     this.loginResult$.next(loginResult);
 
     this.oidcSessionManagement.startWatching();
-    this.updateInterval = this.window.setInterval(() => this.updateTokenIfNeeded(), this.config.tokenUpdateIntervalSeconds * 1000);
+    this.updateInterval = this.window.setInterval(
+      () => this.updateTokenIfNeeded(),
+      this.config.tokenUpdateIntervalSeconds * 1000
+    );
     this.timeoutHandler.start();
 
     const userInfo = this.getUserInfo();
     this.logger.info('Login was successful, user is logged in', userInfo);
-    if(loginResult.redirectPath) {
+    if (loginResult.redirectPath) {
       this.router.navigateByUrl(loginResult.redirectPath);
     }
   }
 
-  private updateTokenIfNeeded(){
+  private updateTokenIfNeeded() {
     const exp = this.getExpiresAt() ?? new Date();
     const expIn = exp.valueOf() - Date.now();
-    if(expIn >= (this.config.minimalTokenValiditySeconds * 1000)){
-      this.logger.debug("Token expires in " + expIn + ", do not update yet")
+    if (expIn >= this.config.minimalTokenValiditySeconds * 1000) {
+      this.logger.debug('Token expires in ' + expIn + ', do not update yet');
       return;
     }
-    this.logger.debug("Token expires in " + expIn + ", start update")
+    this.logger.debug('Token expires in ' + expIn + ', start update');
     this.updateSession(true);
   }
 
   /**
    * Logout the current user
    */
-  public async logout(): Promise<void>{
+  public async logout(): Promise<void> {
     await this.initialSetupFinished$;
 
-    if(this.updateInterval) {
+    if (this.updateInterval) {
       this.window.clearInterval(this.updateInterval);
       this.updateInterval = undefined;
     }
     this.oidcSessionManagement.stopWatching();
     this.timeoutHandler.stop();
 
-    if(!this.isLoggedIn()) {
-      this.logger.info('No logout is started as user is already logged out')
+    if (!this.isLoggedIn()) {
+      this.logger.info('No logout is started as user is already logged out');
       return;
     }
 
     const userInfo = this.getUserInfo();
-    this.logger.info('Log out user', userInfo)
+    this.logger.info('Log out user', userInfo);
     await this.oidcLogout.logout();
 
-    const loginResult = {isLoggedIn: false};
+    const loginResult = { isLoggedIn: false };
     this.tokenStore.setLoginResult(loginResult);
-    this.loginResult$.next(loginResult)
+    this.loginResult$.next(loginResult);
 
-    if(this.config.logoutUrl) {
-      this.logger.info('Redirect to', this.config.logoutUrl)
+    if (this.config.logoutUrl) {
+      this.logger.info('Redirect to', this.config.logoutUrl);
       this.router.navigateByUrl(this.config.logoutUrl);
     } else {
-      this.logger.debug('Logged out, but no redirect URI is specified')
+      this.logger.debug('Logged out, but no redirect URI is specified');
     }
   }
 
   /**
    * Update the access token, this will be triggered automatically
-   * but can be triggered manually as well 
+   * but can be triggered manually as well
    */
-  public async updateSession(shouldUseRefreshToken: boolean): Promise<void>{
-    if(!this.isLoggedIn) {
+  public async updateSession(shouldUseRefreshToken: boolean): Promise<void> {
+    if (!this.isLoggedIn) {
       this.logger.info('Try to update token, but user is not logged in...');
       this.logout();
       return;
@@ -200,25 +221,30 @@ export class AuthService {
 
     this.logger.debug('Try to update tokens');
     const oldLoginResult = this.tokenStore.getLoginResult();
-    const useRefreshToken = shouldUseRefreshToken && oldLoginResult.refreshToken;
-    const loginResult = useRefreshToken ? await this.oidcRefresh.tokenRefresh(oldLoginResult)  : await this.oidcSilentLogin.login({});
+    const useRefreshToken =
+      shouldUseRefreshToken && oldLoginResult.refreshToken;
+    const loginResult = useRefreshToken
+      ? await this.oidcRefresh.tokenRefresh(oldLoginResult)
+      : await this.oidcSilentLogin.login({});
 
-    if(!loginResult.isLoggedIn) {
+    if (!loginResult.isLoggedIn) {
       this.logger.info('The user is not logged in any more');
       this.logout();
       return;
     }
 
-    if(oldLoginResult.userInfo!.sub !== loginResult.userInfo?.sub) {
-      this.logger.info('The user information has changed, the user needs to be logged out')
+    if (oldLoginResult.userInfo!.sub !== loginResult.userInfo?.sub) {
+      this.logger.info(
+        'The user information has changed, the user needs to be logged out'
+      );
       this.logout();
       return;
     }
-    
+
     this.logger.info('The session has been updated');
     this.tokenStore.setLoginResult(loginResult);
     this.loginResult$.next(loginResult);
-    if(oldLoginResult.sessionState !== loginResult.sessionState) {
+    if (oldLoginResult.sessionState !== loginResult.sessionState) {
       this.logger.debug('Session state has changed, watch new session');
       this.oidcSessionManagement.stopWatching();
       this.oidcSessionManagement.startWatching();
@@ -250,12 +276,12 @@ export class AuthService {
   }
 
   /**
-   * Get the user information of the currently logged in user 
+   * Get the user information of the currently logged in user
    * @returns the parsed id token or undefined if no user is logged in / he has no id token
    */
   public getUserInfo(): UserInfo | undefined {
     return this.tokenStore.getLoginResult().userInfo;
-  }  
+  }
 
   /**
    * When does the current token expire

@@ -1,6 +1,6 @@
-import { UrlTree } from "@angular/router";
-import { JWK } from "jose";
-import { IdleConfiguration } from "./idle-configuration";
+import { UrlTree } from '@angular/router';
+import { JWK } from 'jose';
+import { IdleConfiguration } from './idle-configuration';
 
 export type DiscoveryUrl = string;
 
@@ -15,15 +15,15 @@ export interface ProviderConfig {
 }
 
 export interface ClientConfig {
-  clientId: string,
-  redirectUri: string
+  clientId: string;
+  redirectUri: string;
 }
 
 export interface OauthConfig {
   client: ClientConfig;
   provider: DiscoveryUrl | ProviderConfig;
-  logoutUrl?: string | UrlTree,
-  errorUrl?:string | UrlTree,
+  logoutUrl?: string | UrlTree;
+  errorUrl?: string | UrlTree;
   silentLoginEnabled?: boolean;
   inactiveSessionHandlingEnabled?: boolean;
   silentLoginTimeoutInSecond?: number;

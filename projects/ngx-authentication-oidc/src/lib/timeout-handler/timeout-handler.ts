@@ -1,8 +1,8 @@
-import { InjectionToken } from "@angular/core";
-import { Observable } from "rxjs";
+import { InjectionToken } from '@angular/core';
+import { Observable } from 'rxjs';
 
 /**
- * The timeout handler terminates user sessions after a timeout. You can either 
+ * The timeout handler terminates user sessions after a timeout. You can either
  * chose one of the existing implementations ({@link InactiveSessionHandler} or {@link UpdateSessionHandler})
  * or provide your own
  */
@@ -26,5 +26,5 @@ export interface TimeoutHandler {
   /**
    * Stop checking for timeout
    */
-   stop(): void;
+  stop(): void;
 }

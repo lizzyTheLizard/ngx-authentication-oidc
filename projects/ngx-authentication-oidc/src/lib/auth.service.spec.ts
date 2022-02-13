@@ -1,3 +1,5 @@
+/*global localStorage*/
+
 import { AuthService } from './auth.service';
 import { TokenStore } from './token-store/token-store';
 import { LoginResult } from './login-result';
@@ -11,23 +13,36 @@ import { OidcSilentLogin } from './oidc/oidc-silent-login';
 import { OidcLogout } from './oidc/oidc-logout';
 import { Router } from '@angular/router';
 import { OidcSessionManagement } from './oidc/oidc-session-management';
-import { firstValueFrom, Subject } from 'rxjs';
+import { Subject, firstValueFrom } from 'rxjs';
 import { LoggerFactoryToken } from './logger/logger';
 import { InitializerToken } from './initializer/initializer';
 import { WindowToken } from './authentication-module.tokens';
 import { TimeoutHandlerToken } from './timeout-handler/timeout-handler';
 
-const loginResult: LoginResult = {isLoggedIn: true, idToken: 'at', accessToken: 'id', userInfo: {sub: 'name'}};
-const failedLoginResult: LoginResult = {isLoggedIn: false};
+const loginResult: LoginResult = {
+  isLoggedIn: true,
+  idToken: 'at',
+  accessToken: 'id',
+  userInfo: { sub: 'name' }
+};
+const failedLoginResult: LoginResult = { isLoggedIn: false };
 const config: OauthConfig = {
   errorUrl: 'auth/error',
   logoutUrl: 'auth/logout',
-  client: {clientId: "id", redirectUri: "url"},
-  provider: {authEndpoint: "auth", tokenEndpoint: "token", issuer: "iss", publicKeys: []},
-  silentLoginEnabled: true      
+  client: { clientId: 'id', redirectUri: 'url' },
+  provider: {
+    authEndpoint: 'auth',
+    tokenEndpoint: 'token',
+    issuer: 'iss',
+    publicKeys: []
+  },
+  silentLoginEnabled: true
 };
 
-const windowMock = jasmine.createSpyObj('window', ['setInterval', 'clearInterval']);
+const windowMock = jasmine.createSpyObj('window', [
+  'setInterval',
+  'clearInterval'
+]);
 
 let service: AuthService;
 let router: Router;
@@ -40,38 +55,55 @@ let sessionHandlerTimeout = new Subject<void>();
 let sessionHandlerTimeoutWarning = new Subject<void>();
 
 describe('AuthService', () => {
-  beforeEach(() => {  
+  beforeEach(() => {
     initializer = jasmine.createSpy('initializer');
-    let oidcLogin: OidcLogin= jasmine.createSpyObj('oidcLogin', [ 'login']);
-    login = oidcLogin.login as jasmine.Spy<(options: LoginOptions) => Promise<LoginResult>>;
-    let oidcSilentLogin: OidcSilentLogin = jasmine.createSpyObj('oidcSilentLogin', [ 'login']);
-    silentLogin = oidcSilentLogin.login as jasmine.Spy<(options: LoginOptions) => Promise<LoginResult>>;
-    let oidcDiscovery: OidcDiscovery = jasmine.createSpyObj('oidcDiscovery', [ 'discover']);
+    let oidcLogin: OidcLogin = jasmine.createSpyObj('oidcLogin', ['login']);
+    login = oidcLogin.login as jasmine.Spy<
+      (options: LoginOptions) => Promise<LoginResult>
+    >;
+    let oidcSilentLogin: OidcSilentLogin = jasmine.createSpyObj(
+      'oidcSilentLogin',
+      ['login']
+    );
+    silentLogin = oidcSilentLogin.login as jasmine.Spy<
+      (options: LoginOptions) => Promise<LoginResult>
+    >;
+    let oidcDiscovery: OidcDiscovery = jasmine.createSpyObj('oidcDiscovery', [
+      'discover'
+    ]);
     discovery = oidcDiscovery.discover as jasmine.Spy<() => Promise<void>>;
-    let oidcLogout: OidcLogout = jasmine.createSpyObj('oidcLogout', [ 'logout']);
-    let timeoutHandler = jasmine.createSpyObj('timeoutHandler', ["start", 'stop']);
+    let oidcLogout: OidcLogout = jasmine.createSpyObj('oidcLogout', ['logout']);
+    let timeoutHandler = jasmine.createSpyObj('timeoutHandler', [
+      'start',
+      'stop'
+    ]);
     timeoutHandler.timeout$ = sessionHandlerTimeout;
     timeoutHandler.timeoutWarning$ = sessionHandlerTimeoutWarning;
 
     oidcSessionManagementChange = new Subject();
-    let oidcSessionManagement = jasmine.createSpyObj('oidcSessionManagement', ["startWatching", 'stopWatching']);
+    let oidcSessionManagement = jasmine.createSpyObj('oidcSessionManagement', [
+      'startWatching',
+      'stopWatching'
+    ]);
     oidcSessionManagement.sessionChanged$ = oidcSessionManagementChange;
     TestBed.configureTestingModule({
       imports: [
         AuthenticationModule.forRoot(config as OauthConfig),
-        RouterTestingModule.withRoutes([{path: 'auth/logout', redirectTo: "/"}])
+        RouterTestingModule.withRoutes([
+          { path: 'auth/logout', redirectTo: '/' }
+        ])
       ],
-      providers:[
+      providers: [
         { provide: LoggerFactoryToken, useValue: () => console },
         { provide: InitializerToken, useValue: initializer },
         { provide: TimeoutHandlerToken, useValue: timeoutHandler },
         { provide: WindowToken, useFactory: () => windowMock },
-        { provide: OidcLogin, useValue: oidcLogin},
-        { provide: OidcSilentLogin, useValue: oidcSilentLogin},
-        { provide: OidcDiscovery, useValue: oidcDiscovery},
-        { provide: OidcLogout, useValue: oidcLogout},
-        { provide: OidcSessionManagement, useValue: oidcSessionManagement},
-      ],
+        { provide: OidcLogin, useValue: oidcLogin },
+        { provide: OidcSilentLogin, useValue: oidcSilentLogin },
+        { provide: OidcDiscovery, useValue: oidcDiscovery },
+        { provide: OidcLogout, useValue: oidcLogout },
+        { provide: OidcSessionManagement, useValue: oidcSessionManagement }
+      ]
     });
     service = TestBed.inject(AuthService);
     router = TestBed.inject(Router);
@@ -80,14 +112,14 @@ describe('AuthService', () => {
     spyOn<TokenStore, any>(localStorage, 'removeItem').and.callThrough();
   });
 
-  it("Discovery Failed", async () => {
+  it('Discovery Failed', async () => {
     const navigateSpy = spyOn(router, 'navigateByUrl');
-    discovery.and.returnValue(Promise.reject("Cannot perform initialization"));
+    discovery.and.returnValue(Promise.reject('Cannot perform initialization'));
     initializer.and.returnValue(Promise.resolve(failedLoginResult));
-    
+
     service.initialize();
     await service.initialSetupFinished$;
-    
+
     expect(navigateSpy).toHaveBeenCalledWith('auth/error');
     expect(service.getAccessToken()).toEqual(undefined);
     expect(service.getIdToken()).toEqual(undefined);
@@ -95,7 +127,7 @@ describe('AuthService', () => {
     expect(service.isLoggedIn()).toEqual(false);
   });
 
-  it("Initialization No Login", async () => {
+  it('Initialization No Login', async () => {
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(failedLoginResult));
 
@@ -108,7 +140,7 @@ describe('AuthService', () => {
     expect(service.isLoggedIn()).toEqual(false);
   });
 
-  it("Initialization Login", async () => {
+  it('Initialization Login', async () => {
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(loginResult));
 
@@ -121,14 +153,16 @@ describe('AuthService', () => {
     expect(service.isLoggedIn()).toEqual(true);
   });
 
-  it("Initialization Failed", async () => {
+  it('Initialization Failed', async () => {
     const navigateSpy = spyOn(router, 'navigateByUrl');
     discovery.and.returnValue(Promise.resolve());
-    initializer.and.returnValue(Promise.reject("Cannot perform initialization"));
-    
+    initializer.and.returnValue(
+      Promise.reject('Cannot perform initialization')
+    );
+
     service.initialize();
     await service.initialSetupFinished$;
-    
+
     expect(navigateSpy).toHaveBeenCalledWith('auth/error');
     expect(service.getAccessToken()).toEqual(undefined);
     expect(service.getIdToken()).toEqual(undefined);
@@ -136,8 +170,8 @@ describe('AuthService', () => {
     expect(service.isLoggedIn()).toEqual(false);
   });
 
-  it("Login", async () => {
-    login.and.returnValue(Promise.resolve(loginResult))
+  it('Login', async () => {
+    login.and.returnValue(Promise.resolve(loginResult));
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(failedLoginResult));
     service.initialize();
@@ -151,8 +185,8 @@ describe('AuthService', () => {
     expect(service.isLoggedIn()).toEqual(true);
   });
 
-  it("Login Failed", async () => {
-    login.and.returnValue(Promise.resolve(failedLoginResult))
+  it('Login Failed', async () => {
+    login.and.returnValue(Promise.resolve(failedLoginResult));
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(failedLoginResult));
     service.initialize();
@@ -166,8 +200,8 @@ describe('AuthService', () => {
     expect(service.isLoggedIn()).toEqual(false);
   });
 
-  it("Silent Login", async () => {
-    silentLogin.and.returnValue(Promise.resolve(loginResult))
+  it('Silent Login', async () => {
+    silentLogin.and.returnValue(Promise.resolve(loginResult));
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(failedLoginResult));
     service.initialize();
@@ -181,8 +215,8 @@ describe('AuthService', () => {
     expect(service.isLoggedIn()).toEqual(true);
   });
 
-  it("Silent Login Failed", async () => {
-    silentLogin.and.returnValue(Promise.resolve(failedLoginResult))
+  it('Silent Login Failed', async () => {
+    silentLogin.and.returnValue(Promise.resolve(failedLoginResult));
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(failedLoginResult));
     service.initialize();
@@ -196,7 +230,7 @@ describe('AuthService', () => {
     expect(service.isLoggedIn()).toEqual(false);
   });
 
-  it("Logout", async () => {
+  it('Logout', async () => {
     const navigateSpy = spyOn(router, 'navigateByUrl');
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(loginResult));
@@ -212,8 +246,8 @@ describe('AuthService', () => {
     expect(service.isLoggedIn()).toEqual(false);
   });
 
-  it("Session Changed, SilentLogin Failed", async () => {
-    silentLogin.and.returnValue(Promise.resolve(failedLoginResult))
+  it('Session Changed, SilentLogin Failed', async () => {
+    silentLogin.and.returnValue(Promise.resolve(failedLoginResult));
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(loginResult));
 
@@ -231,8 +265,10 @@ describe('AuthService', () => {
     expect(service.isLoggedIn()).toEqual(false);
   });
 
-  it("Session Changed, SilentLogin returns different user", async () => {
-    silentLogin.and.returnValue(Promise.resolve({...loginResult, userInfo: {sub: 'name2'}}))
+  it('Session Changed, SilentLogin returns different user', async () => {
+    silentLogin.and.returnValue(
+      Promise.resolve({ ...loginResult, userInfo: { sub: 'name2' } })
+    );
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(loginResult));
 
@@ -248,7 +284,7 @@ describe('AuthService', () => {
     expect(service.isLoggedIn()).toEqual(false);
   });
 
-  it("Session Changed, SilentLogin returns same user", async () => {
+  it('Session Changed, SilentLogin returns same user', async () => {
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(loginResult));
     silentLogin.and.returnValue(Promise.resolve(loginResult));
@@ -265,7 +301,7 @@ describe('AuthService', () => {
     expect(service.isLoggedIn()).toEqual(true);
   });
 
-  it("Timeout", async () => {
+  it('Timeout', async () => {
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(loginResult));
     silentLogin.and.returnValue(Promise.resolve(loginResult));
@@ -282,9 +318,11 @@ describe('AuthService', () => {
     expect(service.isLoggedIn()).toEqual(false);
   });
 
-  it("Ping, SilentLogin returns fails", async () => {
+  it('Ping, SilentLogin returns fails', async () => {
     let timeoutHandler: Function;
-    windowMock.setInterval.and.callFake((handler: Function) => timeoutHandler = handler);
+    windowMock.setInterval.and.callFake(
+      (handler: Function) => (timeoutHandler = handler)
+    );
     silentLogin.and.returnValue(Promise.resolve(failedLoginResult));
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(loginResult));
@@ -301,10 +339,14 @@ describe('AuthService', () => {
     expect(service.isLoggedIn()).toEqual(false);
   });
 
-  it("Ping, SilentLogin returns different user", async () => {
+  it('Ping, SilentLogin returns different user', async () => {
     let timeoutHandler: Function;
-    windowMock.setInterval.and.callFake((handler: Function) => timeoutHandler = handler);
-    silentLogin.and.returnValue(Promise.resolve({...loginResult, userInfo: {sub: 'name2'}}))
+    windowMock.setInterval.and.callFake(
+      (handler: Function) => (timeoutHandler = handler)
+    );
+    silentLogin.and.returnValue(
+      Promise.resolve({ ...loginResult, userInfo: { sub: 'name2' } })
+    );
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(loginResult));
 
@@ -320,12 +362,16 @@ describe('AuthService', () => {
     expect(service.isLoggedIn()).toEqual(false);
   });
 
-  it("Ping, SilentLogin returns same user", async () => {
+  it('Ping, SilentLogin returns same user', async () => {
     let timeoutHandler: Function;
-    windowMock.setInterval.and.callFake((handler: Function) => timeoutHandler = handler);
+    windowMock.setInterval.and.callFake(
+      (handler: Function) => (timeoutHandler = handler)
+    );
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(loginResult));
-    silentLogin.and.returnValue(Promise.resolve({...loginResult, accessToken: "at2"}));
+    silentLogin.and.returnValue(
+      Promise.resolve({ ...loginResult, accessToken: 'at2' })
+    );
 
     service.initialize();
     await service.initialSetupFinished$;
@@ -333,7 +379,7 @@ describe('AuthService', () => {
     timeoutHandler!();
     await userInfoChangedPromise;
 
-    expect(service.getAccessToken()).toEqual("at2");
+    expect(service.getAccessToken()).toEqual('at2');
     expect(service.getIdToken()).toEqual(loginResult.idToken);
     expect(service.getUserInfo()).toEqual(loginResult.userInfo);
     expect(service.isLoggedIn()).toEqual(true);

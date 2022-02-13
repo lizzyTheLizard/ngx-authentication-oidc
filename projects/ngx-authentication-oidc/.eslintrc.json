@@ -17,22 +17,57 @@
         "createDefaultProgram": true
       },
       "extends": [
+        "eslint:recommended",
         "plugin:@angular-eslint/recommended",
-        "plugin:@angular-eslint/template/process-inline-templates"
+        "plugin:@angular-eslint/template/process-inline-templates",
+        "plugin:prettier/recommended"
       ],
       "rules": {
-        "indent": ["error", 2],
-        "no-multiple-empty-lines": ["error", { "max": 2, "maxEOF": 1}],
-        "eol-last": ["error"],
         "no-unused-vars": "off",
-        "@typescript-eslint/no-unused-vars": "error"
+        "@typescript-eslint/no-unused-vars": "error",
+        "@angular-eslint/component-selector": [
+          "error",
+          {
+            "prefix": "app",
+            "style": "kebab-case",
+            "type": "element"
+          }
+        ],
+        "@angular-eslint/directive-selector": [
+          "error",
+          {
+            "prefix": "app",
+            "style": "camelCase",
+            "type": "attribute"
+          }
+        ],
+        "sort-imports": [
+          "error",
+          {
+            "ignoreDeclarationSort": true
+          }
+        ]
       }
     },
     {
       "files": [
         "*.html"
       ],
+      "extends": [
+        "plugin:@angular-eslint/template/recommended"
+      ],
       "rules": {}
     }
-  ]
+  ],
+  "globals": {
+    "expect": "readonly",
+    "it": "readonly",
+    "spyOn": "readonly",
+    "describe": "readonly",
+    "beforeEach": "readonly",
+    "afterEach": "readonly",
+    "expectAsync": "readonly",
+    "jasmine": "readonly",
+    "console": "readonly"
+  }
 }

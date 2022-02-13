@@ -1,6 +1,6 @@
-import { LoggerFactory } from "../logger/logger";
-import { LoginOptions } from "../configuration/login-options";
-import { LoginResult } from "../login-result";
+import { LoggerFactory } from '../logger/logger';
+import { LoginOptions } from '../configuration/login-options';
+import { LoginResult } from '../login-result';
 
 export interface InitializerInput {
   initialLoginResult: LoginResult;

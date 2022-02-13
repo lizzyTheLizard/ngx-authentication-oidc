@@ -4,7 +4,7 @@ import { AuthService } from '../auth.service';
 import { AuthTestingService } from './auth-testing.service';
 
 @NgModule({
-  imports: [ HttpClientTestingModule],
+  imports: [HttpClientTestingModule]
 })
 export class AuthenticationTestingModule {
   static forRoot(): ModuleWithProviders<AuthenticationTestingModule> {
@@ -12,12 +12,12 @@ export class AuthenticationTestingModule {
       ngModule: AuthenticationTestingModule,
       providers: [
         AuthTestingService,
-        { provide: AuthService, useExisting: AuthTestingService},
-      ],
+        { provide: AuthService, useExisting: AuthTestingService }
+      ]
     };
   }
 
   constructor(authService: AuthService) {
-    authService.initialize().catch(e => console.log(e));
+    authService.initialize().catch((e) => console.log(e));
   }
 }

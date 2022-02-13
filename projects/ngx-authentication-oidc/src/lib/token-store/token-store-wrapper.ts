@@ -1,16 +1,17 @@
-import { Inject, Injectable, InjectionToken } from "@angular/core";
-import { LoginResult } from "../login-result";
-import { TokenStore } from "./token-store";
+import { Inject, Injectable, InjectionToken } from '@angular/core';
+import { LoginResult } from '../login-result';
+import { TokenStore } from './token-store';
 
 export const TokenStoreToken = new InjectionToken('TokenStore');
 
-const prefix: string = "auth.";
+const prefix: string = 'auth.';
 
 @Injectable()
 export class TokenStoreWrapper {
   constructor(
-    @Inject(TokenStoreToken) private readonly tokenStore: TokenStore) {}
-        
+    @Inject(TokenStoreToken) private readonly tokenStore: TokenStore
+  ) {}
+
   public getLoginResult(): LoginResult {
     return {
       isLoggedIn: this.getObject('isLoggedIn') ?? false,
@@ -20,23 +21,23 @@ export class TokenStoreWrapper {
       sessionState: this.getString('sessionState'),
       expiresAt: this.getDate('expiresAt'),
       refreshToken: this.getString('refreshToken')
-    }
-  }   
+    };
+  }
 
-  private getString(name: string) : string | undefined {
+  private getString(name: string): string | undefined {
     return this.tokenStore.getItem(prefix + name) ?? undefined;
   }
 
-  private getObject<T>(name: string) : T | undefined {
+  private getObject<T>(name: string): T | undefined {
     const str = this.getString(name);
-    return str ? JSON.parse(str): undefined;
+    return str ? JSON.parse(str) : undefined;
   }
 
-  private getDate(name: string) : Date | undefined {
+  private getDate(name: string): Date | undefined {
     const str = this.getString(name);
-    return str ? new Date(str): undefined;
+    return str ? new Date(str) : undefined;
   }
-    
+
   public setLoginResult(loginResult: LoginResult): void {
     this.setObject('isLoggedIn', loginResult.isLoggedIn);
     this.setString('accessToken', loginResult.accessToken);
@@ -51,14 +52,14 @@ export class TokenStoreWrapper {
     const str = item ? JSON.stringify(item) : undefined;
     this.setString(name, str);
   }
-    
+
   private setDate(name: string, item: Date | undefined): void {
     const str = item ? item.toISOString() : undefined;
     this.setString(name, str);
   }
 
   private setString(name: string, item: string | undefined): void {
-    if(item) {
+    if (item) {
       this.tokenStore.setItem(prefix + name, item);
     } else {
       this.tokenStore.removeItem(prefix + name);
