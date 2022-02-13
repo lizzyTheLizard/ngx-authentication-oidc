@@ -1,21 +1,14 @@
 /* global window, document, localStorage */
-
-import {
-  Location,
-  LocationStrategy,
-  PathLocationStrategy
-} from '@angular/common';
+// eslint-disable-next-line prettier/prettier
+import { Location, LocationStrategy, PathLocationStrategy } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { ModuleWithProviders, NgModule } from '@angular/core';
-import {
-  loginResponseCheck,
-  silentLoginCheck
-} from './initializer/initializer';
+// eslint-disable-next-line prettier/prettier
+import { loginResponseCheck, silentLoginCheck } from './initializer/initializer';
 import { AuthConfigService } from './auth-config.service';
 import { AuthService } from './auth.service';
 import { DocumentToken, WindowToken } from './authentication-module.tokens';
 import { OauthConfig } from './configuration/oauth-config';
-import { consoleLoggerFactory } from './logger/console-logger';
 import { OidcDiscovery } from './oidc/oidc-discovery';
 import { OidcLogin } from './oidc/oidc-login';
 import { OidcLogout } from './oidc/oidc-logout';
@@ -25,11 +18,9 @@ import { OidcSilentLogin } from './oidc/oidc-silent-login';
 import { OidcTokenValidator } from './oidc/oidc-token-validator';
 import { InactiveTimeoutHandler } from './timeout-handler/inactive-timeout-handler';
 import { TimeoutHandlerToken } from './timeout-handler/timeout-handler';
-import {
-  TokenStoreToken,
-  TokenStoreWrapper
-} from './token-store/token-store-wrapper';
-import { LoggerFactoryToken } from './logger/logger';
+import { TokenStoreToken } from './token-store/token-store';
+import { TokenStoreWrapper } from './token-store/token-store-wrapper';
+import { LoggerFactoryToken, consoleLoggerFactory } from './logger/logger';
 import { InitializerToken } from './initializer/initializer';
 import { NgIdleModule } from '@ng-idle/core';
 import { NoTimeoutHandler } from '../public-api';

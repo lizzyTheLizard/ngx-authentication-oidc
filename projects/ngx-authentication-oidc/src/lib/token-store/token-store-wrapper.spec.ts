@@ -2,7 +2,8 @@
 
 import { TestBed } from '@angular/core/testing';
 import { LoginResult } from '../login-result';
-import { TokenStoreToken, TokenStoreWrapper } from './token-store-wrapper';
+import { TokenStoreToken } from './token-store';
+import { TokenStoreWrapper } from './token-store-wrapper';
 
 let service: TokenStoreWrapper;
 

@@ -1,12 +1,10 @@
+// eslint-disable-next-line prettier/prettier
+import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { LoggerFactoryToken } from '../logger/logger';
 import { OauthConfig, ProviderConfig } from '../configuration/oauth-config';
 import { OidcRefresh } from './oidc-refresh';
 import { OidcResponse } from './oidc-response';
-import {
-  HttpClientTestingModule,
-  HttpTestingController
-} from '@angular/common/http/testing';
 import { LoginResult } from '../login-result';
 import { AuthConfigService } from '../auth-config.service';
 

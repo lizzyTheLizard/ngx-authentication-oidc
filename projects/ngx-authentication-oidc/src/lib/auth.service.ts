@@ -1,10 +1,9 @@
 import { Inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, Subject, map } from 'rxjs';
-import { Initializer } from './initializer/initializer';
+import { Initializer, InitializerInput } from './initializer/initializer';
 import { AuthConfigService } from './auth-config.service';
 import { LoginOptions } from './configuration/login-options';
-import { InitializerInput } from './initializer/initializer-input';
 import { Logger, LoggerFactory } from './logger/logger';
 import { LoginResult, UserInfo } from './login-result';
 import { OidcDiscovery } from './oidc/oidc-discovery';
@@ -12,10 +11,8 @@ import { OidcLogin } from './oidc/oidc-login';
 import { OidcLogout } from './oidc/oidc-logout';
 import { OidcSilentLogin } from './oidc/oidc-silent-login';
 import { TokenStoreWrapper } from './token-store/token-store-wrapper';
-import {
-  TimeoutHandler,
-  TimeoutHandlerToken
-} from './timeout-handler/timeout-handler';
+// eslint-disable-next-line prettier/prettier
+import { TimeoutHandler, TimeoutHandlerToken } from './timeout-handler/timeout-handler';
 import { OidcResponse } from './oidc/oidc-response';
 import { OidcSessionManagement } from './oidc/oidc-session-management';
 import { LoggerFactoryToken } from './logger/logger';
@@ -26,6 +23,7 @@ import { OidcRefresh } from './oidc/oidc-refresh';
 /**
  * Main facade of the library, can be used to check and perform logins. Is available if you import {@link AuthenticationModule}.
  */
+//TODO: Refactor and reduce this class
 @Injectable()
 export class AuthService {
   /** Observable to check if a user is currently logged in */
@@ -103,9 +101,9 @@ export class AuthService {
       initialLoginResult: this.tokenStore.getLoginResult() ?? {
         isLoggedIn: false
       },
-      login: (options) =>
+      login: (options: LoginOptions) =>
         this.oidcLogin.login({ ...options, finalUrl: this.router.url }),
-      silentLogin: (options) =>
+      silentLogin: (options: LoginOptions) =>
         this.oidcSilentLogin.login({ ...options, finalUrl: this.router.url }),
       handleResponse: () => this.oidcResponse.handleURLResponse()
     };

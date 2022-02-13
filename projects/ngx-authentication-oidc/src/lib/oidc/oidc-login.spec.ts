@@ -1,7 +1,5 @@
-import {
-  HttpClientTestingModule,
-  HttpTestingController
-} from '@angular/common/http/testing';
+// eslint-disable-next-line prettier/prettier
+import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { LoggerFactoryToken } from '../logger/logger';
 import { OauthConfig, ProviderConfig } from '../configuration/oauth-config';

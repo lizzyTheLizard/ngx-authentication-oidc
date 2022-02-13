@@ -1,10 +1,7 @@
 import { UrlTree } from '@angular/router';
 import { IdleConfiguration } from './configuration/idle-configuration';
-import {
-  ClientConfig,
-  OauthConfig,
-  ProviderConfig
-} from './configuration/oauth-config';
+// eslint-disable-next-line prettier/prettier
+import { ClientConfig, OauthConfig, ProviderConfig } from './configuration/oauth-config';
 import { DEFAULT_INTERRUPTSOURCES } from '@ng-idle/core';
 
 export class AuthConfigService {

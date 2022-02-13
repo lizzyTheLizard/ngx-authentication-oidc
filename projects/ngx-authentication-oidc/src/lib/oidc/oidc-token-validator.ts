@@ -1,11 +1,6 @@
 import { Inject, Injectable } from '@angular/core';
-import {
-  JWTHeaderParameters,
-  JWTPayload,
-  KeyLike,
-  importJWK,
-  jwtVerify
-} from 'jose';
+// eslint-disable-next-line prettier/prettier
+import { JWTHeaderParameters, JWTPayload, KeyLike, importJWK, jwtVerify } from 'jose';
 import { AuthConfigService } from '../auth-config.service';
 import { Logger, LoggerFactory, LoggerFactoryToken } from '../logger/logger';
 import { UserInfo } from '../login-result';

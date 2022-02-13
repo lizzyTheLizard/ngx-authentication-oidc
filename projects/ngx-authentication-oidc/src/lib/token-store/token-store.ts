@@ -1,3 +1,6 @@
+import { InjectionToken } from '@angular/core';
+
+export const TokenStoreToken = new InjectionToken('TokenStore');
 export interface TokenStore {
   setItem(name: string, obj: string): void;
 

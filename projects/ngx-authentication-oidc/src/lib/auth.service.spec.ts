@@ -1,5 +1,4 @@
 /*global localStorage*/
-
 import { AuthService } from './auth.service';
 import { TokenStore } from './token-store/token-store';
 import { LoginResult } from './login-result';

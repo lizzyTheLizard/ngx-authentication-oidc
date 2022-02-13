@@ -2,10 +2,8 @@
 
 import 'zone.js';
 import 'zone.js/testing';
-import {
-  BrowserDynamicTestingModule,
-  platformBrowserDynamicTesting
-} from '@angular/platform-browser-dynamic/testing';
+// eslint-disable-next-line prettier/prettier
+import { BrowserDynamicTestingModule, platformBrowserDynamicTesting } from '@angular/platform-browser-dynamic/testing';
 import { getTestBed } from '@angular/core/testing';
 
 declare const require: {

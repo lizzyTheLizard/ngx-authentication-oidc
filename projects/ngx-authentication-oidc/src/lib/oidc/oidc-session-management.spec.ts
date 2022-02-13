@@ -1,5 +1,4 @@
 /*global setInterval, clearInterval*/
-
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { DocumentToken, WindowToken } from '../authentication-module.tokens';
 import { LoggerFactoryToken } from '../logger/logger';

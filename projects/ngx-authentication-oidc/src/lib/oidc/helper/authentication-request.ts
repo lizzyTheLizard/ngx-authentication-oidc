@@ -1,5 +1,4 @@
 /*global crypto*/
-
 import { LoginOptions, ResponseType } from '../../configuration/login-options';
 import { State } from './state';
 
