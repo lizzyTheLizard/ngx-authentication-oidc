@@ -1,27 +1,28 @@
-import { Injectable } from "@angular/core";
+import { Inject, Injectable } from "@angular/core";
+import { importJWK, JWTHeaderParameters, JWTPayload, jwtVerify, KeyLike } from "jose";
 import { AuthConfigService } from "../auth-config.service";
-
-interface Claims {
-  iss?: string;
-  aud?: string | string[];
-  exp?: number;
-  iat?: number;
-  nbf?: number;
-  nonce?: string;
-}
-
-interface Header {
-  alg?: string,
-}
+import { Logger, LoggerFactory, LoggerFactoryToken } from "../logger/logger";
+import { UserInfo } from "../login-result";
 
 @Injectable()
-export class OidcValidator {
-  constructor(
-    private readonly config: AuthConfigService){
+export class OidcTokenValidator {
+  private readonly logger: Logger;
 
+  constructor(
+      private readonly config: AuthConfigService,
+      @Inject(LoggerFactoryToken) loggerFactory: LoggerFactory){
+    this.logger = loggerFactory('OidcTokenValidator');
   }
-          
-  public validate(claims?: Claims, headers?: Header, nonce?: string){
+
+  public async verify(idToken?: string, nonce?: string): Promise<UserInfo> {
+    if(!idToken) {
+      throw new Error('No id token given')
+    }
+
+    const verifyResult = await jwtVerify(idToken, header => this.getKey(header), {});
+    const claims = verifyResult.payload;
+    const headers = verifyResult.protectedHeader;
+
     if(!claims) {
       throw new Error('No claims given')
     }
@@ -33,9 +34,43 @@ export class OidcValidator {
     this.validateAudience(claims);
     this.validateAlgorithm(headers);
     this.validateTime(claims);
-    this.validateNonce(nonce, claims);
+    this.validateNonce(claims, nonce);
+
+    if(!claims.sub) {
+      throw new Error('No sub given')
+    }
+
+    return {
+      ...claims,
+      sub: claims.sub!
+    }
   }
 
+  private async getKey(header: JWTHeaderParameters): Promise<KeyLike | Uint8Array> {
+    const publicKeys = this.config.getProviderConfiguration().publicKeys;
+    const sigKeys = publicKeys
+      .filter(k => !header.alg || !k.alg || k.alg === header.alg)
+      .filter(k => !k.use || k.use == 'sig')
+    if (sigKeys.length === 0) {
+      this.logger.error('No signature keys given');
+      throw new Error('No valid signature key found');
+    }
+    if(!header.kid && sigKeys.length == 1) {
+      return importJWK(sigKeys[0]);
+    }
+    if(!header.kid) {
+      this.logger.error('Multiple signature keys but no kid keys given, take first');
+      return importJWK(sigKeys[0]);
+    }
+    const keys = sigKeys
+      .filter(k => k.kid === header.kid);
+    if(keys.length == 0) {
+      this.logger.error('No key with kid ' + header.kid + ' could be found in the key set');
+      throw new Error('No valid key found');
+    }
+    return importJWK(keys[0]);
+  }
+          
   private validateAccessTokenHash() {
     //TODO: Validate at_hash according to 3.2.2.9
     /*
@@ -45,7 +80,7 @@ export class OidcValidator {
     */
   }
 
-  private validateIssuer(claims: Claims) {
+  private validateIssuer(claims: JWTPayload) {
     if(!claims.iss){
       throw new Error('ID-Token contains invalid iss claim')
     }
@@ -55,7 +90,7 @@ export class OidcValidator {
     }
   }
 
-  private validateAudience(claims: Claims) {
+  private validateAudience(claims: JWTPayload) {
     if(!claims.aud) {
       throw new Error('ID-Token does not contain valid aud claim');
     }
@@ -73,7 +108,7 @@ export class OidcValidator {
     }
   }
 
-  private validateAlgorithm(headers: Header) {
+  private validateAlgorithm(headers: JWTHeaderParameters) {
     const alg = this.config.getProviderConfiguration().alg;
     if(!alg && headers.alg !== "RS256") {
       throw Error('Wrong ID-Token algorithm')
@@ -90,7 +125,7 @@ export class OidcValidator {
     return;
   }
 
-  private validateTime(claims: Claims) {
+  private validateTime(claims: JWTPayload) {
     const actualTime = Math.floor(Date.now()/1000);
     if(!claims.exp) {
       throw new Error('exp claim required');
@@ -114,8 +149,8 @@ export class OidcValidator {
     return;
   }
 
-  private validateNonce(nonce: string | undefined, claims: Claims) {
-    if(nonce && nonce !== claims.nonce) {
+  private validateNonce(claims: JWTPayload, nonce?: string) {
+    if(nonce && nonce !== claims['nonce']) {
       throw new Error("Nonce not returned");
     }
   }

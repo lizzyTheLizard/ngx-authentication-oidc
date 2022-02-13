@@ -13,7 +13,7 @@ import { OidcLogout } from './oidc/oidc-logout';
 import { OidcResponse } from './oidc/oidc-response';
 import { OidcSessionManagement } from './oidc/oidc-session-management';
 import { OidcSilentLogin } from './oidc/oidc-silent-login';
-import { OidcValidator } from './oidc/oidc-validator';
+import { OidcTokenValidator } from './oidc/oidc-token-validator';
 import { InactiveTimeoutHandler } from './timeout-handler/inactive-timeout-handler';
 import { TimeoutHandlerToken } from './timeout-handler/timeout-handler';
 import { TokenStoreToken, TokenStoreWrapper } from './token-store/token-store-wrapper';
@@ -21,6 +21,7 @@ import { LoggerFactoryToken } from './logger/logger';
 import { InitializerToken } from './initializer/initializer';
 import { NgIdleModule } from '@ng-idle/core';
 import { NoTimeoutHandler } from '../public-api';
+import { OidcRefresh } from './oidc/oidc-refresh';
 
 
 /**
@@ -54,8 +55,9 @@ export class AuthenticationModule {
         OidcLogin,
         OidcLogout,
         OidcSilentLogin,
-        OidcValidator,
+        OidcTokenValidator,
         OidcSessionManagement,
+        OidcRefresh,
         TokenStoreWrapper,
       ],
     };

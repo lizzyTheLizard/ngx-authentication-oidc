@@ -1,7 +1,7 @@
 <html>
 <body>
     <script>
-        (window.opener || window.parent).postMessage(location.hash?.substr(1) || location.search, location.origin);
+        (window.opener || window.parent).postMessage(location.href, location.origin);
     </script>
 </body>
 </html>

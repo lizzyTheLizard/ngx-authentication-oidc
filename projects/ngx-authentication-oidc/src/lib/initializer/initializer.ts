@@ -9,9 +9,6 @@ export type Initializer = (input: InitializerInput) => Promise<LoginResult>;
 export async function loginResponseCheck(input: InitializerInput) {
   const logger = input.loggerFactory('LoginResponseInitializer');
   const loginResult = input.initialLoginResult;
-  if(!input.isResponse()) {
-    return loginResult;
-  }
   const responseLoginResult = await input.handleResponse()
   if(responseLoginResult.isLoggedIn) {
     logger.debug('This is a successful login response', responseLoginResult);

@@ -6,6 +6,8 @@ import { LoggerFactoryToken } from "../logger/logger";
 import { ClientConfig, OauthConfig, ProviderConfig } from "../configuration/oauth-config";
 import { OidcSessionManagement } from "./oidc-session-management";
 import { TokenStoreWrapper } from "../token-store/token-store-wrapper";
+import { InitializerToken } from "../initializer/initializer";
+import { OidcSilentLogin } from "./oidc-silent-login";
 
 
 const pc: ProviderConfig = {
@@ -45,7 +47,11 @@ const documentMock = {
   createElement: jasmine.createSpy('createElement').and.returnValue(iframeMock),
 };
 
-const tokenStoreMock = jasmine.createSpyObj('tokenStoreMock', ['getLoginResult']);
+const silentLoginMock = {
+  login: jasmine.createSpy('OidcSilentLogin').and.returnValue(Promise.resolve({isLoggedIn: false}))
+}
+
+const tokenStoreMock = jasmine.createSpyObj('tokenStoreMock', ['getLoginResult','setLoginResult']);
 
 let service: OidcSessionManagement;
 
@@ -61,6 +67,8 @@ describe('OidcSessionManagement', () => {
         { provide: DocumentToken, useFactory: () => documentMock },
         { provide: TokenStoreWrapper, useFactory: () => tokenStoreMock },
         { provide: LoggerFactoryToken, useValue: () => console },
+        { provide: OidcSilentLogin, useFactory: () => silentLoginMock},
+        { provide: InitializerToken, useValue: () => Promise.resolve({isLoggedIn: false}) },
       ],
     });
     service = TestBed.inject(OidcSessionManagement);

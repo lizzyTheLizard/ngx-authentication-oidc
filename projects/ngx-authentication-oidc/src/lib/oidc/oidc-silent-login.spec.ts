@@ -1,5 +1,5 @@
 import { APP_BASE_HREF } from "@angular/common";
-import { TestBed } from "@angular/core/testing";
+import { fakeAsync, TestBed, tick } from "@angular/core/testing";
 import { RouterTestingModule } from "@angular/router/testing";
 import { AuthenticationModule } from "../authentication-module";
 import { DocumentToken, WindowToken } from "../authentication-module.tokens";
@@ -8,12 +8,17 @@ import { OauthConfig } from "../configuration/oauth-config";
 import { OidcLogin } from "./oidc-login";
 import { OidcResponse } from "./oidc-response";
 import { OidcSilentLogin } from "./oidc-silent-login";
+import { InitializerToken } from "../initializer/initializer";
 
 
 const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.GjKRxKZWcBLTjWTOPSwFBoRsu0zuMkK-uh-7gdfiNDA';
 
 const config = {
-  silentLoginTimeoutInSecond: 1
+  silentLoginTimeoutInSecond: 1,
+  client: { clientId: 'id'},
+  provider: {
+    authEndpoint: "https://example.com/auth"
+  },
 };
 
 const windowMock = {
@@ -35,8 +40,7 @@ const documentMock = {
 
 const oidcLogin = jasmine.createSpyObj('oidcLogin', ['createAuthenticationRequest']);
 oidcLogin.createAuthenticationRequest = jasmine.createSpy('createAuthenticationRequest').and.returnValue(new URL("https://example.com/auth"))
-const oidcResponse = jasmine.createSpyObj('oidcResponse', ['parseResponseParams', 'handleResponse']);
-oidcResponse.parseResponseParams = jasmine.createSpy('parseResponseParams').and.returnValue({});
+const oidcResponse = jasmine.createSpyObj('oidcResponse', ['handleURLResponse']);
 
 let service: OidcSilentLogin;
 
@@ -53,6 +57,7 @@ describe('OidcSilentLogin', () => {
         { provide: WindowToken, useFactory: () => windowMock },
         { provide: DocumentToken, useFactory: () => documentMock },
         { provide: LoggerFactoryToken, useValue: () => console },
+        { provide: InitializerToken, useValue: () => Promise.resolve({isLoggedIn: false})},
         { provide: OidcLogin, useValue: oidcLogin },
         { provide: OidcResponse, useValue: oidcResponse }
       ],
@@ -60,44 +65,47 @@ describe('OidcSilentLogin', () => {
     service = TestBed.inject(OidcSilentLogin);
   });
     
-  it("Silent Login Timeout", async () => {
+  it("Silent Login Timeout", fakeAsync(() => {
     windowMock.addEventListener = jasmine.createSpy('addEventListener').and.callFake(() => {});
-    oidcResponse.handleResponse = jasmine.createSpy('handleResponse').and.returnValue(Promise.resolve({isLoggedIn: true, idToken: token, accessToken: "SlAV32hkKG"}));
+    oidcResponse.handleURLResponse = jasmine.createSpy('handleURLResponse').and.returnValue(Promise.resolve({isLoggedIn: true, idToken: token, accessToken: "SlAV32hkKG"}));
 
-    const result = await service.login({});
-
-    expect(result).toEqual({isLoggedIn: false});
-  });
+    const result = service.login({});
+    tick(6000)
+    expectAsync(result).toBeResolvedTo({isLoggedIn: false});
+  }));
 
   it("Silent Login Request", async () => {
-    windowMock.addEventListener = jasmine.createSpy('addEventListener').and.callFake(() => {});
+    const mock = {origin: windowMock.location.origin, data: "https://example.com/rd?error=failed", source: iframeMock};
+    windowMock.addEventListener = jasmine.createSpy('addEventListener').and.callFake((m,l) => l(mock));
+    oidcResponse.handleURLResponse = jasmine.createSpy('handleURLResponse').and.returnValue(Promise.resolve({isLoggedIn: false}));
     
     await service.login({});
 
-    expect(oidcLogin.createAuthenticationRequest.calls.mostRecent().args[0]).toEqual({prompt: "none"});
     expect(iframeMock.setAttribute.calls.mostRecent().args[0]).toEqual("src");
     expect(iframeMock.setAttribute.calls.mostRecent().args[1]).toMatch("https://example.com/auth");
   });  
 
   it("Silent Login Failed", async () => {
-    const mock = {origin: windowMock.location.origin, data: "failed", source: iframeMock};
+    const mock = {origin: windowMock.location.origin, data: "https://example.com/rd?error=failed", source: iframeMock};
     windowMock.addEventListener = jasmine.createSpy('addEventListener').and.callFake((m,l) => l(mock));
-    oidcResponse.handleResponse = jasmine.createSpy('handleResponse').and.returnValue(Promise.resolve({isLoggedIn: false}));
+    oidcResponse.handleURLResponse = jasmine.createSpy('handleURLResponse').and.returnValue(Promise.resolve({isLoggedIn: false}));
 
     const result = await service.login({});
 
+    expect(oidcResponse.handleURLResponse.calls.mostRecent().args[0]).toEqual(mock.data);
     expect(result).toEqual({isLoggedIn: false});
-    expect(oidcResponse.handleResponse.calls.mostRecent().args[0]).toEqual({});
   });
 
   it("Silent Login Success", async () => {
-    const mock = {origin: windowMock.location.origin, data: "access_token=SlAV32hkKG&token_type=bearer&id_token="+ token + "&expires_in=3600&state=af0ifjsldkj", source: iframeMock};
+    const mock = {origin: windowMock.location.origin, data: "https://example.com/rd?access_token=SlAV32hkKG&token_type=bearer&id_token="+ token + "&expires_in=3600&state=af0ifjsldkj", source: iframeMock};
     windowMock.addEventListener = jasmine.createSpy('addEventListener').and.callFake((m,l) => l(mock));
-    oidcResponse.handleResponse = jasmine.createSpy('handleResponse').and.returnValue(Promise.resolve({isLoggedIn: true, idToken: token, accessToken: "SlAV32hkKG"}));
+    oidcResponse.handleURLResponse = jasmine.createSpy('handleURLResponse').and.callFake(() => {
+      return Promise.resolve({isLoggedIn: true, idToken: token, accessToken: "SlAV32hkKG"});
+    });
     
     const result = await service.login({});
 
-    expect(oidcResponse.parseResponseParams.calls.mostRecent().args[0]).toEqual(mock.data);
+    expect(oidcResponse.handleURLResponse.calls.mostRecent().args[0]).toEqual(mock.data);
     expect(result).toEqual({ isLoggedIn: true, idToken: token, accessToken: "SlAV32hkKG"});
   });  
 });

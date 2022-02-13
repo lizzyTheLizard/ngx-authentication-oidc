@@ -85,6 +85,7 @@ export class OidcSessionManagement {
       this.sessionChangedSub.error(e);
       return;
     }
+    this.logger.info('Session Change detected');
     this.sessionChangedSub.next();
   }
 

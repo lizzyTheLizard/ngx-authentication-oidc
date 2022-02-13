@@ -10,6 +10,7 @@ import { Logger, LoggerFactory } from "../logger/logger";
 import { LoginResult } from "../login-result";
 import { OidcLogin } from "./oidc-login";
 import { OidcResponse } from "./oidc-response";
+import { AuthenticationRequest } from "./helper/authentication-request";
 
 const silentRefreshIFrameName = 'silent-refresh-iframe';
 
@@ -56,7 +57,9 @@ export class OidcSilentLogin {
   public async login(loginOptions: LoginOptions): Promise<LoginResult> {
     console.info('Perform silent login');
     const silentLoginOptions = { ... loginOptions, prompt: "none"};
-    const url = this.oidcLogin.createAuthenticationRequest(silentLoginOptions, this.silentRefreshUrl.toString());
+    const clientId = this.config.client.clientId;
+    const authEndpoint = this.config.getProviderConfiguration().authEndpoint;
+    const url = new AuthenticationRequest(silentLoginOptions, this.silentRefreshUrl.toString(), clientId, authEndpoint).toUrl();
     const iframe = this.createIFrame(url);
     const result = this.setupLoginEventListener(iframe);
     this.document.body.appendChild(iframe);
@@ -96,12 +99,10 @@ export class OidcSilentLogin {
       return;
     }
     this.window.removeEventListener("message", this.loginEventListener!);
-    const params = this.oidcResponse.parseResponseParams(e.data);
-    this.logger.debug('Got silent refresh response', params);
-    this.oidcResponse.handleResponse(params, this.silentRefreshUrl).then(
+    this.oidcResponse.handleURLResponse(e.data, this.silentRefreshUrl).then(
       result => subject.next(result), 
       (error) => {
-        this.logger.info('Could not silently log in: ', error);
+        this.logger.debug('Could not silently log in: ', error);
         subject.next({isLoggedIn: false});
       });
   }

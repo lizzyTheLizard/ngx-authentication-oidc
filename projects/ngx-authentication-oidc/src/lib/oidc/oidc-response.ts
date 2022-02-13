@@ -1,14 +1,14 @@
-import { HttpClient, HttpParameterCodec, HttpParams } from "@angular/common/http";
+import { HttpClient, HttpParams } from "@angular/common/http";
 import { Inject, Injectable } from "@angular/core";
-import { importJWK, JWTHeaderParameters, jwtVerify, KeyLike } from "jose";
 import { catchError, firstValueFrom, map } from "rxjs";
 import { AuthConfigService } from "../auth-config.service";
 import { WindowToken } from "../authentication-module.tokens";
 import { LoggerFactoryToken } from "../logger/logger";
 import { Logger, LoggerFactory } from "../logger/logger";
-import { LoginResult, UserInfo } from "../login-result";
-import { State } from "./oidc-login";
-import { OidcValidator } from "./oidc-validator";
+import { LoginResult } from "../login-result";
+import { CustomHttpParamEncoder } from "./helper/custom-http-param-encoder";
+import { State } from "./helper/state";
+import { OidcTokenValidator } from "./oidc-token-validator";
 
 export interface ResponseParams extends State {
   error_description?: string;
@@ -22,21 +22,6 @@ export interface ResponseParams extends State {
   session_state?: string;
 }
 
-class CustomHttpParamEncoder implements HttpParameterCodec {
-  encodeKey(key: string): string {
-    return encodeURIComponent(key);
-  }
-  encodeValue(value: string): string {
-    return encodeURIComponent(value);
-  }
-  decodeKey(key: string): string {
-    return decodeURIComponent(key);
-  }
-  decodeValue(value: string): string {
-    return decodeURIComponent(value);
-  }
-} 
-
 @Injectable()
 export class OidcResponse {
   private readonly logger: Logger;
@@ -45,28 +30,47 @@ export class OidcResponse {
   constructor(
       private readonly httpClient: HttpClient,
       private readonly config: AuthConfigService,
-      private readonly validator: OidcValidator,
+      private readonly tokenValidator: OidcTokenValidator,
       @Inject(WindowToken) private readonly window: Window,
       @Inject(LoggerFactoryToken) private readonly loggerFactory: LoggerFactory){
     this.logger = loggerFactory('OidcResponse');
   }
 
-  public isResponse(){
-    const currentUrl = new URL(this.window.location.href);
-    const redirectUrl = new URL(this.config.client.redirectUri);
-    if(currentUrl.pathname === redirectUrl.pathname){
-      return true;
+  public async handleURLResponse(urlStr?: string, redirectUrl?: URL): Promise<LoginResult>{
+    const url = new URL(urlStr ?? this.window.location.href);
+    redirectUrl = redirectUrl ?? new URL(this.config.client.redirectUri);
+    if(url.pathname !== redirectUrl.pathname){
+      this.logger.debug('This is not a redirect as URL', url,' is not redirect url', redirectUrl);
+      return { isLoggedIn: false};
     }
-    this.logger.debug('This is not a redirect as URL', currentUrl,' is not redirect url', redirectUrl);
-    return false;
+
+    const queryString = url.hash ? url.hash.substr(1): url.search;
+    const params = this.parseResponseParams(queryString);
+    this.logger.debug('Got silent refresh response', params);
+    return this.handleResponse(params, redirectUrl);
   }
 
-  public getResponseParamsFromQueryString(): ResponseParams {
-    const currentUrl = new URL(this.window.location.href);
-    return this.parseResponseParams(currentUrl.hash ? currentUrl.hash.substr(1): currentUrl.search);
+  public async handleResponse(params: ResponseParams, redirectUrl?: URL) : Promise<LoginResult> {
+    if(params.error) {
+      return this.handleErrorResponse(params);
+    }
+    const hasCode = !!params.code;
+    const hasToken = params.id_token || params.access_token;
+    if(hasCode && hasToken) {
+      throw new Error('Login failed: Hybrid Flow not supported')
+    }
+    if(hasCode) {
+      redirectUrl = redirectUrl ?? new URL(this.config.client.redirectUri);
+      return this.handleCodeResponse(params, redirectUrl);
+    }
+    if(hasToken) {
+      return this.handleTokenResponse(params);
+    }
+    this.logger.debug('This is not a redirect as URL as no return params can be detected');
+    return {isLoggedIn: false};
   }
-
-  public parseResponseParams(queryString: string): ResponseParams  {
+  
+  private parseResponseParams(queryString: string): ResponseParams  {
     const urlSearchParams = new URLSearchParams(queryString);
     const state = this.parseResponseState(urlSearchParams.get('state'));
     const ret = {...state};
@@ -88,39 +92,6 @@ export class OidcResponse {
     }
   }
 
-  public async handleResponse(params: ResponseParams, redirectUrl?: URL) : Promise<LoginResult> {
-    if(!redirectUrl) {
-      redirectUrl = new URL(this.config.client.redirectUri);
-    }
-    if(params.error) {
-      return this.handleErrorResponse(params);
-    }
-    const hasCode = !!params.code;
-    const hasToken = params.id_token || params.access_token;
-    if(hasCode && hasToken) {
-      throw new Error('Login failed: Hybrid Flow not supported')
-    }
-    if(hasCode) {
-      return this.handleCodeResponse(params, redirectUrl);
-    }
-    if(hasToken) {
-      return this.handleTokenResponse(params);
-    }
-    this.logger.debug('This is not a redirect as URL as no return params can be detected');
-    return {isLoggedIn: false};
-  }
-          
-  private parseResponseState(state: string | null) : State {
-    if(!state) {
-      return {};
-    }
-    try {
-      return JSON.parse(state);
-    } catch (e) {
-      return {stateMessage: state};
-    }
-  }
-        
   //TODO: Implement confidential clients
   private async handleCodeResponse(params: ResponseParams, redirectUrl: URL): Promise<LoginResult> {
     const payload = new HttpParams({encoder: this.encoder})
@@ -141,12 +112,23 @@ export class OidcResponse {
       stateMessage: params.stateMessage
     };
   }
-    
+          
+  private parseResponseState(state: string | null) : State {
+    if(!state) {
+      return {};
+    }
+    try {
+      return JSON.parse(state);
+    } catch (e) {
+      return {stateMessage: state};
+    }
+  }
+            
   //TODO: UserInfo Endpoint (Chapter 5.3, https://openid.net/specs/openid-connect-core-1_0.html)
   private async handleTokenResponse(response: ResponseParams): Promise<LoginResult> {
     const idToken = response.id_token ?? undefined;
-    const verifyResult = idToken ? await jwtVerify(idToken, header => this.getKey(header), {}) : undefined;
-    this.validator.validate(verifyResult?.payload, verifyResult?.protectedHeader);
+    //TODO: Verify nonce
+    const userInfo = await this.tokenValidator.verify(idToken);
     const expiresIn = response.expires_in;
     const expiresAt = expiresIn ? new Date(Date.now() + parseInt(expiresIn)*1000) : undefined;
     const result = {
@@ -155,44 +137,19 @@ export class OidcResponse {
       refreshToken: response.refresh_token,
       idToken: idToken,
       expiresAt: expiresAt,
-      userInfo: verifyResult?.payload as UserInfo,
+      userInfo: userInfo,
       redirectPath: response.finalUrl,
       stateMessage: response.stateMessage,
       sessionState: response.session_state,
     }
     return result;
   }
-    
-  private async getKey(header: JWTHeaderParameters): Promise<KeyLike | Uint8Array> {
-    const publicKeys = this.config.getProviderConfiguration().publicKeys;
-    const sigKeys = publicKeys
-      .filter(k => !header.alg || !k.alg || k.alg === header.alg)
-      .filter(k => !k.use || k.use == 'sig')
-    if (sigKeys.length === 0) {
-      this.logger.error('No signature keys given');
-      throw new Error('No valid signature key found');
-    }
-    if(!header.kid && sigKeys.length == 1) {
-      return importJWK(sigKeys[0]);
-    }
-    if(!header.kid) {
-      this.logger.error('Multiple signature keys but no kid keys given, take first');
-      return importJWK(sigKeys[0]);
-    }
-    const keys = sigKeys
-      .filter(k => k.kid === header.kid);
-    if(keys.length == 0) {
-      this.logger.error('No key with kid ' + header.kid + ' could be found in the key set');
-      throw new Error('No valid key found');
-    }
-    return importJWK(keys[0]);
-  }
-      
+          
   private handleErrorResponse(params: ResponseParams): Promise<LoginResult> {
     const error = params.error!;
     const description = params.error_description;
     const uri = params.error_uri;
-    this.logger.debug('Login failed',error, description, uri);
+    this.logger.info('Login failed',error, description, uri);
     return Promise.reject(new Error("Login failed: " + error));
   }
 }

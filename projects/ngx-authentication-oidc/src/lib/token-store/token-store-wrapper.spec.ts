@@ -1,5 +1,5 @@
 import { TestBed } from "@angular/core/testing";
-import { LoginResult } from "dist/ngx-authentication-oidc/lib/login-result";
+import { LoginResult } from "../login-result";
 import { TokenStoreToken, TokenStoreWrapper } from "./token-store-wrapper";
 
 let service: TokenStoreWrapper;

@@ -17,7 +17,9 @@ const config: OauthConfig = {
   },
   provider: "http://localhost:8080/auth/realms/Test-Application",
   logoutUrl: 'public',
-  errorUrl: 'auth/error'
+  errorUrl: 'auth/error',
+  tokenUpdateIntervalSeconds: 10,
+  minimalTokenValiditySeconds: 280
 }
 
 @NgModule({

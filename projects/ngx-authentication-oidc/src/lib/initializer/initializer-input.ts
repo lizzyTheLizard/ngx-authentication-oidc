@@ -7,6 +7,5 @@ export interface InitializerInput {
   loggerFactory: LoggerFactory;
   login(loginOptions: LoginOptions): Promise<LoginResult>;
   silentLogin(loginOptions: LoginOptions): Promise<LoginResult>;
-  isResponse(): boolean;
   handleResponse(): Promise<LoginResult>;
 }

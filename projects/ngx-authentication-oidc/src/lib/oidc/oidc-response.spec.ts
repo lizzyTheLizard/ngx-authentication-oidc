@@ -1,14 +1,13 @@
 import { APP_BASE_HREF } from "@angular/common";
 import { HttpClientTestingModule, HttpTestingController } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
-import { Validator } from "@angular/forms";
 import { RouterTestingModule } from "@angular/router/testing";
 import { AuthConfigService } from "../auth-config.service";
 import { AuthenticationModule } from "../authentication-module";
 import { LoggerFactoryToken } from "../logger/logger";
 import { ClientConfig, OauthConfig, ProviderConfig } from "../configuration/oauth-config";
 import { OidcResponse, ResponseParams } from "./oidc-response";
-import { OidcValidator } from "./oidc-validator";
+import { OidcTokenValidator } from "./oidc-token-validator";
 import { WindowToken } from "../authentication-module.tokens";
 
 const pc: ProviderConfig = {
@@ -16,12 +15,7 @@ const pc: ProviderConfig = {
   tokenEndpoint: "http://xx",
   issuer: "http://xx",
   alg: ["HS256"],
-  publicKeys: [ {
-    kty: "oct",
-    alg: "HS256",
-    k   : "eW91ci0yNTYtYml0LXNlY3JldA",
-    ext: true,
-  }],
+  publicKeys: [],
   maxAge: 10000
 }
 
@@ -45,11 +39,11 @@ const windowMock = {
 
 let httpTestingController: HttpTestingController;
 let service: OidcResponse;
-let validator: Validator;
+let validator: OidcTokenValidator;
 
 describe('OidcResponse', () => {
   beforeEach(() => {  
-    validator = jasmine.createSpyObj('validator', ['validate']);
+    validator = jasmine.createSpyObj('OidcTokenValidator', ['verify']);
 
     TestBed.configureTestingModule({
       imports: [
@@ -61,7 +55,7 @@ describe('OidcResponse', () => {
         { provide: APP_BASE_HREF, useFactory: () => "http://localhost/temp/" },
         { provide: WindowToken, useFactory: () => windowMock },
         { provide: LoggerFactoryToken, useValue: () => console },
-        { provide: OidcValidator, useValue: validator},
+        { provide: OidcTokenValidator, useValue: validator},
       ],
     });
 
@@ -75,64 +69,8 @@ describe('OidcResponse', () => {
     httpTestingController.verify();
   });
 
-  it("No Response", async () => {
-    windowMock.location.href = 'http://example.com/test';
-
-    expect(service.isResponse()).toBeFalse();
-  });
-
-  it("Has Response", async () => {
-    windowMock.location.href = 'http://example.com/rd#access_token=SlAV32hkKG&token_type=bearer&id_token=token&expires_in=3600&state=af0ifjsldkj';
-
-    expect(service.isResponse()).toBeTrue();
-  });
-
-  it("Parse Hash Response", () => {
-    windowMock.location.href = 'http://example.com/rd#access_token=SlAV32hkKG&token_type=bearer&id_token=token&expires_in=3600&state=af0ifjsldkj';
-
-    const res = service.getResponseParamsFromQueryString();
-
-    expect(res).toEqual({
-      stateMessage: "af0ifjsldkj",
-      expires_in: "3600",
-      id_token: 'token',
-      access_token: "SlAV32hkKG",
-    });
-  });
-
-  it("Parse Query Response", () => {
-    windowMock.location.href = 'http://example.com/rd?access_token=SlAV32hkKG&token_type=bearer&id_token=token&expires_in=3600&state=af0ifjsldkj';
-
-    const res = service.getResponseParamsFromQueryString();
-
-    expect(res).toEqual({
-      stateMessage: "af0ifjsldkj",
-      expires_in: "3600",
-      id_token: 'token',
-      access_token: "SlAV32hkKG"
-    });
-  });
-
-  it("Parse Error Response", () => {
-    windowMock.location.href = 'http://example.com/rd#error=not_possible';
-
-    const res = service.getResponseParamsFromQueryString();
-
-    expect(res).toEqual({error: "not_possible"});
-  });
-
-  it("Parse Response Parameter directly", () => {
-    const res = service.parseResponseParams("access_token=SlAV32hkKG&token_type=bearer&id_token=token&expires_in=3600&state=af0ifjsldkj");
-
-    expect(res).toEqual({
-      stateMessage: "af0ifjsldkj",
-      expires_in: "3600",
-      id_token: 'token',
-      access_token: "SlAV32hkKG"
-    });
-  });
-
   it("Handle Implicit Response", async () => {
+    validator.verify = jasmine.createSpy('validate').and.returnValue({sub: '1234567890'});
     const params: ResponseParams = {
       stateMessage: "af0ifjsldkj",
       expires_in: "3600",
@@ -193,6 +131,7 @@ describe('OidcResponse', () => {
   });
 
   it("Handle Code Response", (done) => {
+    validator.verify = jasmine.createSpy('validate').and.returnValue({sub: '1234567890'});
     const params: ResponseParams = {
       code: "123-123",
     };
@@ -221,6 +160,7 @@ describe('OidcResponse', () => {
   });
 
   it("Handle Code Response Invalid Token", (done) => {
+    validator.verify = jasmine.createSpy('validate').and.throwError(new Error('Not valid'));
     const params: ResponseParams = {
       code: "123-123",
     };
@@ -238,50 +178,6 @@ describe('OidcResponse', () => {
       refresh_token: "8xLOxBtZp8",
       expires_in: 3600,
       id_token: 'invalid'
-    });    
-  });
-
-  it("Handle Code Response Wrong Signature", (done) => {
-    const params: ResponseParams = {
-      code: "123-123",
-    };
-
-    service.handleResponse(params).then(() => {
-      done.fail('This should not work');
-    }).catch(() => done());
-
-    const req = httpTestingController.expectOne(pc.tokenEndpoint);
-    expect(req.request.method).toEqual('POST');
-    expect(req.request.body.toString()).toEqual("client_id=id&grant_type=authorization_code&code=123-123&redirect_uri=https%3A%2F%2Fexample.com%2Frd")
-    req.flush({
-      access_token: "SlAV32hkKG",
-      token_type: "Bearer",
-      refresh_token: "8xLOxBtZp8",
-      expires_in: 3600,
-      id_token: token.substring(0, token.length-2) + 'ds'
-    });    
-  });
-
-  it("Handle Code Response Validation Failed", (done) => {
-    validator.validate = jasmine.createSpy('validate').and.throwError(new Error('Not valid'));
-    const params: ResponseParams = {
-      code: "123-123",
-    };
-
-    service.handleResponse(params).then(() => {
-      done.fail('This should not work');
-    }).catch(() => done());
-
-
-    const req = httpTestingController.expectOne(pc.tokenEndpoint);
-    expect(req.request.method).toEqual('POST');
-    expect(req.request.body.toString()).toEqual("client_id=id&grant_type=authorization_code&code=123-123&redirect_uri=https%3A%2F%2Fexample.com%2Frd")
-    req.flush({
-      access_token: "SlAV32hkKG",
-      token_type: "Bearer",
-      refresh_token: "8xLOxBtZp8",
-      expires_in: 3600,
-      id_token: token
     });    
   });
 

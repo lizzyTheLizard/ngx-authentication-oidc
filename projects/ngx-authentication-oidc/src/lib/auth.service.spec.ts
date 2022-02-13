@@ -59,7 +59,7 @@ describe('AuthService', () => {
     TestBed.configureTestingModule({
       imports: [
         AuthenticationModule.forRoot(config as OauthConfig),
-        RouterTestingModule,
+        RouterTestingModule.withRoutes([{path: 'auth/logout', redirectTo: "/"}])
       ],
       providers:[
         { provide: LoggerFactoryToken, useValue: () => console },
