@@ -8,6 +8,7 @@ import { Observable, Subject } from 'rxjs';
 /**
  * Timeout handler that times out if the user is inactive
  */
+//TODO: Add tests for {@link InactiveTimeoutHandler}
 @Injectable()
 export class InactiveTimeoutHandler implements TimeoutHandler {
   private readonly logger: Logger;
