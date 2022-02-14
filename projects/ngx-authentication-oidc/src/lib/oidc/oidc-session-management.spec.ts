@@ -92,7 +92,7 @@ describe('OidcSessionManagement', () => {
       .and.returnValue({ isLoggedIn: true, sessionState: '123-123' });
     service.startWatching();
     let changes = 0;
-    service.sessionChanged$.subscribe(() => changes++);
+    service.changed$.subscribe(() => changes++);
     eventListener(
       new MessageEvent('message', {
         origin: 'https://example.com',
@@ -109,7 +109,7 @@ describe('OidcSessionManagement', () => {
     service.startWatching();
     let changes = 0;
     let errors = 0;
-    service.sessionChanged$.subscribe({
+    service.changed$.subscribe({
       error: () => errors++,
       next: () => changes++
     });
@@ -132,7 +132,7 @@ describe('OidcSessionManagement', () => {
     tick(6000);
     expect(iframeMock.contentWindow.postMessage).toHaveBeenCalledTimes(0);
     let changes = 0;
-    service.sessionChanged$.subscribe(() => changes++);
+    service.changed$.subscribe(() => changes++);
     eventListener(
       new MessageEvent('message', {
         origin: 'https:/example.com',

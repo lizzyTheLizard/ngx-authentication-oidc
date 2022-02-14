@@ -50,7 +50,7 @@ class CurrentWatch {
 @Injectable()
 export class OidcSessionManagement {
   private readonly logger: Logger;
-  public sessionChanged$: Observable<void>;
+  public changed$: Observable<void>;
   private sessionChangedSub: Subject<void>;
   private currentWatch?: CurrentWatch;
 
@@ -63,7 +63,7 @@ export class OidcSessionManagement {
   ) {
     this.logger = loggerFactory('OidcSessionManagement');
     this.sessionChangedSub = new Subject();
-    this.sessionChanged$ = this.sessionChangedSub.asObservable();
+    this.changed$ = this.sessionChangedSub.asObservable();
     window.addEventListener(
       'message',
       (e) => this.sessionChangeListener(e),
