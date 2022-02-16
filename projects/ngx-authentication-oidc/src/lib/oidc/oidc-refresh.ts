@@ -1,12 +1,11 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Inject, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { firstValueFrom, map } from 'rxjs';
 import { AuthConfigService } from '../auth-config.service';
-import { LoggerFactoryToken } from '../logger/logger';
-import { Logger, LoggerFactory } from '../logger/logger';
-import { LoginResult } from '../login-result';
-import { CustomHttpParamEncoder } from './helper/custom-http-param-encoder';
-import { OidcResponse, ResponseParams } from './oidc-response';
+import { Logger } from '../configuration/oauth-config';
+import { LoginResult } from '../helper/login-result';
+import { CustomHttpParamEncoder } from '../helper/custom-http-param-encoder';
+import { OidcResponse, Response } from './oidc-response';
 
 @Injectable()
 export class OidcRefresh {
@@ -16,10 +15,9 @@ export class OidcRefresh {
   constructor(
     private readonly httpClient: HttpClient,
     private readonly config: AuthConfigService,
-    private readonly oidcResponse: OidcResponse,
-    @Inject(LoggerFactoryToken) loggerFactory: LoggerFactory
+    private readonly oidcResponse: OidcResponse
   ) {
-    this.logger = loggerFactory('OidcRefresh');
+    this.logger = this.config.loggerFactory('OidcRefresh');
   }
 
   public async tokenRefresh(oldLoginResult: LoginResult): Promise<LoginResult> {
@@ -34,15 +32,15 @@ export class OidcRefresh {
     return await firstValueFrom(
       this.httpClient.post(tokenEndpoint, payload).pipe(
         map((r) => this.mergeWithOldResult(r, oldLoginResult)),
-        map((r) => this.oidcResponse.handleResponse(r))
+        map((r) => this.oidcResponse.response(r))
       )
     );
   }
 
   private mergeWithOldResult(
-    response: ResponseParams,
+    response: Response,
     oldLoginResult: LoginResult
-  ): ResponseParams {
+  ): Response {
     return {
       ...response,
       refresh_token: response.refresh_token ?? oldLoginResult.refreshToken,

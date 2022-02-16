@@ -1,14 +1,17 @@
-import { Inject, Injectable } from '@angular/core';
-import { LoginResult } from '../login-result';
-import { TokenStore, TokenStoreToken } from './token-store';
+import { Injectable } from '@angular/core';
+import { TokenStore } from '../configuration/oauth-config';
+import { AuthConfigService } from '../auth-config.service';
+import { LoginResult } from './login-result';
 
 const prefix: string = 'auth.';
 
 @Injectable()
 export class TokenStoreWrapper {
-  constructor(
-    @Inject(TokenStoreToken) private readonly tokenStore: TokenStore
-  ) {}
+  private readonly tokenStore: TokenStore;
+
+  constructor(private readonly config: AuthConfigService) {
+    this.tokenStore = config.tokenStore;
+  }
 
   public getLoginResult(): LoginResult {
     return {

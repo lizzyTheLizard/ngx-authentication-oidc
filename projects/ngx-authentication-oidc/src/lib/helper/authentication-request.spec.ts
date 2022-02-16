@@ -1,5 +1,6 @@
-import { ResponseType } from '../../configuration/login-options';
-import { AuthenticationRequest } from './authentication-request';
+// eslint-disable-next-line prettier/prettier
+import { LoginOptions, Prompt, ResponseType } from '../configuration/login-options';
+import { AuthenticationRequest, DEFAULT_SCOPE } from './authentication-request';
 
 describe('AuthenticationRequest', () => {
   it('Create Auth Request default params', () => {
@@ -13,7 +14,7 @@ describe('AuthenticationRequest', () => {
 
     expect(result.pathname).toEqual('/auth');
     expect(result.searchParams.get('response_type')).toEqual('code');
-    expect(result.searchParams.get('scope')).toEqual('openid profile');
+    expect(result.searchParams.get('scope')).toEqual(DEFAULT_SCOPE);
     expect(result.searchParams.get('client_id')).toEqual('id');
     expect(JSON.parse(result.searchParams.get('state')!)).toEqual({});
     expect(result.searchParams.get('redirect_uri')).toEqual(
@@ -23,11 +24,10 @@ describe('AuthenticationRequest', () => {
   });
 
   it('Create Auth Request special params', () => {
-    const loginOptions = {
-      stateMessage: 'test',
+    const loginOptions: LoginOptions = {
       finalUrl: 'https://example.com/final',
       scope: ['openid', 'profile', 'email'],
-      prompt: 'none',
+      prompts: Prompt.NONE,
       ui_locales: 'de',
       response_type: ResponseType.IMPLICIT_FLOW_TOKEN,
       login_hint: 'hint',
@@ -46,7 +46,6 @@ describe('AuthenticationRequest', () => {
     expect(result.searchParams.get('scope')).toEqual('openid profile email');
     expect(result.searchParams.get('client_id')).toEqual('id');
     expect(JSON.parse(result.searchParams.get('state')!)).toEqual({
-      stateMessage: 'test',
       finalUrl: 'https://example.com/final'
     });
     expect(result.searchParams.get('redirect_uri')).toEqual(

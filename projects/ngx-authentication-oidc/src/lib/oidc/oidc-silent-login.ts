@@ -4,12 +4,11 @@ import { Observable, Subject, firstValueFrom, of, timeout } from 'rxjs';
 import { TimeoutConfig } from 'rxjs/internal/operators/timeout';
 import { AuthConfigService } from '../auth-config.service';
 import { DocumentToken, WindowToken } from '../authentication-module.tokens';
-import { LoggerFactoryToken } from '../logger/logger';
 import { LoginOptions } from '../configuration/login-options';
-import { Logger, LoggerFactory } from '../logger/logger';
-import { LoginResult } from '../login-result';
+import { Logger } from '../configuration/oauth-config';
+import { LoginResult } from '../helper/login-result';
 import { OidcResponse } from './oidc-response';
-import { AuthenticationRequest } from './helper/authentication-request';
+import { AuthenticationRequest } from '../helper/authentication-request';
 
 const silentRefreshIFrameName = 'silent-refresh-iframe';
 
@@ -29,13 +28,12 @@ export class OidcSilentLogin {
     private readonly oidcResponse: OidcResponse,
     private readonly config: AuthConfigService,
     @Inject(DocumentToken) private readonly document: Document,
-    @Inject(WindowToken) private readonly window: Window,
-    @Inject(LoggerFactoryToken) private readonly loggerFactory: LoggerFactory
+    @Inject(WindowToken) private readonly window: Window
   ) {
-    this.logger = loggerFactory('OidcSilentLogin');
+    this.logger = this.config.loggerFactory('OidcSilentLogin');
     this.silentRefreshUrl = this.getSilentRefreshUrl();
     this.timeoutOptions = {
-      each: this.config.silentLoginTimeoutInSecond * 1000,
+      each: this.config.silentLogin.timeoutInSecond * 1000,
       with: () => {
         this.logger.info('Silent Login did not return within timeout');
         return of({ isLoggedIn: false });
@@ -45,7 +43,7 @@ export class OidcSilentLogin {
 
   private getSilentRefreshUrl(): URL {
     const urlStr =
-      this.config.silentRefreshRedirectUri ??
+      this.config.silentLogin.redirectUri ??
       this.location.prepareExternalUrl('assets/silent-refresh.html');
     try {
       return new URL(urlStr);
@@ -123,7 +121,7 @@ export class OidcSilentLogin {
       return;
     }
     this.window.removeEventListener('message', this.loginEventListener!);
-    this.oidcResponse.handleURLResponse(e.data, this.silentRefreshUrl).then(
+    this.oidcResponse.urlResponse(e.data, this.silentRefreshUrl).then(
       (result) => subject.next(result),
       (error) => {
         this.logger.debug('Could not silently log in: ', error);

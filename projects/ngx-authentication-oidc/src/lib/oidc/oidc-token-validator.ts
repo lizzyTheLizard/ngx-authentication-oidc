@@ -1,19 +1,16 @@
-import { Inject, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 // eslint-disable-next-line prettier/prettier
 import { JWTHeaderParameters, JWTPayload, KeyLike, importJWK, jwtVerify } from 'jose';
 import { AuthConfigService } from '../auth-config.service';
-import { Logger, LoggerFactory, LoggerFactoryToken } from '../logger/logger';
-import { UserInfo } from '../login-result';
+import { Logger } from '../configuration/oauth-config';
+import { UserInfo } from '../helper/login-result';
 
 @Injectable()
 export class OidcTokenValidator {
   private readonly logger: Logger;
 
-  constructor(
-    private readonly config: AuthConfigService,
-    @Inject(LoggerFactoryToken) loggerFactory: LoggerFactory
-  ) {
-    this.logger = loggerFactory('OidcTokenValidator');
+  constructor(private readonly config: AuthConfigService) {
+    this.logger = this.config.loggerFactory('OidcTokenValidator');
   }
 
   public async verify(idToken?: string, nonce?: string): Promise<UserInfo> {
@@ -83,12 +80,14 @@ export class OidcTokenValidator {
   }
 
   private validateAccessTokenHash() {
-    //TODO: Validate at_hash according to 3.2.2.9
+    // TODO: Validate at_hash according to 3.2.2.9
     /*
-    Hash the octets of the ASCII representation of the access_token with the hash algorithm specified in JWA [JWA] for the alg Header Parameter of the ID Token's JOSE Header. For instance, if the alg is RS256, the hash algorithm used is SHA-256.
-    Take the left-most half of the hash and base64url encode it.
-    The value of at_hash in the ID Token MUST match the value produced in the previous step.
-    */
+     * Hash the octets of the ASCII representation of the access_token with the hash algorithm
+     * specified in JWA [JWA] for the alg Header Parameter of the ID Token's JOSE Header.
+     * For instance, if the alg is RS256, the hash algorithm used is SHA-256.
+     * Take the left-most half of the hash and base64url encode it.
+     * The value of at_hash in the ID Token MUST match the value produced in the previous step.
+     */
   }
 
   private validateIssuer(claims: JWTPayload) {

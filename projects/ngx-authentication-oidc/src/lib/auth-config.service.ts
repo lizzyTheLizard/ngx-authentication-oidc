@@ -1,52 +1,86 @@
+/* global localStorage */
 import { UrlTree } from '@angular/router';
-import { IdleConfiguration } from './configuration/idle-configuration';
 // eslint-disable-next-line prettier/prettier
-import { ClientConfig, OauthConfig, ProviderConfig } from './configuration/oauth-config';
+import { TokenUpdateConfig as AutoUpdateConfig, ClientConfig, DiscoveryUrl, InactiveTimeoutConfig as InactiveTimeout, Initializer, LoggerFactory, OauthConfig, ProviderConfig, SilentLoginConfig, TokenStore } from './configuration/oauth-config';
 import { DEFAULT_INTERRUPTSOURCES } from '@ng-idle/core';
+// eslint-disable-next-line prettier/prettier
+import { consoleLoggerFactory } from './helper/console-logger';
+import { loginResponseCheck, silentLoginCheck } from './helper/initializer';
 
 export class AuthConfigService {
+  public readonly client: ClientConfig;
+  public readonly discoveryUrl?: DiscoveryUrl;
   public readonly logoutUrl?: string | UrlTree;
   public readonly errorUrl: string | UrlTree;
-  public readonly silentLoginEnabled: boolean;
-  public readonly inactiveSessionHandlingEnabled: boolean;
-  public readonly silentLoginTimeoutInSecond: number;
-  public readonly client: ClientConfig;
-  public readonly provider: string | ProviderConfig;
-  public readonly silentRefreshRedirectUri: string | undefined;
-  public readonly idleConfiguration: IdleConfiguration;
-  public readonly tokenUpdateIntervalSeconds: number;
-  public readonly minimalTokenValiditySeconds: number;
+  public readonly loggerFactory: LoggerFactory;
+  public readonly tokenStore: TokenStore;
+  public readonly silentLogin: SilentLoginConfig;
+  public readonly inactiveTimeout: InactiveTimeout;
+  public readonly autoUpdate: AutoUpdateConfig;
   private providerConfiguration?: ProviderConfig;
+  public readonly initializer: Initializer;
 
   constructor(config: OauthConfig) {
+    this.client = config.client;
+    this.discoveryUrl = this.createDiscoveryUrl(config);
     this.logoutUrl = config.logoutUrl;
     this.errorUrl = config.errorUrl ?? 'auth-error';
-    this.silentLoginEnabled = config.silentLoginEnabled ?? true;
-    this.inactiveSessionHandlingEnabled =
-      config.inactiveSessionHandlingEnabled ?? true;
-    this.silentLoginTimeoutInSecond = config.silentLoginTimeoutInSecond ?? 5;
-    this.silentRefreshRedirectUri = config.silentRefreshRedirectUri;
-    this.client = config.client;
-    this.provider = config.provider;
-    this.tokenUpdateIntervalSeconds = config.tokenUpdateIntervalSeconds ?? 30;
-    this.minimalTokenValiditySeconds = config.minimalTokenValiditySeconds ?? 60;
-    this.idleConfiguration = this.createIdleConfiguration(
-      config.idleConfiguration
-    );
+    this.loggerFactory = config.loggerFactory ?? consoleLoggerFactory;
+    this.tokenStore = config.tokenStore ?? localStorage;
+    this.silentLogin = this.createSilentLogin(config);
+    this.inactiveTimeout = this.createInactive(config);
+    this.autoUpdate = this.createAutoUpdate(config);
+    this.initializer = this.createInitializer(config);
   }
 
-  private createIdleConfiguration(
-    idleConfiguration?: Partial<IdleConfiguration>
-  ): IdleConfiguration {
+  private createDiscoveryUrl(config: OauthConfig): DiscoveryUrl | undefined {
+    if (typeof config.provider === 'string') {
+      return config.provider;
+    } else {
+      this.providerConfiguration = config.provider;
+      return undefined;
+    }
+  }
+
+  private createSilentLogin(config: OauthConfig): SilentLoginConfig {
+    const input = config.silentLogin;
     return {
-      idleTimeSeconds: idleConfiguration?.idleTimeSeconds ?? 60,
-      timeoutSeconds: idleConfiguration?.timeoutSeconds ?? 60,
-      interruptsSource:
-        idleConfiguration?.interruptsSource ?? DEFAULT_INTERRUPTSOURCES
+      enabled: input?.enabled ?? true,
+      timeoutInSecond: input?.timeoutInSecond ?? 60,
+      redirectUri: input?.redirectUri
     };
   }
 
+  private createInactive(config: OauthConfig): InactiveTimeout {
+    const input = config.inactiveTimeout;
+    return {
+      idleTimeSeconds: input?.idleTimeSeconds ?? 300,
+      timeoutSeconds: input?.timeoutSeconds ?? 60,
+      interrupts: input?.interrupts ?? DEFAULT_INTERRUPTSOURCES,
+      enabled: input?.enabled ?? true
+    };
+  }
+
+  private createAutoUpdate(config: OauthConfig): AutoUpdateConfig {
+    const input = config.autoUpdate;
+    return {
+      enabled: input?.enabled ?? true,
+      updateIntervalSeconds: input?.updateIntervalSeconds ?? 60,
+      minimalValiditySeconds: input?.minimalValiditySeconds ?? 90
+    };
+  }
+
+  private createInitializer(config: OauthConfig): Initializer {
+    return (
+      config.initializer ??
+      (this.silentLogin.enabled ? silentLoginCheck : loginResponseCheck)
+    );
+  }
+
   public setProviderConfiguration(providerConfiguration: ProviderConfig) {
+    if (this.providerConfiguration) {
+      throw new Error('Provider Configuration is already initialized');
+    }
     this.providerConfiguration = providerConfiguration;
   }
 

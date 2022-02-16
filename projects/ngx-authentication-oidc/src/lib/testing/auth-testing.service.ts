@@ -1,7 +1,11 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, map } from 'rxjs';
-import { LoginResult, UserInfo } from '../login-result';
+import { LoginResult, UserInfo } from '../helper/login-result';
 
+/**
+ * A testing service that can be used in your unit tests. This will be injected instead of
+ * {@link AuthService} when {@link AuthenticationTestingModule} is imported.
+ */
 @Injectable()
 export class AuthTestingService {
   public readonly isLoggedIn$: Observable<boolean>;
@@ -11,12 +15,12 @@ export class AuthTestingService {
   private initialSetupFinishedResolve: (e: any) => void = () => {};
 
   constructor() {
-    //Set up initialSetupFinished promise
+    // Set up initialSetupFinished promise
     this.initialSetupFinished$ = new Promise((resolve) => {
       this.initialSetupFinishedResolve = resolve;
     });
 
-    //Set up Observables
+    // Set up Observables
     this.loginResult$ = new BehaviorSubject<LoginResult>({ isLoggedIn: false });
     this.isLoggedIn$ = this.loginResult$.pipe(map((t) => t.isLoggedIn));
     this.userInfo$ = this.loginResult$.pipe(map((t) => t.userInfo));
@@ -35,17 +39,17 @@ export class AuthTestingService {
   }
 
   public async login(): Promise<boolean> {
-    //Nothing to do here
+    // Nothing to do here
     return true;
   }
 
   public async silentLogin(): Promise<boolean> {
-    //Nothing to do here
+    // Nothing to do here
     return true;
   }
 
   public async logout(): Promise<void> {
-    //Nothing to do here
+    // Nothing to do here
   }
 
   public getAccessToken(): string | undefined {

@@ -1,10 +1,8 @@
-/* global window, document, localStorage */
+/* global window, document */
 // eslint-disable-next-line prettier/prettier
 import { Location, LocationStrategy, PathLocationStrategy } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { ModuleWithProviders, NgModule } from '@angular/core';
-// eslint-disable-next-line prettier/prettier
-import { loginResponseCheck, silentLoginCheck } from './initializer/initializer';
 import { AuthConfigService } from './auth-config.service';
 import { AuthService } from './auth.service';
 import { DocumentToken, WindowToken } from './authentication-module.tokens';
@@ -16,19 +14,15 @@ import { OidcResponse } from './oidc/oidc-response';
 import { OidcSessionManagement } from './oidc/oidc-session-management';
 import { OidcSilentLogin } from './oidc/oidc-silent-login';
 import { OidcTokenValidator } from './oidc/oidc-token-validator';
-import { InactiveTimeoutHandler } from './timeout-handler/inactive-timeout-handler';
-import { TimeoutHandlerToken } from './timeout-handler/timeout-handler';
-import { TokenStoreToken } from './token-store/token-store';
-import { TokenStoreWrapper } from './token-store/token-store-wrapper';
-import { LoggerFactoryToken, consoleLoggerFactory } from './logger/logger';
-import { InitializerToken } from './initializer/initializer';
+import { InactiveTimeoutHandler } from './helper/inactive-timeout-handler';
+import { TokenStoreWrapper } from './helper/token-store-wrapper';
 import { NgIdleModule } from '@ng-idle/core';
-import { NoTimeoutHandler } from '../public-api';
 import { OidcRefresh } from './oidc/oidc-refresh';
 
 /**
  * Main module of the library, has to be imported into our application. The configuration
- * needs to be given as parameter, see {@link OauthConfig}. Provides an instance of {@link AuthService}.
+ * needs to be given as parameter, see {@link OauthConfig}.
+ * Provides an instance of {@link AuthService}.
  */
 @NgModule({
   imports: [HttpClientModule, NgIdleModule.forRoot()]
@@ -46,20 +40,7 @@ export class AuthenticationModule {
         { provide: AuthConfigService, useValue: authConfig },
         { provide: WindowToken, useValue: window },
         { provide: DocumentToken, useValue: document },
-        {
-          provide: InitializerToken,
-          useValue: authConfig.silentLoginEnabled
-            ? silentLoginCheck
-            : loginResponseCheck
-        },
-        {
-          provide: TimeoutHandlerToken,
-          useClass: authConfig.inactiveSessionHandlingEnabled
-            ? InactiveTimeoutHandler
-            : NoTimeoutHandler
-        },
-        { provide: TokenStoreToken, useValue: localStorage },
-        { provide: LoggerFactoryToken, useValue: consoleLoggerFactory },
+        InactiveTimeoutHandler,
         AuthService,
         OidcDiscovery,
         OidcResponse,

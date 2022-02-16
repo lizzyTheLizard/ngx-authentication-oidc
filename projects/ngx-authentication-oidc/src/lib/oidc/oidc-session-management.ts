@@ -2,9 +2,8 @@ import { Inject, Injectable } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { AuthConfigService } from '../auth-config.service';
 import { DocumentToken, WindowToken } from '../authentication-module.tokens';
-import { LoggerFactoryToken } from '../logger/logger';
-import { Logger, LoggerFactory } from '../logger/logger';
-import { TokenStoreWrapper } from '../token-store/token-store-wrapper';
+import { Logger } from '../configuration/oauth-config';
+import { TokenStoreWrapper } from '../helper/token-store-wrapper';
 
 const watchSessionIframeName = 'watchSessionIFrame';
 
@@ -58,10 +57,9 @@ export class OidcSessionManagement {
     private readonly config: AuthConfigService,
     private readonly tokenStore: TokenStoreWrapper,
     @Inject(DocumentToken) private readonly document: Document,
-    @Inject(WindowToken) private readonly window: Window,
-    @Inject(LoggerFactoryToken) loggerFactory: LoggerFactory
+    @Inject(WindowToken) private readonly window: Window
   ) {
-    this.logger = loggerFactory('OidcSessionManagement');
+    this.logger = this.config.loggerFactory('OidcSessionManagement');
     this.sessionChangedSub = new Subject();
     this.changed$ = this.sessionChangedSub.asObservable();
     window.addEventListener(

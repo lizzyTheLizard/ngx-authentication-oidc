@@ -1,6 +1,7 @@
-import { LoginResult } from '../login-result';
+import { LoginResult } from './login-result';
 // eslint-disable-next-line prettier/prettier
-import { InitializerInput, enforceLogin, loginResponseCheck, silentCheckAndThenEnforce, silentLoginCheck } from './initializer';
+import { enforceLogin, loginResponseCheck, silentCheckAndThenEnforce, silentLoginCheck } from './initializer';
+import { InitializerInput } from '../configuration/oauth-config';
 
 const successfulLoginResult: LoginResult = {
   isLoggedIn: true,

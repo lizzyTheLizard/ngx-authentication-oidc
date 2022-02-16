@@ -1,33 +1,35 @@
-import { Inject, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, Subject, map } from 'rxjs';
-import { Initializer, InitializerInput } from './initializer/initializer';
 import { AuthConfigService } from './auth-config.service';
 import { LoginOptions } from './configuration/login-options';
-import { Logger, LoggerFactory } from './logger/logger';
-import { LoginResult, UserInfo } from './login-result';
+import { InitializerInput, Logger } from './configuration/oauth-config';
+import { LoginResult, UserInfo } from './helper/login-result';
 import { OidcDiscovery } from './oidc/oidc-discovery';
 import { OidcLogin } from './oidc/oidc-login';
 import { OidcLogout } from './oidc/oidc-logout';
 import { OidcSilentLogin } from './oidc/oidc-silent-login';
-import { TokenStoreWrapper } from './token-store/token-store-wrapper';
-// eslint-disable-next-line prettier/prettier
-import { TimeoutHandler, TimeoutHandlerToken } from './timeout-handler/timeout-handler';
+import { TokenStoreWrapper } from './helper/token-store-wrapper';
 import { OidcResponse } from './oidc/oidc-response';
 import { OidcSessionManagement } from './oidc/oidc-session-management';
-import { LoggerFactoryToken } from './logger/logger';
-import { InitializerToken } from './initializer/initializer';
-import { TokenUpdater } from './token-updater';
+import { TokenUpdater } from './helper/token-updater';
+import { InactiveTimeoutHandler } from './helper/inactive-timeout-handler';
 
 /**
- * Main facade of the library, can be used to check and perform logins. Is available if you import {@link AuthenticationModule}.
+ * Main facade of the library, can be used to check and perform logins.
+ * Is available if you import {@link AuthenticationModule}.
  */
 @Injectable()
 export class AuthService {
   /** Observable to check if a user is currently logged in */
   public readonly isLoggedIn$: Observable<boolean>;
-  /** Observable returning the user information of the currently logged in user or {@link undefined} if no user is logged in */
+
+  /**
+   * Observable returning the user information of the currently logged in user
+   * or {@link undefined} if no user is logged in
+   */
   public readonly userInfo$: Observable<UserInfo | undefined>;
+
   /** Promise returning  true as soon as the setup has finished */
   public readonly initialSetupFinished$: Promise<boolean>;
 
@@ -46,24 +48,21 @@ export class AuthService {
     private readonly router: Router,
     private readonly tokenStore: TokenStoreWrapper,
     private readonly tokenUpdater: TokenUpdater,
-    @Inject(LoggerFactoryToken) private readonly loggerFactory: LoggerFactory,
-    @Inject(TimeoutHandlerToken)
-    private readonly timeoutHandler: TimeoutHandler,
-    @Inject(InitializerToken) private readonly initializer: Initializer
+    private readonly timeoutHandler: InactiveTimeoutHandler
   ) {
-    this.logger = loggerFactory('AuthService');
+    this.logger = this.config.loggerFactory('AuthService');
 
-    //Set up initialSetupFinished promise
+    // Set up initialSetupFinished promise
     this.initialSetupFinished$ = new Promise((resolve) => {
       this.initialSetupFinishedResolve = resolve;
     });
 
-    //Set up Observables
+    // Set up Observables
     this.loginResult$ = new Subject();
     this.isLoggedIn$ = this.loginResult$.pipe(map((t) => t.isLoggedIn));
     this.userInfo$ = this.loginResult$.pipe(map((t) => t.userInfo));
 
-    //Subscribe to others
+    // Subscribe to others
     this.sessionManagement.changed$.subscribe(() => this.updateSession(false));
     this.tokenUpdater.updated$.subscribe((res) => this.sessionUpdated(res));
     this.timeoutHandler.timeout$.subscribe(() => this.logout());
@@ -86,14 +85,15 @@ export class AuthService {
   }
 
   /**
-   * Initialize the library, is called by {@link AuthenticationModule} and must not be called manually
+   * Initialize the library, is called by {@link AuthenticationModule}
+   * and must not be called manually
    */
   public async initialize() {
     try {
       this.logger.debug('Start authentication module');
       await this.oidcDiscovery.discover();
       const initializerInput = this.createInitializerInput();
-      const loginResult = await this.initializer(initializerInput);
+      const loginResult = await this.config.initializer(initializerInput);
       if (loginResult.isLoggedIn) {
         this.handleSuccessfulLoginResult(loginResult);
         this.logger.debug('Finished initialization, user is logged in');
@@ -110,24 +110,30 @@ export class AuthService {
   private createInitializerInput(): InitializerInput {
     const initial = this.tokenStore.getLoginResult() ?? { isLoggedIn: false };
     return {
-      loggerFactory: this.loggerFactory,
+      loggerFactory: this.config.loggerFactory,
       initialLoginResult: initial,
       login: (options: LoginOptions) =>
         this.oidcLogin.login({ ...options, finalUrl: this.router.url }),
       silentLogin: (options: LoginOptions) =>
         this.oidcSilentLogin.login({ ...options, finalUrl: this.router.url }),
-      handleResponse: () => this.oidcResponse.handleURLResponse()
+      handleResponse: () => this.oidcResponse.urlResponse()
     };
   }
 
   /**
-   * Start a manual login. After a successful login, the user will be redirected to the current page or {@link LoginOptions.finalUrl} if given.
-   * @param loginOptions login options, check {@link LoginOptions}
-   * @returns The returned promise will usually not resolve, as this triggers a redirect. If it does return, the value of the promise defines if the login was successful.
+   * Start a manual login. After a successful login, the user will be redirected to the
+   * current page or {@link LoginOptions.finalUrl} if given.
+   * @param {LoginOptions} loginOptions login options, check {@link LoginOptions}
+   * @returns {Promise<boolean>} The returned promise will usually not resolve,
+   *   as this triggers a redirect. If it does return, the value of the promise defines
+   *   if the login was successful.
    */
   public async login(loginOptions: LoginOptions = {}): Promise<boolean> {
-    const finalUrl = loginOptions.finalUrl ?? this.router.url;
-    loginOptions = { ...loginOptions, finalUrl: finalUrl };
+    loginOptions = {
+      ...loginOptions,
+      id_token_hint: loginOptions.id_token_hint ?? this.getIdToken(),
+      finalUrl: loginOptions.finalUrl ?? this.router.url
+    };
     const loginResult = await this.oidcLogin.login(loginOptions);
     if (loginResult.isLoggedIn) {
       this.handleSuccessfulLoginResult(loginResult);
@@ -138,11 +144,16 @@ export class AuthService {
   }
 
   /**
-   * Perform a silent login without redirect and user interaction. This is e.g. used to check if the user is already logged in or if the session is still present.
-   * @param loginOptions login options, check {@link LoginOptions}
-   * @returns A promise resolving to true if the login was successful and false otherwise
+   * Perform a silent login without redirect and user interaction.
+   * This is e.g. used to check if the user is already logged in or if the session is still present.
+   * @param {LoginOptions}  loginOptions login options, check {@link LoginOptions}
+   * @returns {Promise<boolean>} Resolving to true if the login was successful and false otherwise
    */
   public async silentLogin(loginOptions: LoginOptions = {}): Promise<boolean> {
+    loginOptions = {
+      ...loginOptions,
+      id_token_hint: loginOptions.id_token_hint ?? this.getIdToken()
+    };
     const loginResult = await this.oidcSilentLogin.login(loginOptions);
     if (loginResult.isLoggedIn) {
       this.handleSuccessfulLoginResult(loginResult);
@@ -201,6 +212,7 @@ export class AuthService {
   /**
    * Update the access token, this will be triggered automatically
    * but can be triggered manually as well
+   * @param {boolean?} shouldUseRefreshToken Should a refresh token be used? Default is true
    */
   public async updateSession(shouldUseRefreshToken?: boolean): Promise<void> {
     this.tokenUpdater.updateSession(shouldUseRefreshToken ?? true);
@@ -208,7 +220,8 @@ export class AuthService {
 
   /**
    * Get the access token of the currently logged in user
-   * @returns The access token of {@link undefined} if no user is logged in / he has no access token
+   * @returns {string | undefined} The access token or {@link undefined} if no user is
+   *     logged in or he has no access token
    */
   public getAccessToken(): string | undefined {
     return this.tokenStore.getLoginResult().accessToken;
@@ -216,7 +229,8 @@ export class AuthService {
 
   /**
    * Get the id token of the currently logged in user
-   * @returns The id token of {@link undefined} if no user is logged in / he has no id token
+   * @returns {string | undefined} The id token of {@link undefined} if no user is
+   * logged in / he has no id token
    */
   public getIdToken(): string | undefined {
     return this.tokenStore.getLoginResult().idToken;
@@ -224,7 +238,7 @@ export class AuthService {
 
   /**
    * Is a user currently logged in?
-   * @returns True if a user is logged in false otherwise
+   * @returns {boolean} True if a user is logged in false otherwise
    */
   public isLoggedIn(): boolean {
     return this.tokenStore.getLoginResult().isLoggedIn;
@@ -232,7 +246,8 @@ export class AuthService {
 
   /**
    * Get the user information of the currently logged in user
-   * @returns the parsed id token or undefined if no user is logged in / he has no id token
+   * @returns { UserInfo | undefined} the parsed id token or undefined if no user
+   * is logged in / he has no id token
    */
   public getUserInfo(): UserInfo | undefined {
     return this.tokenStore.getLoginResult().userInfo;
@@ -240,7 +255,7 @@ export class AuthService {
 
   /**
    * When does the current token expire
-   * @returns Timestamp when the current session expires
+   * @returns { Date | undefined} Timestamp when the current session expires
    */
   public getExpiresAt(): Date | undefined {
     return this.tokenStore.getLoginResult().expiresAt;

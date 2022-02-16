@@ -1,11 +1,9 @@
 // eslint-disable-next-line prettier/prettier
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { LoggerFactoryToken } from '../logger/logger';
-import { OauthConfig, ProviderConfig } from '../configuration/oauth-config';
 import { OidcRefresh } from './oidc-refresh';
 import { OidcResponse } from './oidc-response';
-import { LoginResult } from '../login-result';
+import { LoginResult } from '../helper/login-result';
 import { AuthConfigService } from '../auth-config.service';
 
 const config = {
@@ -23,21 +21,17 @@ const oldLoginResult: LoginResult = {
   sessionState: 'SS'
 };
 
-const oidcResponse = jasmine.createSpyObj('oidcResponse', [
-  'handleURLResponse'
-]);
+const oidcResponse = jasmine.createSpyObj('oidcResponse', ['urlResponse']);
 
 let httpTestingController: HttpTestingController;
 let service: OidcRefresh;
 
 describe('OidcRefresh', () => {
   beforeEach(() => {
-    const authConfig = new AuthConfigService(config as OauthConfig);
-    authConfig.setProviderConfiguration(config.provider as ProviderConfig);
+    const authConfig = new AuthConfigService(config as any);
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
       providers: [
-        { provide: LoggerFactoryToken, useValue: () => console },
         { provide: AuthConfigService, useValue: authConfig },
         { provide: OidcResponse, useValue: oidcResponse },
         OidcRefresh
@@ -62,12 +56,12 @@ describe('OidcRefresh', () => {
   });
 
   it('Merge with old Session', (done) => {
-    oidcResponse.handleResponse = jasmine
-      .createSpy('handleResponse')
+    oidcResponse.response = jasmine
+      .createSpy('response')
       .and.returnValue({ isLoggedIn: false });
     service.tokenRefresh(oldLoginResult).then(
       () => {
-        expect(oidcResponse.handleResponse).toHaveBeenCalledWith({
+        expect(oidcResponse.response).toHaveBeenCalledWith({
           expires_in: 3600,
           id_token: 'id2',
           access_token: 'at2',
@@ -93,8 +87,8 @@ describe('OidcRefresh', () => {
       idToken: 'ud2',
       userInfo: { sub: '123' }
     };
-    oidcResponse.handleResponse = jasmine
-      .createSpy('handleResponse')
+    oidcResponse.response = jasmine
+      .createSpy('response')
       .and.returnValue(newLoginResult);
     service.tokenRefresh(oldLoginResult).then(
       (res) => {

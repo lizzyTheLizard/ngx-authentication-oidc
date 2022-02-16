@@ -2,9 +2,8 @@
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { AuthConfigService } from '../auth-config.service';
-import { LoggerFactoryToken } from '../logger/logger';
-import { OauthConfig, ProviderConfig } from '../configuration/oauth-config';
-import { OidcResponse, ResponseParams } from './oidc-response';
+import { OauthConfig } from '../configuration/oauth-config';
+import { OidcResponse, Response } from './oidc-response';
 import { OidcTokenValidator } from './oidc-token-validator';
 import { WindowToken } from '../authentication-module.tokens';
 
@@ -39,14 +38,12 @@ let validator: OidcTokenValidator;
 describe('OidcResponse', () => {
   beforeEach(() => {
     const authConfig = new AuthConfigService(config as OauthConfig);
-    authConfig.setProviderConfiguration(config.provider as ProviderConfig);
     validator = jasmine.createSpyObj('OidcTokenValidator', ['verify']);
 
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
       providers: [
         { provide: WindowToken, useFactory: () => windowMock },
-        { provide: LoggerFactoryToken, useValue: () => console },
         { provide: OidcTokenValidator, useValue: validator },
         { provide: AuthConfigService, useValue: authConfig },
         OidcResponse
@@ -64,14 +61,14 @@ describe('OidcResponse', () => {
     validator.verify = jasmine
       .createSpy('validate')
       .and.returnValue({ sub: '1234567890' });
-    const params: ResponseParams = {
+    const params: Response = {
       stateMessage: 'af0ifjsldkj',
       expires_in: '3600',
       id_token: token,
       access_token: 'SlAV32hkKG'
     };
 
-    const res = await service.handleResponse(params);
+    const res = await service.response(params);
 
     expect(res.accessToken).toEqual('SlAV32hkKG');
     const expiresIn = Math.round(
@@ -85,25 +82,25 @@ describe('OidcResponse', () => {
   });
 
   it('Handle Implicit Response State', async () => {
-    const params: ResponseParams = {
+    const params: Response = {
       stateMessage: 'tst',
       finalUrl: 'http://xy',
       expires_in: '3600',
       id_token: token,
       access_token: 'SlAV32hkKG'
     };
-    const res = await service.handleResponse(params);
+    const res = await service.response(params);
 
     expect(res.redirectPath).toEqual('http://xy');
     expect(res.stateMessage).toEqual('tst');
   });
 
   it('Handle Error Response', (done) => {
-    const params: ResponseParams = {
+    const params: Response = {
       error: 'not_possible'
     };
 
-    service.handleResponse(params).then(
+    service.response(params).then(
       () => done.fail(new Error('This should not work')),
       (e: Error) => {
         expect(e.message).toEqual('Login failed: not_possible');
@@ -113,12 +110,12 @@ describe('OidcResponse', () => {
   });
 
   it('Handle Hybrid Response', (done) => {
-    const params: ResponseParams = {
+    const params: Response = {
       code: '1234',
       access_token: '123123'
     };
 
-    service.handleResponse(params).then(
+    service.response(params).then(
       () => done.fail(new Error('This should not work')),
       (e: Error) => {
         expect(e.message).toEqual('Login failed: Hybrid Flow not supported');
@@ -131,12 +128,12 @@ describe('OidcResponse', () => {
     validator.verify = jasmine
       .createSpy('validate')
       .and.returnValue({ sub: '1234567890' });
-    const params: ResponseParams = {
+    const params: Response = {
       code: '123-123'
     };
 
     service
-      .handleResponse(params)
+      .response(params)
       .then((res) => {
         expect(res.accessToken).toEqual('SlAV32hkKG');
         const expiresIn = Math.round(
@@ -169,12 +166,12 @@ describe('OidcResponse', () => {
     validator.verify = jasmine
       .createSpy('validate')
       .and.throwError(new Error('Not valid'));
-    const params: ResponseParams = {
+    const params: Response = {
       code: '123-123'
     };
 
     service
-      .handleResponse(params)
+      .response(params)
       .then(() => {
         done.fail('This should not work');
       })
@@ -195,13 +192,13 @@ describe('OidcResponse', () => {
   });
 
   it('Handle Code Response State', async () => {
-    const params: ResponseParams = {
+    const params: Response = {
       code: '123-123',
       stateMessage: 'tst',
       finalUrl: 'http://xy'
     };
 
-    service.handleResponse(params).then((res) => {
+    service.response(params).then((res) => {
       expect(res.redirectPath).toEqual('http://xy');
       expect(res.stateMessage).toEqual('tst');
     });
@@ -221,11 +218,11 @@ describe('OidcResponse', () => {
   });
 
   it('Handle Code Response TokenRequest failed', (done) => {
-    const params: ResponseParams = {
+    const params: Response = {
       code: '123-123'
     };
 
-    service.handleResponse(params).then(
+    service.response(params).then(
       () => done.fail(new Error('This should not work')),
       (e: Error) => {
         expect(e.message).toEqual('Login failed: invalid_request');

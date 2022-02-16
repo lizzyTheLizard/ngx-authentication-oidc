@@ -1,11 +1,10 @@
-/*global setInterval, clearInterval*/
+/* global setInterval, clearInterval*/
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { DocumentToken, WindowToken } from '../authentication-module.tokens';
-import { LoggerFactoryToken } from '../logger/logger';
 import { OidcSessionManagement } from './oidc-session-management';
-import { TokenStoreWrapper } from '../token-store/token-store-wrapper';
+import { TokenStoreWrapper } from '../helper/token-store-wrapper';
 import { AuthConfigService } from '../auth-config.service';
-import { OauthConfig, ProviderConfig } from '../configuration/oauth-config';
+import { OauthConfig } from '../configuration/oauth-config';
 
 const config = {
   provider: {
@@ -51,13 +50,11 @@ let service: OidcSessionManagement;
 describe('OidcSessionManagement', () => {
   beforeEach(() => {
     const authConfig = new AuthConfigService(config as OauthConfig);
-    authConfig.setProviderConfiguration(config.provider as ProviderConfig);
     TestBed.configureTestingModule({
       providers: [
         { provide: WindowToken, useFactory: () => windowMock },
         { provide: DocumentToken, useFactory: () => documentMock },
         { provide: TokenStoreWrapper, useFactory: () => tokenStoreMock },
-        { provide: LoggerFactoryToken, useValue: () => console },
         { provide: AuthConfigService, useValue: authConfig },
         OidcSessionManagement
       ]

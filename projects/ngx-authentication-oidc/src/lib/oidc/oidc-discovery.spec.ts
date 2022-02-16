@@ -1,11 +1,10 @@
-/*global setTimeout*/
+/* global setTimeout*/
 
 // eslint-disable-next-line prettier/prettier
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { AuthConfigService } from '../auth-config.service';
 import { OauthConfig } from '../configuration/oauth-config';
-import { LoggerFactoryToken } from '../logger/logger';
 import { OidcDiscovery } from './oidc-discovery';
 
 const config = {
@@ -41,7 +40,6 @@ describe('OidcDiscovery', () => {
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
       providers: [
-        { provide: LoggerFactoryToken, useValue: () => console },
         { provide: AuthConfigService, useValue: configService },
         OidcDiscovery
       ]

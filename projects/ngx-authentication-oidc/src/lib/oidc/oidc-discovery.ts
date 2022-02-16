@@ -1,10 +1,9 @@
 import { HttpClient } from '@angular/common/http';
-import { Inject, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { JWK } from 'jose';
 import { firstValueFrom } from 'rxjs';
 import { AuthConfigService } from '../auth-config.service';
-import { LoggerFactoryToken } from '../logger/logger';
-import { Logger, LoggerFactory } from '../logger/logger';
+import { Logger } from '../configuration/oauth-config';
 
 interface Metadata {
   issuer: string;
@@ -29,18 +28,16 @@ export class OidcDiscovery {
 
   constructor(
     private readonly httpClient: HttpClient,
-    private readonly config: AuthConfigService,
-    @Inject(LoggerFactoryToken) loggerFactory: LoggerFactory
+    private readonly config: AuthConfigService
   ) {
-    this.logger = loggerFactory('OidcDiscovery');
+    this.logger = this.config.loggerFactory('OidcDiscovery');
   }
 
   public async discover(): Promise<void> {
-    if (typeof this.config.provider !== 'string') {
-      this.config.setProviderConfiguration(this.config.provider);
+    if (!this.config.discoveryUrl) {
       return;
     }
-    const url = this.getWellKnownUrl(this.config.provider);
+    const url = this.getWellKnownUrl(this.config.discoveryUrl);
     const metadata = await this.getMetadata(url);
     const jwks = await this.getJwks(metadata.jwks_uri);
     const providerConfig = {

@@ -1,8 +1,7 @@
 // eslint-disable-next-line prettier/prettier
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { LoggerFactoryToken } from '../logger/logger';
-import { OauthConfig, ProviderConfig } from '../configuration/oauth-config';
+import { OauthConfig } from '../configuration/oauth-config';
 import { OidcLogin } from './oidc-login';
 import { WindowToken } from '../authentication-module.tokens';
 import { AuthConfigService } from '../auth-config.service';
@@ -42,12 +41,10 @@ let service: OidcLogin;
 describe('OidcLogin', () => {
   beforeEach(() => {
     const authConfig = new AuthConfigService(config as OauthConfig);
-    authConfig.setProviderConfiguration(config.provider as ProviderConfig);
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
       providers: [
         { provide: WindowToken, useFactory: () => windowMock },
-        { provide: LoggerFactoryToken, useValue: () => console },
         { provide: AuthConfigService, useValue: authConfig },
         OidcLogin
       ]
@@ -63,7 +60,7 @@ describe('OidcLogin', () => {
 
   it('Login', () => {
     const loginOptions = {
-      stateMessage: 'test',
+      state: 'test',
       finalUrl: 'https://example.com/final'
     };
 
@@ -72,7 +69,7 @@ describe('OidcLogin', () => {
     const url = new URL(windowMock.location.href);
     expect(url.pathname).toEqual('/auth');
     expect(url.searchParams.get('response_type')).toEqual('code');
-    expect(url.searchParams.get('scope')).toEqual('openid profile');
+    expect(url.searchParams.get('scope')).toEqual('openid profile email phone');
     expect(url.searchParams.get('client_id')).toEqual('id');
     expect(JSON.parse(url.searchParams.get('state')!)).toEqual({
       stateMessage: 'test',

@@ -1,18 +1,17 @@
-/*global localStorage*/
-
 import { TestBed } from '@angular/core/testing';
-import { LoginResult } from '../login-result';
-import { TokenStoreToken } from './token-store';
+import { AuthConfigService } from '../auth-config.service';
+import { OauthConfig } from '../configuration/oauth-config';
+import { LoginResult } from './login-result';
 import { TokenStoreWrapper } from './token-store-wrapper';
 
 let service: TokenStoreWrapper;
 
 describe('TokenStoreWrapper', () => {
   beforeEach(() => {
+    const configService = new AuthConfigService({} as OauthConfig);
     TestBed.configureTestingModule({
-      imports: [],
       providers: [
-        { provide: TokenStoreToken, useValue: localStorage },
+        { provide: AuthConfigService, useValue: configService },
         TokenStoreWrapper
       ]
     });

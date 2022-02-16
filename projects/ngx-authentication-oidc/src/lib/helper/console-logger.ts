@@ -1,14 +1,6 @@
-import { InjectionToken } from '@angular/core';
+import { Logger, LoggerFactory } from '../configuration/oauth-config';
 
-export const LoggerFactoryToken = new InjectionToken('LoggerFactory');
-
-export interface Logger {
-  debug(message: string, ...optionalParams: any[]): void;
-  info(message: string, ...optionalParams: any[]): void;
-  error(message: string, e?: Error | unknown, ...optionalParams: any[]): void;
-}
-
-export type LoggerFactory = (name: string) => Logger;
+// TODO: Document public API
 
 class ConsoleLogger implements Logger {
   constructor(private readonly name: string) {}

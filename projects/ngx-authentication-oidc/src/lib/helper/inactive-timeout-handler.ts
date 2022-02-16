@@ -1,16 +1,15 @@
-import { Inject, Injectable } from '@angular/core';
-import { TimeoutHandler } from './timeout-handler';
+import { Injectable } from '@angular/core';
 import { Idle } from '@ng-idle/core';
 import { AuthConfigService } from '../auth-config.service';
-import { Logger, LoggerFactory, LoggerFactoryToken } from '../logger/logger';
+import { Logger } from '../configuration/oauth-config';
 import { Observable, Subject } from 'rxjs';
 
-/**
- * Timeout handler that times out if the user is inactive
+/*
+ * TODO: Add tests for {@link InactiveTimeoutHandler}
+ * TODO: Document public API
  */
-//TODO: Add tests for {@link InactiveTimeoutHandler}
 @Injectable()
-export class InactiveTimeoutHandler implements TimeoutHandler {
+export class InactiveTimeoutHandler {
   private readonly logger: Logger;
   private readonly timeoutSub: Subject<void>;
   private readonly timeoutWarningSub: Subject<number>;
@@ -19,19 +18,24 @@ export class InactiveTimeoutHandler implements TimeoutHandler {
 
   constructor(
     private readonly idle: Idle,
-    private readonly config: AuthConfigService,
-    @Inject(LoggerFactoryToken) loggerFactory: LoggerFactory
+    private readonly config: AuthConfigService
   ) {
-    this.logger = loggerFactory('InactiveTimeoutHandler');
+    this.logger = this.config.loggerFactory('InactiveTimeoutHandler');
     this.timeoutSub = new Subject();
     this.timeout$ = this.timeoutSub.asObservable();
     this.timeoutWarningSub = new Subject();
     this.timeoutWarning$ = this.timeoutWarningSub.asObservable();
 
-    this.idle.setIdle(this.config.idleConfiguration.idleTimeSeconds);
+    if (!this.config.inactiveTimeout.enabled) {
+      this.logger.debug('Inactive timeout is disabled');
+      return;
+    }
+    this.logger.debug('Inactive timeout is enabled');
+
+    this.idle.setIdle(this.config.inactiveTimeout.idleTimeSeconds);
     this.idle.setIdleName('InactiveTimeoutHandler');
-    this.idle.setTimeout(this.config.idleConfiguration.timeoutSeconds);
-    this.idle.setInterrupts(this.config.idleConfiguration.interruptsSource);
+    this.idle.setTimeout(this.config.inactiveTimeout.timeoutSeconds);
+    this.idle.setInterrupts(this.config.inactiveTimeout.interrupts);
     this.idle.onIdleStart.subscribe(() => this.logger.debug('User is idle'));
     this.idle.onIdleEnd.subscribe(() =>
       this.logger.debug('User is not idle any more')
@@ -55,10 +59,16 @@ export class InactiveTimeoutHandler implements TimeoutHandler {
   }
 
   start(): void {
+    if (!this.config.inactiveTimeout.enabled) {
+      return;
+    }
     this.idle.watch();
   }
 
   stop(): void {
+    if (!this.config.inactiveTimeout.enabled) {
+      return;
+    }
     this.idle.stop();
   }
 }

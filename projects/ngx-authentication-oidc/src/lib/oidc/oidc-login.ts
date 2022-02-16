@@ -1,11 +1,10 @@
 import { Inject, Injectable } from '@angular/core';
 import { AuthConfigService } from '../auth-config.service';
-import { LoggerFactoryToken } from '../logger/logger';
 import { LoginOptions } from '../configuration/login-options';
-import { Logger, LoggerFactory } from '../logger/logger';
-import { LoginResult } from '../login-result';
+import { Logger } from '../configuration/oauth-config';
+import { LoginResult } from '../helper/login-result';
 import { WindowToken } from '../authentication-module.tokens';
-import { AuthenticationRequest } from './helper/authentication-request';
+import { AuthenticationRequest } from '../helper/authentication-request';
 
 @Injectable()
 export class OidcLogin {
@@ -13,10 +12,9 @@ export class OidcLogin {
 
   constructor(
     private readonly config: AuthConfigService,
-    @Inject(WindowToken) private readonly window: Window,
-    @Inject(LoggerFactoryToken) loggerFactory: LoggerFactory
+    @Inject(WindowToken) private readonly window: Window
   ) {
-    this.logger = loggerFactory('OidcLogin');
+    this.logger = this.config.loggerFactory('OidcLogin');
   }
 
   public async login(loginOptions: LoginOptions): Promise<LoginResult> {

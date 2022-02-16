@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { JWTPayload, SignJWT, importJWK } from 'jose';
 import { AuthConfigService } from '../auth-config.service';
-import { LoggerFactoryToken } from '../logger/logger';
 import { OidcTokenValidator } from './oidc-token-validator';
 
 const config = {
@@ -54,11 +53,9 @@ async function writeToken(claims: JWTPayload): Promise<string> {
 describe('OidcTokenValidator', () => {
   beforeEach(() => {
     const authConfig = new AuthConfigService(config);
-    authConfig.setProviderConfiguration(config.provider);
 
     TestBed.configureTestingModule({
       providers: [
-        { provide: LoggerFactoryToken, useValue: () => console },
         { provide: AuthConfigService, useValue: authConfig },
         OidcTokenValidator
       ]
@@ -125,12 +122,12 @@ describe('OidcTokenValidator', () => {
   });
 
   it('iat in Future', async () => {
-    const token = await writeToken({ ...claims, iat: getCurrentTime() + 1 });
+    const token = await writeToken({ ...claims, iat: getCurrentTime() + 10 });
     await expectAsync(service.verify(token, nonce)).toBeRejected();
   });
 
   it('nbf in Future', async () => {
-    const token = await writeToken({ ...claims, nbf: getCurrentTime() + 1 });
+    const token = await writeToken({ ...claims, nbf: getCurrentTime() + 10 });
     await expectAsync(service.verify(token, nonce)).toBeRejected();
   });
 

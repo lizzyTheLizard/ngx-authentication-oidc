@@ -46,7 +46,17 @@
           {
             "ignoreDeclarationSort": true
           }
-        ]
+        ],
+        "multiline-comment-style": ["error", "starred-block"],
+        "spaced-comment": ["error", "always", { "exceptions": ["-", "+"] }],
+        "valid-jsdoc": ["error",
+          {"requireReturn": false}
+        ],
+         "max-len": ["error", {
+          "code": 100000,
+          "comments": 100,
+          "ignoreComments": false
+         }]
       }
     },
     {
