@@ -1,7 +1,5 @@
 import { Logger, LoggerFactory } from '../configuration/oauth-config';
 
-// TODO: Document public API
-
 class ConsoleLogger implements Logger {
   constructor(private readonly name: string) {}
   debug = console.debug.bind(console, this.name + ': %s');
@@ -10,5 +8,9 @@ class ConsoleLogger implements Logger {
   error = console.error.bind(console, this.name + ': %s');
 }
 
+// eslint-disable-next-line valid-jsdoc
+/**
+ * A {@link Logger} that just logs to the console
+ */
 export const consoleLoggerFactory: LoggerFactory = (name) =>
   new ConsoleLogger(name);
