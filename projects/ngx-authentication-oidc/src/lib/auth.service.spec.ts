@@ -2,7 +2,7 @@
 import { AuthService } from './auth.service';
 import { TokenStore } from './configuration/oauth-config';
 import { LoginResult } from './helper/login-result';
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { AuthenticationModule } from './authentication-module';
 import { RouterTestingModule } from '@angular/router/testing';
 import { OidcDiscovery } from './oidc/oidc-discovery';
@@ -276,4 +276,30 @@ describe('AuthService', () => {
     expect(service.getUserInfo()).toEqual(undefined);
     expect(service.isLoggedIn()).toEqual(false);
   });
+
+  it('Timeout Warning', fakeAsync(async () => {
+    discovery.and.returnValue(Promise.resolve());
+    initializer.and.returnValue(Promise.resolve(loginResult));
+
+    service.initialize();
+    await service.initialSetupFinished$;
+    let warnings = 0;
+    service.inactiveLogoutWarning$.subscribe(() => warnings++);
+    sessionHandlerTimeoutWarning.next(10);
+    tick(1000);
+    expect(warnings).toEqual(1);
+  }));
+
+  it('No Timeout Warning when logged in', fakeAsync(async () => {
+    discovery.and.returnValue(Promise.resolve());
+    initializer.and.returnValue(Promise.resolve({ isLoggedIn: false }));
+
+    service.initialize();
+    await service.initialSetupFinished$;
+    let warnings = 0;
+    service.inactiveLogoutWarning$.subscribe(() => warnings++);
+    sessionHandlerTimeoutWarning.next(10);
+    tick(1000);
+    expect(warnings).toEqual(0);
+  }));
 });

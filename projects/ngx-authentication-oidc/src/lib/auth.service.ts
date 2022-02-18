@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, Subject, map } from 'rxjs';
+import { Observable, Subject, filter, map } from 'rxjs';
 import { AuthConfigService } from './auth-config.service';
 import { LoginOptions } from './configuration/login-options';
 import { InitializerInput, Logger } from './configuration/oauth-config';
@@ -29,6 +29,12 @@ export class AuthService {
    * or {@link undefined} if no user is logged in
    */
   public readonly userInfo$: Observable<UserInfo | undefined>;
+
+  /**
+   * Observable fires when the user is about to be logged out due to inactivity
+   * Parameter is the number of seconds until logout.
+   */
+  public readonly inactiveLogoutWarning$: Observable<number>;
 
   /** Promise returning  true as soon as the setup has finished */
   public readonly initialSetupFinished$: Promise<boolean>;
@@ -61,6 +67,9 @@ export class AuthService {
     this.loginResult$ = new Subject();
     this.isLoggedIn$ = this.loginResult$.pipe(map((t) => t.isLoggedIn));
     this.userInfo$ = this.loginResult$.pipe(map((t) => t.userInfo));
+    this.inactiveLogoutWarning$ = this.timeoutHandler.timeoutWarning$.pipe(
+      filter(() => this.isLoggedIn())
+    );
 
     // Subscribe to others
     this.sessionManagement.changed$.subscribe(() => this.updateSession(false));
