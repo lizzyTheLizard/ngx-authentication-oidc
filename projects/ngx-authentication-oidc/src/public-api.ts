@@ -11,5 +11,4 @@ export * from './lib/configuration/login-options';
 export * from './lib/configuration/oauth-config';
 
 export * from './lib/helper/console-logger';
-export * from './lib/helper/inactive-timeout-handler';
 export * from './lib/helper/initializer';

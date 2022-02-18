@@ -4,10 +4,6 @@ import { AuthConfigService } from '../auth-config.service';
 import { Logger } from '../configuration/oauth-config';
 import { Observable, Subject } from 'rxjs';
 
-/*
- * TODO: Add tests for {@link InactiveTimeoutHandler}
- * TODO: Document public API
- */
 @Injectable()
 export class InactiveTimeoutHandler {
   private readonly logger: Logger;
