@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { AuthenticationModule, enforceLogin, InitializerToken, OauthConfig } from 'ngx-authentication-oidc';
+import { AuthenticationModule, enforceLogin, OauthConfig } from 'ngx-authentication-oidc';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -18,8 +18,15 @@ const config: OauthConfig = {
   provider: "http://localhost:8080/auth/realms/Test-Application",
   logoutUrl: 'public',
   errorUrl: 'auth/error',
-  tokenUpdateIntervalSeconds: 10,
-  minimalTokenValiditySeconds: 280
+  autoUpdate: {
+    updateIntervalSeconds: 60,
+    minimalValiditySeconds: 90
+  },
+  inactiveTimeout: {
+    idleTimeSeconds: 300,
+    timeoutSeconds: 60,
+  },
+  initializer: enforceLogin
 }
 
 @NgModule({
@@ -35,9 +42,6 @@ const config: OauthConfig = {
     BrowserModule,
     AppRoutingModule,
     AuthenticationModule.forRoot(config),
-  ],
-  providers: [
-    { provide: InitializerToken, useValue: enforceLogin },
   ],
   bootstrap: [AppComponent]
 })

@@ -18,7 +18,7 @@ export class OidcLogin {
   }
 
   public async login(loginOptions: LoginOptions): Promise<LoginResult> {
-    console.info('Perform login');
+    this.logger.info('Perform login');
     const redirectUri = this.config.client.redirectUri;
     const clientId = this.config.client.clientId;
     const authEndpoint = this.config.getProviderConfiguration().authEndpoint;

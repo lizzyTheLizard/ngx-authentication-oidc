@@ -215,7 +215,7 @@ export class AuthService {
    * @param {boolean?} shouldUseRefreshToken Should a refresh token be used? Default is true
    */
   public async updateSession(shouldUseRefreshToken?: boolean): Promise<void> {
-    this.tokenUpdater.updateSession(shouldUseRefreshToken ?? true);
+    this.tokenUpdater.forceCheck(shouldUseRefreshToken ?? true);
   }
 
   /**

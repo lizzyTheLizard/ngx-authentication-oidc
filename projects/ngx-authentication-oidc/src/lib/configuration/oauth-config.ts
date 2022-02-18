@@ -3,20 +3,55 @@ import { InterruptSource } from '@ng-idle/core';
 import { JWK } from 'jose';
 import { LoginResult } from '../helper/login-result';
 import { LoginOptions } from './login-options';
+// eslint-disable-next-line prettier/prettier, @typescript-eslint/no-unused-vars
+import { enforceLogin, loginResponseCheck, silentCheckAndThenEnforce, silentLoginCheck } from '../helper/initializer';
+// eslint-disable-next-line prettier/prettier, @typescript-eslint/no-unused-vars
+import { consoleLoggerFactory } from '../helper/console-logger';
 
 // TODO: Document public API
 
 export interface OauthConfig {
+  /** OIDC Client Configuration */
   client: ClientConfig;
-  provider: DiscoveryUrl | ProviderConfig;
+  /**
+   * OIDC Provider Configuration
+   * Can either be given as URL, then OIDC discovery is used or as {@link ProviderConfig}
+   */
+  provider: IssuerUrl | ProviderConfig;
+  /**
+   * After a logout the user is redirected to this URL.
+   * If none given, user is not redirected at all
+   */
+  // TODO: Allow a or URLs as well
   logoutUrl?: string | UrlTree;
+  /**
+   * After an error the user is redirected to this URL.
+   * If none given, /auth/error is used
+   */
+  // TODO: Allow a or URLs as well
   errorUrl?: string | UrlTree;
+  /**
+   * Function to initialize the library. Either use a default like {@link silentLoginCheck},
+   * {@link enforceLogin}, {@link silentCheckAndThenEnforce}, {@link loginResponseCheck} or
+   * define your own function. When not set {@link silentLoginCheck} is used when silent login
+   * is enabled and {@link loginResponseCheck} otherwise
+   */
   initializer?: Initializer;
+  /** Factory to generate loggers. When not set {@link consoleLoggerFactory} is used. */
   loggerFactory?: LoggerFactory;
+  /**
+   * Place to store tokens. Default is {@link localStorage}, but you could also use
+   * {@link sessionStorage} or your own implementation.
+   */
   tokenStore?: TokenStore;
+  /** Silent login configuration, check {@link @SilentLoginConfig}. */
   silentLogin?: Partial<SilentLoginConfig>;
+  /** Inactive configuration, check {@link InactiveTimeoutConfig} */
   inactiveTimeout?: Partial<InactiveTimeoutConfig>;
+  /** Auto update configuration, check {@link TokenUpdateConfig} */
   autoUpdate?: Partial<TokenUpdateConfig>;
+  /** Session management configuration, check {@link SessionManagementConfig} */
+  sessionManagement?: Partial<SessionManagementConfig>;
 }
 
 export interface ClientConfig {
@@ -24,7 +59,8 @@ export interface ClientConfig {
   redirectUri: string;
 }
 
-export type DiscoveryUrl = string;
+// TODO: Allow URLS as well
+export type IssuerUrl = string;
 
 export interface ProviderConfig {
   issuer: any;
@@ -74,4 +110,9 @@ export interface TokenUpdateConfig {
   enabled: boolean;
   updateIntervalSeconds: number;
   minimalValiditySeconds: number;
+}
+
+export interface SessionManagementConfig {
+  enabled: boolean;
+  checkIntervalSeconds: number;
 }

@@ -45,7 +45,7 @@ let initializer: jasmine.Spy<Initializer>;
 let discovery: jasmine.Spy<() => Promise<void>>;
 let login: jasmine.Spy<(options: LoginOptions) => Promise<LoginResult>>;
 let silentLogin: jasmine.Spy<(options: LoginOptions) => Promise<LoginResult>>;
-let updateSession: jasmine.Spy<(useRefresh: boolean) => Promise<LoginResult>>;
+let forceCheck: jasmine.Spy<(useRefresh: boolean) => Promise<LoginResult>>;
 const oidcSessionManagementChange = new Subject<void>();
 const updated = new Subject<LoginResult>();
 const sessionHandlerTimeout = new Subject<void>();
@@ -78,12 +78,12 @@ describe('AuthService', () => {
       stopWatching: () => {}
     };
 
-    updateSession = jasmine.createSpy('updateSession');
+    forceCheck = jasmine.createSpy('forceUpdate');
     const tokenUpdater = {
       updated$: updated,
       startAutoUpdate: () => {},
       stopAutoUpdate: () => {},
-      updateSession: updateSession
+      forceCheck: forceCheck
     };
 
     TestBed.configureTestingModule({
@@ -248,21 +248,21 @@ describe('AuthService', () => {
   it('Session Changed', async () => {
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(loginResult));
-    updateSession.calls.reset();
+    forceCheck.calls.reset();
 
     service.initialize();
     await service.initialSetupFinished$;
     oidcSessionManagementChange.next();
 
-    expect(updateSession).toHaveBeenCalledTimes(1);
-    expect(updateSession).toHaveBeenCalledWith(false);
+    expect(forceCheck).toHaveBeenCalledTimes(1);
+    expect(forceCheck).toHaveBeenCalledWith(false);
   });
 
   it('Timeout', async () => {
     const navigateSpy = spyOn(router, 'navigateByUrl');
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(loginResult));
-    updateSession.calls.reset();
+    forceCheck.calls.reset();
 
     service.initialize();
     await service.initialSetupFinished$;

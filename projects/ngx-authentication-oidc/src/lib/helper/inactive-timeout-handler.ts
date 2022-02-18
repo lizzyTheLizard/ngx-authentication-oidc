@@ -53,7 +53,7 @@ export class InactiveTimeoutHandler {
 
   private timeoutWarning(secondsLeft: number) {
     this.logger.debug(
-      'User is idle, you will be logged out in' + secondsLeft + ' seconds'
+      'User is idle, you will be logged out in ' + secondsLeft + ' seconds'
     );
     this.timeoutWarningSub.next(secondsLeft);
   }

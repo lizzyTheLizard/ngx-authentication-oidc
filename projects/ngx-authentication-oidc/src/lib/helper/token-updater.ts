@@ -1,5 +1,4 @@
 import { Inject, Injectable } from '@angular/core';
-import { WindowToken } from 'ngx-authentication-oidc';
 import { Observable, Subject } from 'rxjs';
 import { AuthConfigService } from '../auth-config.service';
 import { TokenStoreWrapper } from './token-store-wrapper';
@@ -7,6 +6,7 @@ import { Logger } from '../configuration/oauth-config';
 import { OidcSilentLogin } from '../oidc/oidc-silent-login';
 import { OidcRefresh } from '../oidc/oidc-refresh';
 import { LoginResult } from './login-result';
+import { WindowToken } from '../authentication-module.tokens';
 
 @Injectable()
 export class TokenUpdater {
@@ -54,7 +54,13 @@ export class TokenUpdater {
     return true;
   }
 
-  public async updateSession(refreshToken: boolean): Promise<LoginResult> {
+  public async forceCheck(refreshToken: boolean) {
+    this.updateSession(refreshToken).then((res) =>
+      this.sessionUpdatedSub.next(res)
+    );
+  }
+
+  private async updateSession(refreshToken: boolean): Promise<LoginResult> {
     const oldLoginResult = this.tokenStore.getLoginResult();
     if (!oldLoginResult.isLoggedIn) {
       this.logger.info('Try to update token, but user is not logged in...');

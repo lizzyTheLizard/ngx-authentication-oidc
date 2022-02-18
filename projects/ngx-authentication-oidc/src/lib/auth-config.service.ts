@@ -1,7 +1,7 @@
 /* global localStorage */
 import { UrlTree } from '@angular/router';
 // eslint-disable-next-line prettier/prettier
-import { TokenUpdateConfig as AutoUpdateConfig, ClientConfig, DiscoveryUrl, InactiveTimeoutConfig as InactiveTimeout, Initializer, LoggerFactory, OauthConfig, ProviderConfig, SilentLoginConfig, TokenStore } from './configuration/oauth-config';
+import { TokenUpdateConfig as AutoUpdateConfig, ClientConfig, InactiveTimeoutConfig, Initializer, IssuerUrl, LoggerFactory, OauthConfig, ProviderConfig, SessionManagementConfig, SilentLoginConfig, TokenStore } from './configuration/oauth-config';
 import { DEFAULT_INTERRUPTSOURCES } from '@ng-idle/core';
 // eslint-disable-next-line prettier/prettier
 import { consoleLoggerFactory } from './helper/console-logger';
@@ -9,14 +9,15 @@ import { loginResponseCheck, silentLoginCheck } from './helper/initializer';
 
 export class AuthConfigService {
   public readonly client: ClientConfig;
-  public readonly discoveryUrl?: DiscoveryUrl;
+  public readonly discoveryUrl?: IssuerUrl;
   public readonly logoutUrl?: string | UrlTree;
   public readonly errorUrl: string | UrlTree;
   public readonly loggerFactory: LoggerFactory;
   public readonly tokenStore: TokenStore;
   public readonly silentLogin: SilentLoginConfig;
-  public readonly inactiveTimeout: InactiveTimeout;
+  public readonly inactiveTimeout: InactiveTimeoutConfig;
   public readonly autoUpdate: AutoUpdateConfig;
+  public readonly sessionManagement: SessionManagementConfig;
   private providerConfiguration?: ProviderConfig;
   public readonly initializer: Initializer;
 
@@ -31,9 +32,10 @@ export class AuthConfigService {
     this.inactiveTimeout = this.createInactive(config);
     this.autoUpdate = this.createAutoUpdate(config);
     this.initializer = this.createInitializer(config);
+    this.sessionManagement = this.createSessionMgm(config);
   }
 
-  private createDiscoveryUrl(config: OauthConfig): DiscoveryUrl | undefined {
+  private createDiscoveryUrl(config: OauthConfig): IssuerUrl | undefined {
     if (typeof config.provider === 'string') {
       return config.provider;
     } else {
@@ -46,18 +48,26 @@ export class AuthConfigService {
     const input = config.silentLogin;
     return {
       enabled: input?.enabled ?? true,
-      timeoutInSecond: input?.timeoutInSecond ?? 60,
+      timeoutInSecond: input?.timeoutInSecond ?? 5,
       redirectUri: input?.redirectUri
     };
   }
 
-  private createInactive(config: OauthConfig): InactiveTimeout {
+  private createInactive(config: OauthConfig): InactiveTimeoutConfig {
     const input = config.inactiveTimeout;
     return {
       idleTimeSeconds: input?.idleTimeSeconds ?? 300,
       timeoutSeconds: input?.timeoutSeconds ?? 60,
       interrupts: input?.interrupts ?? DEFAULT_INTERRUPTSOURCES,
       enabled: input?.enabled ?? true
+    };
+  }
+
+  private createSessionMgm(config: OauthConfig): SessionManagementConfig {
+    const input = config.sessionManagement;
+    return {
+      enabled: input?.enabled ?? true,
+      checkIntervalSeconds: input?.checkIntervalSeconds ?? 10
     };
   }
 

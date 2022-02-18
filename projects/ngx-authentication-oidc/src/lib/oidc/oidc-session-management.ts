@@ -16,7 +16,8 @@ class CurrentWatch {
     private readonly clientId: string,
     private readonly sessionState: string,
     private readonly document: Document,
-    private readonly window: Window
+    private readonly window: Window,
+    private readonly checkIntervalSeconds: number
   ) {
     this.opIFrame = this.createOpIFrame();
     this.opFrameOrigin = new URL(iFrameUrl).origin;
@@ -42,7 +43,7 @@ class CurrentWatch {
     const mes = this.clientId + ' ' + this.sessionState;
     return this.window.setInterval(() => {
       this.opIFrame!.contentWindow!.postMessage(mes, this.opFrameOrigin);
-    }, 5 * 1000);
+    }, this.checkIntervalSeconds * 1000);
   }
 }
 
@@ -62,6 +63,10 @@ export class OidcSessionManagement {
     this.logger = this.config.loggerFactory('OidcSessionManagement');
     this.sessionChangedSub = new Subject();
     this.changed$ = this.sessionChangedSub.asObservable();
+    if (!this.config.sessionManagement.enabled) {
+      this.logger.info('Session Management is disabled');
+      return;
+    }
     window.addEventListener(
       'message',
       (e) => this.sessionChangeListener(e),
@@ -78,6 +83,7 @@ export class OidcSessionManagement {
       return;
     }
     if (e.data === 'unchanged') {
+      this.logger.debug('Session is unchanged');
       return;
     }
     if (e.data === 'error') {
@@ -95,6 +101,10 @@ export class OidcSessionManagement {
   }
 
   public startWatching() {
+    if (!this.config.sessionManagement.enabled) {
+      this.logger.debug('Session Management is disabled');
+      return;
+    }
     this.stopWatching();
     const sessionState = this.tokenStore.getLoginResult().sessionState;
     if (!sessionState) {
@@ -114,11 +124,16 @@ export class OidcSessionManagement {
       clientID,
       sessionState,
       this.document,
-      this.window
+      this.window,
+      this.config.sessionManagement.checkIntervalSeconds
     );
   }
 
   public stopWatching() {
+    if (!this.config.sessionManagement.enabled) {
+      this.logger.debug('Session Management is disabled');
+      return;
+    }
     const currentWatch = this.currentWatch;
     if (!currentWatch) {
       return;

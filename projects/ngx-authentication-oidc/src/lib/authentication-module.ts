@@ -18,6 +18,7 @@ import { InactiveTimeoutHandler } from './helper/inactive-timeout-handler';
 import { TokenStoreWrapper } from './helper/token-store-wrapper';
 import { NgIdleModule } from '@ng-idle/core';
 import { OidcRefresh } from './oidc/oidc-refresh';
+import { TokenUpdater } from './helper/token-updater';
 
 /**
  * Main module of the library, has to be imported into our application. The configuration
@@ -50,7 +51,8 @@ export class AuthenticationModule {
         OidcTokenValidator,
         OidcSessionManagement,
         OidcRefresh,
-        TokenStoreWrapper
+        TokenStoreWrapper,
+        TokenUpdater
       ]
     };
   }

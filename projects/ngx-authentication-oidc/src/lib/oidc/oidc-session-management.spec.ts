@@ -72,7 +72,7 @@ describe('OidcSessionManagement', () => {
       .and.returnValue({ isLoggedIn: true, sessionState: '123-123' });
     iframeMock.contentWindow.postMessage.calls.reset();
     service.startWatching();
-    tick(6000);
+    tick(10000);
     expect(iframeMock.contentWindow.postMessage).toHaveBeenCalledTimes(1);
     expect(iframeMock.contentWindow.postMessage).toHaveBeenCalledWith(
       config.client.clientId + ' ' + '123-123',

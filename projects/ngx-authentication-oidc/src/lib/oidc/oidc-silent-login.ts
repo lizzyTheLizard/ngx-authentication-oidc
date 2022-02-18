@@ -1,7 +1,6 @@
 import { Location } from '@angular/common';
 import { Inject, Injectable } from '@angular/core';
 import { Observable, Subject, firstValueFrom, of, timeout } from 'rxjs';
-import { TimeoutConfig } from 'rxjs/internal/operators/timeout';
 import { AuthConfigService } from '../auth-config.service';
 import { DocumentToken, WindowToken } from '../authentication-module.tokens';
 import { LoginOptions } from '../configuration/login-options';
@@ -14,11 +13,6 @@ const silentRefreshIFrameName = 'silent-refresh-iframe';
 
 @Injectable()
 export class OidcSilentLogin {
-  private readonly timeoutOptions: TimeoutConfig<
-    LoginResult,
-    Observable<LoginResult>,
-    LoginResult
-  >;
   private readonly silentRefreshUrl: URL;
   private logger: Logger;
   private loginEventListener?: (e: MessageEvent) => void;
@@ -32,13 +26,6 @@ export class OidcSilentLogin {
   ) {
     this.logger = this.config.loggerFactory('OidcSilentLogin');
     this.silentRefreshUrl = this.getSilentRefreshUrl();
-    this.timeoutOptions = {
-      each: this.config.silentLogin.timeoutInSecond * 1000,
-      with: () => {
-        this.logger.info('Silent Login did not return within timeout');
-        return of({ isLoggedIn: false });
-      }
-    };
   }
 
   private getSilentRefreshUrl(): URL {
@@ -61,20 +48,33 @@ export class OidcSilentLogin {
   }
 
   public async login(loginOptions: LoginOptions): Promise<LoginResult> {
-    console.info('Perform silent login');
+    this.logger.info('Perform silent login');
     const silentLoginOptions = { ...loginOptions, prompt: 'none' };
     const clientId = this.config.client.clientId;
     const authEndpoint = this.config.getProviderConfiguration().authEndpoint;
-    const url = new AuthenticationRequest(
+    const authenticationRequest = new AuthenticationRequest(
       silentLoginOptions,
       this.silentRefreshUrl.toString(),
       clientId,
       authEndpoint
-    ).toUrl();
+    );
+    const url = authenticationRequest.toUrl();
     const iframe = this.createIFrame(url);
     const result = this.setupLoginEventListener(iframe);
     this.document.body.appendChild(iframe);
-    return firstValueFrom(result.pipe(timeout(this.timeoutOptions)));
+    const timeoutOptions = {
+      each: this.config.silentLogin.timeoutInSecond * 1000,
+      with: () => {
+        this.logger.info('Silent Login did not return within timeout');
+        return of({ isLoggedIn: false });
+      }
+    };
+    return await firstValueFrom(result.pipe(timeout(timeoutOptions))).catch(
+      (e) => {
+        this.logger.error('Could not perform silent login', e);
+        return { isLoggedIn: false };
+      }
+    );
   }
 
   private createIFrame(url: URL): HTMLIFrameElement {
