@@ -1,4 +1,3 @@
-import { UrlTree } from '@angular/router';
 import { InterruptSource } from '@ng-idle/core';
 import { JWK } from 'jose';
 import { LoginResult } from '../helper/login-result';
@@ -19,17 +18,17 @@ export interface OauthConfig {
    */
   provider: IssuerUrl | ProviderConfig;
   /**
-   * After a logout the user is redirected to this URL.
-   * If none given, user is not redirected at all
+   * Action to be performed after a logout. Can be an URL, then a redirect
+   * to this URL is made, can be a function, then this function is called
+   * or nothing, then nothing will be done.
    */
-  // TODO: Allow a or URLs as well
-  logoutUrl?: string | UrlTree;
+  logoutAction?: RedirectUrl | (() => {});
   /**
-   * After an error the user is redirected to this URL.
-   * If none given, /auth/error is used
+   * Action to be performed after an initialization error. Can be an URL, then a redirect
+   * to this URL is made, can be a function, then this function is called
+   * or nothing, then nothing will be done.
    */
-  // TODO: Allow a or URLs as well
-  errorUrl?: string | UrlTree;
+  initializationErrorAction?: RedirectUrl | ((e: any) => {});
   /**
    * Function to initialize the library. Either use a default like {@link silentLoginCheck},
    * {@link enforceLogin}, {@link silentCheckAndThenEnforce}, {@link loginResponseCheck} or
@@ -59,8 +58,9 @@ export interface ClientConfig {
   redirectUri: string;
 }
 
-// TODO: Allow URLS as well
 export type IssuerUrl = string;
+
+export type RedirectUrl = string;
 
 export interface ProviderConfig {
   issuer: any;

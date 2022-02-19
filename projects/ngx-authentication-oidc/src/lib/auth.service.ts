@@ -111,7 +111,14 @@ export class AuthService {
       }
     } catch (e) {
       this.logger.error('Could not initialize authentication module', e);
-      this.router.navigateByUrl(this.config.errorUrl);
+      if (!this.config.initializationErrorAction) {
+        this.logger.debug('No error action is specified');
+      } else if (typeof this.config.initializationErrorAction === 'string') {
+        this.logger.info('Redirect to', this.config.initializationErrorAction);
+        this.router.navigateByUrl(this.config.initializationErrorAction);
+      } else {
+        this.config.initializationErrorAction(e);
+      }
     }
     this.initialSetupFinishedResolve(true);
   }
@@ -210,11 +217,13 @@ export class AuthService {
     this.tokenStore.setLoginResult(loginResult);
     this.loginResult$.next(loginResult);
 
-    if (this.config.logoutUrl) {
-      this.logger.info('Redirect to', this.config.logoutUrl);
-      this.router.navigateByUrl(this.config.logoutUrl);
+    if (!this.config.logoutAction) {
+      this.logger.debug('Logged out, but no logout action is specified');
+    } else if (typeof this.config.logoutAction === 'string') {
+      this.logger.info('Redirect to', this.config.logoutAction);
+      this.router.navigateByUrl(this.config.logoutAction);
     } else {
-      this.logger.debug('Logged out, but no redirect URI is specified');
+      this.config.logoutAction();
     }
   }
 

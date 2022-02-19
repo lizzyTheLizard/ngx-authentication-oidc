@@ -19,8 +19,8 @@ import { TokenUpdater } from './helper/token-updater';
 import { InactiveTimeoutHandler } from './helper/inactive-timeout-handler';
 
 const config: OauthConfig = {
-  errorUrl: 'auth/error',
-  logoutUrl: 'auth/logout',
+  initializationErrorAction: 'auth/error',
+  logoutAction: 'auth/logout',
   client: { clientId: 'id', redirectUri: 'url' },
   provider: {
     authEndpoint: 'auth',

@@ -1,5 +1,4 @@
 /* global localStorage */
-import { UrlTree } from '@angular/router';
 // eslint-disable-next-line prettier/prettier
 import { TokenUpdateConfig as AutoUpdateConfig, ClientConfig, InactiveTimeoutConfig, Initializer, IssuerUrl, LoggerFactory, OauthConfig, ProviderConfig, SessionManagementConfig, SilentLoginConfig, TokenStore } from './configuration/oauth-config';
 import { DEFAULT_INTERRUPTSOURCES } from '@ng-idle/core';
@@ -10,8 +9,8 @@ import { loginResponseCheck, silentLoginCheck } from './helper/initializer';
 export class AuthConfigService {
   public readonly client: ClientConfig;
   public readonly discoveryUrl?: IssuerUrl;
-  public readonly logoutUrl?: string | UrlTree;
-  public readonly errorUrl: string | UrlTree;
+  public readonly logoutAction?: string | (() => {});
+  public readonly initializationErrorAction?: string | ((e: any) => {});
   public readonly loggerFactory: LoggerFactory;
   public readonly tokenStore: TokenStore;
   public readonly silentLogin: SilentLoginConfig;
@@ -24,8 +23,8 @@ export class AuthConfigService {
   constructor(config: OauthConfig) {
     this.client = config.client;
     this.discoveryUrl = this.createDiscoveryUrl(config);
-    this.logoutUrl = config.logoutUrl;
-    this.errorUrl = config.errorUrl ?? 'auth-error';
+    this.logoutAction = config.logoutAction;
+    this.initializationErrorAction = config.initializationErrorAction;
     this.loggerFactory = config.loggerFactory ?? consoleLoggerFactory;
     this.tokenStore = config.tokenStore ?? localStorage;
     this.silentLogin = this.createSilentLogin(config);
