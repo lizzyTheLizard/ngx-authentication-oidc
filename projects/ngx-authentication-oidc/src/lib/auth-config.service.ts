@@ -36,7 +36,7 @@ export class AuthConfigService {
     this.autoUpdate = this.createAutoUpdate(config);
     this.initializer = this.createInitializer(config);
     this.sessionManagement = this.createSessionMgm(config);
-    this.userInfoSource = config.userInfoSource ?? UserInfoSource.TOKEN_THEN_USER_INFO_ENDPOINT;
+    this.userInfoSource = config.userInfoSource ?? UserInfoSource.USER_INFO_ENDPOINT;
   }
 
   private createDiscoveryUrl(config: OauthConfig): string | undefined {

@@ -177,7 +177,7 @@ export class OidcResponse {
     }
     const options = {
       headers: new HttpHeaders({
-        Authorization: 'Bearer' + response.access_token
+        Authorization: 'Bearer ' + response.access_token
       })
     };
     return firstValueFrom(this.httpClient.post<UserInfo>(endpoint, null, options)).catch((e) => {

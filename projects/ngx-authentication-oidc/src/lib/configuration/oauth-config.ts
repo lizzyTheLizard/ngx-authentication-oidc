@@ -23,7 +23,7 @@ export interface OauthConfig {
   provider: string | ProviderConfig;
   /**
    * Where to get the user information from, see {@link UserInfoSource}.
-   * If not given {@link UserInfoSource.TOKEN_THEN_USER_INFO_ENDPOINT} is used
+   * If not given {@link UserInfoSource.USER_INFO_ENDPOINT} is used
    */
   userInfoSource?: UserInfoSource;
   /**
