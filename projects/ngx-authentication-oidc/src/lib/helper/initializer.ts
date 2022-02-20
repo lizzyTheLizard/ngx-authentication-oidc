@@ -1,9 +1,11 @@
-import { InitializerInput } from '../configuration/oauth-config';
-import { LoginResult } from '../helper/login-result';
+import { Initializer } from '../configuration/oauth-config';
 
-// TODO: Document public API
-
-export async function loginResponseCheck(input: InitializerInput) {
+/**
+ * Initializer that will check if this is an OIDC redirect and if so log the user in
+ * @param {InitializerInput} input Initializer input
+ * @returns {Promise<LoginResult>} The login result after a silent login
+ */
+export const loginResponseCheck: Initializer = async (input) => {
   const logger = input.loggerFactory('LoginResponseInitializer');
   const loginResult = input.initialLoginResult;
   const responseLoginResult = await input.handleResponse();
@@ -14,11 +16,16 @@ export async function loginResponseCheck(input: InitializerInput) {
     logger.debug('User is already logged in', loginResult);
   }
   return loginResult;
-}
+};
 
-export async function silentLoginCheck(
-  input: InitializerInput
-): Promise<LoginResult> {
+/**
+ * Initializer that will first perform a {@link loginResponseCheck}, and if the user is not
+ * logged in then try a silent login. The user is therewith automatically logged in if he already
+ * has a session at the authentication server.
+ * @param {InitializerInput} input Initializer input
+ * @returns {Promise<LoginResult>} The login result after a silent login
+ */
+export const silentLoginCheck: Initializer = async (input) => {
   const logger = input.loggerFactory('SilentLoginCheckInitializer');
   let loginResult = await loginResponseCheck(input);
 
@@ -41,11 +48,15 @@ export async function silentLoginCheck(
       logger.info('Could not perform a silent login: ' + e.message);
       return { isLoggedIn: false };
     });
-}
+};
 
-export async function enforceLogin(
-  input: InitializerInput
-): Promise<LoginResult> {
+/**
+ * Initializer that will first perform a {@link loginResponseCheck}, and if the user is not
+ * logged in then perform a normal login. The user is therewith forced to log in
+ * @param {InitializerInput} input Initializer input
+ * @returns {Promise<LoginResult>} The login result after a silent login
+ */
+export const enforceLogin: Initializer = async (input) => {
   const logger = input.loggerFactory('EnforceLoginInitializer');
   let loginResult = await loginResponseCheck(input);
 
@@ -62,9 +73,17 @@ export async function enforceLogin(
       throw new Error('Cannot log in user');
     }
   });
-}
+};
 
-export async function silentCheckAndThenEnforce(input: InitializerInput) {
+/**
+ * Initializer that will first perform a {@link silentLoginCheck}, and if the user is not
+ * logged in then perform a normal login. The user is therewith forced to log in, but the
+ * login is transparent if he already has a session at the authentication server. However,
+ * the login can take longer than just {@link enforceLogin}.
+ * @param {InitializerInput} input Initializer input
+ * @returns {Promise<LoginResult>} The login result after a silent login
+ */
+export const silentCheckAndThenEnforce: Initializer = async (input) => {
   const logger = input.loggerFactory('EnforceLoginInitializer');
   let loginResult = await silentLoginCheck(input);
 
@@ -81,4 +100,4 @@ export async function silentCheckAndThenEnforce(input: InitializerInput) {
       throw new Error('Cannot log in user');
     }
   });
-}
+};
