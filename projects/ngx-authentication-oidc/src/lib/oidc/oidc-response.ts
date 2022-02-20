@@ -1,9 +1,9 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { catchError, concatMap, firstValueFrom, map } from 'rxjs';
 import { AuthConfigService } from '../auth-config.service';
-import { Logger } from '../configuration/oauth-config';
-import { LoginResult } from '../helper/login-result';
+import { Logger, UserInfoSource } from '../configuration/oauth-config';
+import { LoginResult, UserInfo } from '../helper/login-result';
 import { CustomHttpParamEncoder } from '../helper/custom-http-param-encoder';
 import { State } from '../helper/state';
 import { OidcTokenValidator } from './oidc-token-validator';
@@ -88,7 +88,6 @@ export class OidcResponse {
     }
   }
 
-  // TODO: Implement confidential clients
   private codeResponse(params: Response, redirect: URL): Promise<LoginResult> {
     const payload = new HttpParams({ encoder: this.encoder })
       .set('client_id', this.config.clientId)
@@ -123,11 +122,13 @@ export class OidcResponse {
     }
   }
 
-  // TODO: UserInfo Endpoint (Chapter 5.3, https://openid.net/specs/openid-connect-core-1_0.html)
   public async tokenResponse(response: Response): Promise<LoginResult> {
     const idToken = response.id_token ?? undefined;
     // TODO: Verify nonce
-    const userInfo = await this.tokenValidator.verify(idToken);
+    const userInfoFromToken = idToken
+      ? await this.tokenValidator.verify(idToken)
+      : undefined;
+    const userInfo = await this.getUserInfo(response, userInfoFromToken);
     const expiresIn = response.expires_in;
     const expiresAt = expiresIn
       ? new Date(Date.now() + parseInt(expiresIn) * 1000)
@@ -144,6 +145,55 @@ export class OidcResponse {
       sessionState: response.session_state
     };
     return result;
+  }
+
+  private async getUserInfo(
+    response: Response,
+    fromToken?: UserInfo
+  ): Promise<UserInfo | undefined> {
+    const source = this.config.userInfoSource;
+    switch (source) {
+      case UserInfoSource.TOKEN:
+        this.logger.debug(source + ' => use id token');
+        if (fromToken) {
+          return fromToken;
+        }
+        throw new Error('No ID-Token given but needed');
+      case UserInfoSource.TOKEN_THEN_USER_INFO_ENDPOINT:
+        if (fromToken) {
+          this.logger.debug(source + ' and token given => use token');
+          return fromToken;
+        } else {
+          this.logger.debug(source + ' and no token given => use endpoint');
+          return this.userInfoRequest(response);
+        }
+      case UserInfoSource.USER_INFO_ENDPOINT:
+        this.logger.debug(source + ' => use endpoint');
+        return this.userInfoRequest(response);
+      default:
+        throw new Error('Invalid source ' + source);
+    }
+  }
+
+  private async userInfoRequest(
+    response: Response
+  ): Promise<UserInfo | undefined> {
+    const endpoint = this.config.getProviderConfiguration().userInfoEndpoint;
+    if (!endpoint) {
+      this.logger.info('No endpoint given, cannot get user information');
+      return;
+    }
+    const options = {
+      headers: new HttpHeaders({
+        Authorization: 'Bearer' + response.access_token
+      })
+    };
+    return firstValueFrom(
+      this.httpClient.post<UserInfo>(endpoint, null, options)
+    ).catch((e) => {
+      this.logger.error('Invalid response, cannot get user information', e);
+      return undefined;
+    });
   }
 
   public handleErrorResponse(params: Response): Promise<LoginResult> {

@@ -22,6 +22,11 @@ export interface OauthConfig {
    */
   provider: string | ProviderConfig;
   /**
+   * Where to get the user information from, see {@link UserInfoSource}.
+   * If not given {@link UserInfoSource.TOKEN_THEN_USER_INFO_ENDPOINT} is used
+   */
+  userInfoSource?: UserInfoSource;
+  /**
    * Action to be performed after a logout. Either use a default like {@link singleLogout},
    * {@link logoutRedirect} or define your own function.
    * When not set {@link singleLogout} with the redirectURI is used when single logout
@@ -79,6 +84,8 @@ export interface ProviderConfig {
   checkSessionIframe?: string;
   /** URL of the end session endpoint. If not given, no single logout be used */
   endSessionEndpoint?: string;
+  /** URL of the user info session endpoint. */
+  userInfoEndpoint?: string;
 }
 
 /** Input to the {@link Initializer} function */
@@ -195,3 +202,10 @@ export interface ErrorActionInput {
   router: Router;
 }
 export type ErrorAction = (input: ErrorActionInput) => void;
+
+/** Sources where to get user information from */
+export enum UserInfoSource {
+  TOKEN = 'token',
+  USER_INFO_ENDPOINT = 'userinfo',
+  TOKEN_THEN_USER_INFO_ENDPOINT = 'token_then_userinfo'
+}

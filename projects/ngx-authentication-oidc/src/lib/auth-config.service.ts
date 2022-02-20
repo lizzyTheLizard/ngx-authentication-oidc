@@ -1,6 +1,6 @@
 /* global localStorage */
 // eslint-disable-next-line prettier/prettier
-import { AutoUpdateConfig, ErrorAction, InactiveTimeoutConfig, Initializer, LoggerFactory, LogoutAction, OauthConfig, ProviderConfig, SessionManagementConfig, SilentLoginConfig } from './configuration/oauth-config';
+import { AutoUpdateConfig, ErrorAction, InactiveTimeoutConfig, Initializer, LoggerFactory, LogoutAction, OauthConfig, ProviderConfig, SessionManagementConfig, SilentLoginConfig, UserInfoSource } from './configuration/oauth-config';
 import { DEFAULT_INTERRUPTSOURCES } from '@ng-idle/core';
 import { consoleLoggerFactory } from './helper/console-logger';
 import { loginResponseCheck, silentLoginCheck } from './helper/initializer';
@@ -19,8 +19,9 @@ export class AuthConfigService {
   public readonly inactiveTimeout: InactiveTimeoutConfig;
   public readonly autoUpdate: AutoUpdateConfig;
   public readonly sessionManagement: SessionManagementConfig;
-  private providerConfiguration?: ProviderConfig;
+  public readonly userInfoSource: UserInfoSource;
   public readonly initializer: Initializer;
+  private providerConfiguration?: ProviderConfig;
 
   constructor(config: OauthConfig) {
     this.clientId = config.clientId;
@@ -37,6 +38,8 @@ export class AuthConfigService {
     this.autoUpdate = this.createAutoUpdate(config);
     this.initializer = this.createInitializer(config);
     this.sessionManagement = this.createSessionMgm(config);
+    this.userInfoSource =
+      config.userInfoSource ?? UserInfoSource.TOKEN_THEN_USER_INFO_ENDPOINT;
   }
 
   private createDiscoveryUrl(config: OauthConfig): string | undefined {

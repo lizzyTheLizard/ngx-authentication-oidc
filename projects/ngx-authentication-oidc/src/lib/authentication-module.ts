@@ -21,6 +21,10 @@ import { OidcRefresh } from './oidc/oidc-refresh';
 import { TokenUpdater } from './helper/token-updater';
 import { LocalUrl } from './helper/local-url';
 
+// TODO: Request interceptor
+
+// TODO: Auth guard?
+
 /**
  * Main module of the library, has to be imported into our application. The configuration
  * needs to be given as parameter, see {@link OauthConfig}.

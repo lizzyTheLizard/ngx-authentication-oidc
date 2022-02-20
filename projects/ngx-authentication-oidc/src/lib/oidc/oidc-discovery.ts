@@ -47,7 +47,8 @@ export class OidcDiscovery {
       alg: metadata.id_token_signing_alg_values_supported,
       publicKeys: jwks ? jwks.keys : [],
       checkSessionIframe: metadata.check_session_iframe,
-      endSessionEndpoint: metadata.end_session_endpoint
+      endSessionEndpoint: metadata.end_session_endpoint,
+      userInfoEndpoint: metadata.userinfo_endpoint
     };
     this.config.setProviderConfiguration(providerConfig);
   }
