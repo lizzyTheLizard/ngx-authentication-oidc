@@ -12,3 +12,5 @@ export * from './lib/configuration/oauth-config';
 
 export * from './lib/helper/console-logger';
 export * from './lib/helper/initializer';
+export * from './lib/helper/defaultActions';
+export * from './lib/helper/login-result';

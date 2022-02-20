@@ -4,12 +4,13 @@ import { DocumentToken, WindowToken } from '../authentication-module.tokens';
 import { OidcResponse } from './oidc-response';
 import { OidcSilentLogin } from './oidc-silent-login';
 import { AuthConfigService } from '../auth-config.service';
+import { LocalUrl } from '../helper/local-url';
 
 const token =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.GjKRxKZWcBLTjWTOPSwFBoRsu0zuMkK-uh-7gdfiNDA';
 
 const config = {
-  client: { clientId: 'id' },
+  clientId: 'id',
   provider: {
     authEndpoint: 'https://example.com/auth'
   },
@@ -42,6 +43,11 @@ let service: OidcSilentLogin;
 describe('OidcSilentLogin', () => {
   beforeEach(() => {
     const authConfig = new AuthConfigService(config as any);
+    const localUrl = {
+      getLocalUrl: jasmine
+        .createSpy('getLocalUrl')
+        .and.returnValue(new URL('https://localhost'))
+    };
 
     TestBed.configureTestingModule({
       providers: [
@@ -50,6 +56,7 @@ describe('OidcSilentLogin', () => {
         { provide: WindowToken, useFactory: () => windowMock },
         { provide: DocumentToken, useFactory: () => documentMock },
         { provide: AuthConfigService, useValue: authConfig },
+        { provide: LocalUrl, useValue: localUrl },
         OidcSilentLogin
       ]
     });

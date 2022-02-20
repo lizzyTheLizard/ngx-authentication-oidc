@@ -5,6 +5,7 @@ import { OauthConfig } from '../configuration/oauth-config';
 import { OidcLogin } from './oidc-login';
 import { WindowToken } from '../authentication-module.tokens';
 import { AuthConfigService } from '../auth-config.service';
+import { LocalUrl } from '../helper/local-url';
 
 const config = {
   provider: {
@@ -38,12 +39,18 @@ let service: OidcLogin;
 
 describe('OidcLogin', () => {
   beforeEach(() => {
+    const localUrl = {
+      getLocalUrl: jasmine
+        .createSpy('getLocalUrl')
+        .and.returnValue(new URL('https://localhost'))
+    };
     const authConfig = new AuthConfigService(config as OauthConfig);
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
       providers: [
         { provide: WindowToken, useFactory: () => windowMock },
         { provide: AuthConfigService, useValue: authConfig },
+        { provide: LocalUrl, useValue: localUrl },
         OidcLogin
       ]
     });

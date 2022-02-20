@@ -1,4 +1,3 @@
-import { Location } from '@angular/common';
 import { Inject, Injectable } from '@angular/core';
 import { Observable, Subject, firstValueFrom, of, timeout } from 'rxjs';
 import { AuthConfigService } from '../auth-config.service';
@@ -8,43 +7,23 @@ import { Logger } from '../configuration/oauth-config';
 import { LoginResult } from '../helper/login-result';
 import { OidcResponse } from './oidc-response';
 import { AuthenticationRequest } from '../helper/authentication-request';
+import { LocalUrl } from '../helper/local-url';
 
 const silentRefreshIFrameName = 'silent-refresh-iframe';
 
 @Injectable()
 export class OidcSilentLogin {
-  private readonly silentRedirectUrl: URL;
   private logger: Logger;
   private loginEventListener?: (e: MessageEvent) => void;
 
   constructor(
-    private readonly location: Location,
+    private readonly localUrl: LocalUrl,
     private readonly oidcResponse: OidcResponse,
     private readonly config: AuthConfigService,
     @Inject(DocumentToken) private readonly document: Document,
     @Inject(WindowToken) private readonly window: Window
   ) {
     this.logger = this.config.loggerFactory('OidcSilentLogin');
-    this.silentRedirectUrl = this.getSilentRedirectUrl();
-  }
-
-  private getSilentRedirectUrl(): URL {
-    const urlStr =
-      this.config.silentLogin.redirectUri ??
-      this.location.prepareExternalUrl('assets/silent-refresh.html');
-    try {
-      return new URL(urlStr);
-    } catch (e) {
-      const result = new URL(this.window.location.href);
-      result.pathname = '/assets/silent-refresh.html';
-      result.hash = '';
-      result.search = '';
-      this.logger.debug(
-        'silentRefreshRedirectUri and base href are both not set, use origin as redirect URI',
-        result.toString()
-      );
-      return result;
-    }
   }
 
   public async login(loginOptions: LoginOptions): Promise<LoginResult> {
@@ -52,9 +31,12 @@ export class OidcSilentLogin {
     const silentLoginOptions = { ...loginOptions, prompt: 'none' };
     const clientId = this.config.clientId;
     const authEndpoint = this.config.getProviderConfiguration().authEndpoint;
+    const redirectUrl =
+      this.config.silentLogin.redirectUri ??
+      this.localUrl.getLocalUrl('assets/silent-refresh.html').toString();
     const authenticationRequest = new AuthenticationRequest(
       silentLoginOptions,
-      this.silentRedirectUrl.toString(),
+      redirectUrl,
       clientId,
       authEndpoint
     );
@@ -121,7 +103,10 @@ export class OidcSilentLogin {
       return;
     }
     this.window.removeEventListener('message', this.loginEventListener!);
-    this.oidcResponse.urlResponse(new URL(e.data), this.silentRedirectUrl).then(
+    const redirectUrl = this.config.silentLogin.redirectUri
+      ? new URL(this.config.silentLogin.redirectUri)
+      : this.localUrl.getLocalUrl('assets/silent-refresh.html');
+    this.oidcResponse.urlResponse(new URL(e.data), redirectUrl).then(
       (result) => subject.next(result),
       (error) => {
         this.logger.debug('Could not silently log in: ', error);

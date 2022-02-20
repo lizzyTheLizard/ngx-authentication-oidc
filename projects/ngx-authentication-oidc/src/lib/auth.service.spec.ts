@@ -16,10 +16,11 @@ import { LoginOptions } from './configuration/login-options';
 import { Initializer, OauthConfig } from './configuration/oauth-config';
 import { TokenUpdater } from './helper/token-updater';
 import { InactiveTimeoutHandler } from './helper/inactive-timeout-handler';
+import { redirect } from './helper/defaultActions';
 
 const config: OauthConfig = {
-  initializationErrorAction: 'auth/error',
-  logoutAction: 'auth/logout',
+  initializationErrorAction: redirect('/auth/error'),
+  logoutAction: redirect('/auth/logout'),
   clientId: 'id',
   redirectUri: 'url',
   provider: {
@@ -42,14 +43,15 @@ const failedLoginResult: LoginResult = { isLoggedIn: false };
 let service: AuthService;
 let router: Router;
 let initializer: jasmine.Spy<Initializer>;
+let logout: jasmine.Spy<() => Promise<void>>;
 let discovery: jasmine.Spy<() => Promise<void>>;
 let login: jasmine.Spy<(options: LoginOptions) => Promise<LoginResult>>;
 let silentLogin: jasmine.Spy<(options: LoginOptions) => Promise<LoginResult>>;
 let forceCheck: jasmine.Spy<(useRefresh: boolean) => Promise<LoginResult>>;
-const oidcSessionManagementChange = new Subject<void>();
-const updated = new Subject<LoginResult>();
-const sessionHandlerTimeout = new Subject<void>();
-const sessionHandlerTimeoutWarning = new Subject<number>();
+let oidcSessionManagementChange: Subject<void>;
+let updated: Subject<LoginResult>;
+let sessionHandlerTimeout: Subject<void>;
+let sessionHandlerTimeoutWarning: Subject<number>;
 
 describe('AuthService', () => {
   beforeEach(() => {
@@ -59,6 +61,12 @@ describe('AuthService', () => {
     login = jasmine.createSpy('login');
     silentLogin = jasmine.createSpy('silentLogin');
     discovery = jasmine.createSpy('discovery');
+    logout = jasmine.createSpy('logout').and.returnValue(Promise.resolve());
+
+    oidcSessionManagementChange = new Subject<void>();
+    updated = new Subject<LoginResult>();
+    sessionHandlerTimeout = new Subject<void>();
+    sessionHandlerTimeoutWarning = new Subject<number>();
 
     const windowMock = {
       setInterval: jasmine.createSpy('setInterval'),
@@ -87,20 +95,26 @@ describe('AuthService', () => {
       forceCheck: forceCheck
     };
 
+    const oidcLogin = {
+      login: login,
+      getRedirectUrl: () => 'https://example.com/rd'
+    };
+
     TestBed.configureTestingModule({
       imports: [
         AuthenticationModule.forRoot(config as OauthConfig),
         RouterTestingModule.withRoutes([
+          { path: 'auth/error', redirectTo: '/' },
           { path: 'auth/logout', redirectTo: '/' }
         ])
       ],
       providers: [
         { provide: WindowToken, useFactory: () => windowMock },
-        { provide: OidcLogin, useValue: { login: login } },
+        { provide: OidcLogin, useValue: oidcLogin },
         { provide: InactiveTimeoutHandler, useValue: timeoutHandler },
         { provide: OidcSilentLogin, useValue: { login: silentLogin } },
         { provide: OidcDiscovery, useValue: { discover: discovery } },
-        { provide: OidcLogout, useValue: { logout: () => {} } },
+        { provide: OidcLogout, useValue: { logout: logout } },
         { provide: OidcSessionManagement, useValue: oidcSessionManagement },
         { provide: TokenUpdater, useValue: tokenUpdater }
       ]
@@ -120,7 +134,7 @@ describe('AuthService', () => {
     service.initialize();
     await service.initialSetupFinished$;
 
-    expect(navigateSpy).toHaveBeenCalledWith('auth/error');
+    expect(navigateSpy).toHaveBeenCalledWith('/auth/error');
     expect(service.getAccessToken()).toEqual(undefined);
     expect(service.getIdToken()).toEqual(undefined);
     expect(service.getUserInfo()).toEqual(undefined);
@@ -163,7 +177,7 @@ describe('AuthService', () => {
     service.initialize();
     await service.initialSetupFinished$;
 
-    expect(navigateSpy).toHaveBeenCalledWith('auth/error');
+    expect(navigateSpy).toHaveBeenCalledWith('/auth/error');
     expect(service.getAccessToken()).toEqual(undefined);
     expect(service.getIdToken()).toEqual(undefined);
     expect(service.getUserInfo()).toEqual(undefined);
@@ -174,7 +188,6 @@ describe('AuthService', () => {
     login.and.returnValue(Promise.resolve(loginResult));
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(failedLoginResult));
-    service.initialize();
     await service.initialSetupFinished$;
 
     await service.login();
@@ -189,7 +202,6 @@ describe('AuthService', () => {
     login.and.returnValue(Promise.resolve(failedLoginResult));
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(failedLoginResult));
-    service.initialize();
     await service.initialSetupFinished$;
 
     await service.login();
@@ -204,7 +216,6 @@ describe('AuthService', () => {
     silentLogin.and.returnValue(Promise.resolve(loginResult));
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(failedLoginResult));
-    service.initialize();
     await service.initialSetupFinished$;
 
     await service.silentLogin();
@@ -219,7 +230,6 @@ describe('AuthService', () => {
     silentLogin.and.returnValue(Promise.resolve(failedLoginResult));
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(failedLoginResult));
-    service.initialize();
     await service.initialSetupFinished$;
 
     await service.silentLogin();
@@ -234,12 +244,11 @@ describe('AuthService', () => {
     const navigateSpy = spyOn(router, 'navigateByUrl');
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(loginResult));
-    service.initialize();
     await service.initialSetupFinished$;
 
     await service.logout();
 
-    expect(navigateSpy).toHaveBeenCalledWith('auth/logout');
+    expect(navigateSpy).toHaveBeenCalledWith('/auth/logout');
     expect(service.getAccessToken()).toEqual(undefined);
     expect(service.getIdToken()).toEqual(undefined);
     expect(service.getUserInfo()).toEqual(undefined);
@@ -250,9 +259,8 @@ describe('AuthService', () => {
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(loginResult));
     forceCheck.calls.reset();
-
-    service.initialize();
     await service.initialSetupFinished$;
+
     oidcSessionManagementChange.next();
 
     expect(forceCheck).toHaveBeenCalledTimes(1);
@@ -264,14 +272,13 @@ describe('AuthService', () => {
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(loginResult));
     forceCheck.calls.reset();
-
-    service.initialize();
     await service.initialSetupFinished$;
+
     const userInfoChangedPromise = firstValueFrom(service.userInfo$);
     sessionHandlerTimeout.next();
     await userInfoChangedPromise;
 
-    expect(navigateSpy).toHaveBeenCalledWith('auth/logout');
+    expect(navigateSpy).toHaveBeenCalledWith('/auth/logout');
     expect(service.getAccessToken()).toEqual(undefined);
     expect(service.getIdToken()).toEqual(undefined);
     expect(service.getUserInfo()).toEqual(undefined);
@@ -281,26 +288,28 @@ describe('AuthService', () => {
   it('Timeout Warning', fakeAsync(async () => {
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve(loginResult));
-
+    // need to call initialize again s.t await is called in fakeAsync zone
     service.initialize();
     await service.initialSetupFinished$;
+
     let warnings = 0;
     service.inactiveLogoutWarning$.subscribe(() => warnings++);
     sessionHandlerTimeoutWarning.next(10);
-    tick(1000);
+    tick(10000);
     expect(warnings).toEqual(1);
   }));
 
   it('No Timeout Warning when logged in', fakeAsync(async () => {
     discovery.and.returnValue(Promise.resolve());
     initializer.and.returnValue(Promise.resolve({ isLoggedIn: false }));
-
+    // need to call initialize again s.t await is called in fakeAsync zone
     service.initialize();
     await service.initialSetupFinished$;
+
     let warnings = 0;
     service.inactiveLogoutWarning$.subscribe(() => warnings++);
     sessionHandlerTimeoutWarning.next(10);
-    tick(1000);
+    tick(10000);
     expect(warnings).toEqual(0);
   }));
 });

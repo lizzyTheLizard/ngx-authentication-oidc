@@ -1,17 +1,18 @@
 /* global localStorage */
 // eslint-disable-next-line prettier/prettier
-import { TokenUpdateConfig as AutoUpdateConfig, InactiveTimeoutConfig, Initializer, LoggerFactory, OauthConfig, ProviderConfig, SessionManagementConfig, SilentLoginConfig } from './configuration/oauth-config';
+import { AutoUpdateConfig, ErrorAction, InactiveTimeoutConfig, Initializer, LoggerFactory, LogoutAction, OauthConfig, ProviderConfig, SessionManagementConfig, SilentLoginConfig } from './configuration/oauth-config';
 import { DEFAULT_INTERRUPTSOURCES } from '@ng-idle/core';
-// eslint-disable-next-line prettier/prettier
 import { consoleLoggerFactory } from './helper/console-logger';
 import { loginResponseCheck, silentLoginCheck } from './helper/initializer';
+// eslint-disable-next-line prettier/prettier
+import { redirect, singleLogoutOrRedirect } from './helper/defaultActions';
 
 export class AuthConfigService {
   public readonly clientId: string;
   public readonly redirectUri?: string;
   public readonly discoveryUrl?: string;
-  public readonly logoutAction?: string | (() => void);
-  public readonly initializationErrorAction?: string | ((e: any) => void);
+  public readonly logoutAction: LogoutAction;
+  public readonly initializationErrorAction: ErrorAction;
   public readonly loggerFactory: LoggerFactory;
   public readonly tokenStore: Storage;
   public readonly silentLogin: SilentLoginConfig;
@@ -25,8 +26,10 @@ export class AuthConfigService {
     this.clientId = config.clientId;
     this.redirectUri = config.redirectUri;
     this.discoveryUrl = this.createDiscoveryUrl(config);
-    this.logoutAction = config.logoutAction;
-    this.initializationErrorAction = config.initializationErrorAction;
+    this.logoutAction =
+      config.logoutAction ?? singleLogoutOrRedirect('/auth/logout');
+    this.initializationErrorAction =
+      config.initializationErrorAction ?? redirect('/auth/error');
     this.loggerFactory = config.loggerFactory ?? consoleLoggerFactory;
     this.tokenStore = config.tokenStore ?? localStorage;
     this.silentLogin = this.createSilentLogin(config);
@@ -49,7 +52,7 @@ export class AuthConfigService {
     const input = config.silentLogin;
     return {
       enabled: input?.enabled ?? true,
-      timeoutInSecond: input?.timeoutInSecond ?? 5,
+      timeoutInSecond: input?.timeoutInSecond ?? 2,
       redirectUri: input?.redirectUri
     };
   }
@@ -60,7 +63,8 @@ export class AuthConfigService {
       idleTimeSeconds: input?.idleTimeSeconds ?? 300,
       timeoutSeconds: input?.timeoutSeconds ?? 60,
       interrupts: input?.interrupts ?? DEFAULT_INTERRUPTSOURCES,
-      enabled: input?.enabled ?? true
+      enabled: input?.enabled ?? true,
+      timeoutAction: input?.timeoutAction ?? redirect('/auth/logout')
     };
   }
 

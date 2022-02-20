@@ -5,7 +5,10 @@ import { LoginOptions } from './login-options';
 // eslint-disable-next-line prettier/prettier, @typescript-eslint/no-unused-vars
 import { enforceLogin, loginResponseCheck, silentCheckAndThenEnforce, silentLoginCheck } from '../helper/initializer';
 // eslint-disable-next-line prettier/prettier, @typescript-eslint/no-unused-vars
+import { redirect, singleLogout } from '../helper/defaultActions';
+// eslint-disable-next-line prettier/prettier, @typescript-eslint/no-unused-vars
 import { consoleLoggerFactory } from '../helper/console-logger';
+import { Router } from '@angular/router';
 
 /** General configuration object, needed to initialize {@link AuthenticationModule} */
 export interface OauthConfig {
@@ -19,17 +22,18 @@ export interface OauthConfig {
    */
   provider: string | ProviderConfig;
   /**
-   * Action to be performed after a logout. Can be an URL, then a redirect
-   * to this URL is made, can be a function, then this function is called
-   * or nothing, then nothing will be done.
+   * Action to be performed after a logout. Either use a default like {@link singleLogout},
+   * {@link logoutRedirect} or define your own function.
+   * When not set {@link singleLogout} with the redirectURI is used when single logout
+   * is possible and {@link logoutRedirect} to '/auth/logout' otherwise
    */
-  logoutAction?: string | (() => void);
+  logoutAction?: LogoutAction;
   /**
-   * Action to be performed after an initialization error. Can be an URL, then a redirect
-   * to this URL is made, can be a function, then this function is called
-   * or nothing, then nothing will be done.
+   * Action to be performed after an initialization error.
+   * Either use a default like {@link redirect} or define your own function.
+   * When not set {@link errorRedirect} to '/auth/logout' is used
    */
-  initializationErrorAction?: string | ((e: any) => void);
+  initializationErrorAction?: ErrorAction;
   /**
    * Function to initialize the library. Either use a default like {@link silentLoginCheck},
    * {@link enforceLogin}, {@link silentCheckAndThenEnforce}, {@link loginResponseCheck} or
@@ -48,8 +52,8 @@ export interface OauthConfig {
   silentLogin?: Partial<SilentLoginConfig>;
   /** Inactive configuration, check {@link InactiveTimeoutConfig} */
   inactiveTimeout?: Partial<InactiveTimeoutConfig>;
-  /** Auto update configuration, check {@link TokenUpdateConfig} */
-  autoUpdate?: Partial<TokenUpdateConfig>;
+  /** Auto update configuration, check {@link AutoUpdateConfig} */
+  autoUpdate?: Partial<AutoUpdateConfig>;
   /** Session management configuration, check {@link SessionManagementConfig} */
   sessionManagement?: Partial<SessionManagementConfig>;
 }
@@ -73,6 +77,8 @@ export interface ProviderConfig {
   publicKeys?: JWK[];
   /** URL of the check session iframe. If not given, no session management will be used */
   checkSessionIframe?: string;
+  /** URL of the end session endpoint. If not given, no single logout be used */
+  endSessionEndpoint?: string;
 }
 
 /** Input to the {@link Initializer} function */
@@ -105,7 +111,7 @@ export type LoggerFactory = (name: string) => Logger;
 export interface SilentLoginConfig {
   /** Is silent login enabled, default is true */
   enabled: boolean;
-  /** Timeout for silent login, default is 5 seconds */
+  /** Timeout for silent login, default is 2 seconds */
   timeoutInSecond: number;
   /**
    * Redirect URL to use for silent login,
@@ -127,10 +133,16 @@ export interface InactiveTimeoutConfig {
   timeoutSeconds: number;
   /** The interrupts regarded as "user activity" */
   interrupts: Array<InterruptSource>;
+  /**
+   * Action to be performed after a timeout. Either use a default like {@link singleLogout},
+   * {@link logoutRedirect} or define your own function.
+   * When not set {@link logoutRedirect} to '/auth/logout' is used
+   */
+  timeoutAction: LogoutAction;
 }
 
-/** Token update configuration */
-export interface TokenUpdateConfig {
+/** Token auto update configuration */
+export interface AutoUpdateConfig {
   /**
    * Enables automatic token update, default is true.
    * If enabled, tokens will be updated automatically
@@ -158,3 +170,28 @@ export interface SessionManagementConfig {
   /** Update interval in seconds */
   checkIntervalSeconds: number;
 }
+
+export interface LogoutActionInput {
+  /** Login-Result before the logout */
+  oldResult: LoginResult;
+  /** Logger factory to generate a logger from */
+  loggerFactory: LoggerFactory;
+  /**
+   * Function to perform a single logout.
+   * Returns true if single login has worked and false otherwise
+   */
+  singleLogout(redirectUri?: string): Promise<boolean>;
+  /** The angular router */
+  router: Router;
+}
+export type LogoutAction = (input: LogoutActionInput) => void;
+
+export interface ErrorActionInput {
+  /** The error */
+  error: any;
+  /** Logger factory to generate a logger from */
+  loggerFactory: LoggerFactory;
+  /** The angular router */
+  router: Router;
+}
+export type ErrorAction = (input: ErrorActionInput) => void;

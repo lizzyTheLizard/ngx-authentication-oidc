@@ -15,6 +15,7 @@ import { OidcSessionManagement } from './oidc/oidc-session-management';
 import { TokenUpdater } from './helper/token-updater';
 import { InactiveTimeoutHandler } from './helper/inactive-timeout-handler';
 import { WindowToken } from './authentication-module.tokens';
+import { LogoutActionInput } from './configuration/oauth-config';
 
 /**
  * Main facade of the library, can be used to check and perform logins.
@@ -76,15 +77,21 @@ export class AuthService {
     // Subscribe to others
     this.sessionManagement.changed$.subscribe(() => this.updateSession(false));
     this.tokenUpdater.updated$.subscribe((res) => this.sessionUpdated(res));
-    this.timeoutHandler.timeout$.subscribe(() => this.logout());
+    this.timeoutHandler.timeout$.subscribe(() => {
+      this.logger.debug('The user session has timed out');
+      const input = this.createLogoutActionInput();
+      this.logoutWithoutAction();
+      this.config.inactiveTimeout.timeoutAction(input);
+    });
   }
 
   private sessionUpdated(newLoginResult: LoginResult) {
     const oldLoginResult = this.tokenStore.getLoginResult();
     if (!newLoginResult.isLoggedIn) {
       this.logger.debug('The user is not logged in any more');
-      this.logout();
-      return;
+      const input = this.createLogoutActionInput();
+      this.logoutWithoutAction();
+      this.config.inactiveTimeout.timeoutAction(input);
     }
     this.logger.debug('The session has been updated');
     this.tokenStore.setLoginResult(newLoginResult);
@@ -113,14 +120,12 @@ export class AuthService {
       }
     } catch (e) {
       this.logger.error('Could not initialize authentication module', e);
-      if (!this.config.initializationErrorAction) {
-        this.logger.debug('No error action is specified');
-      } else if (typeof this.config.initializationErrorAction === 'string') {
-        this.logger.info('Redirect to', this.config.initializationErrorAction);
-        this.router.navigateByUrl(this.config.initializationErrorAction);
-      } else {
-        this.config.initializationErrorAction(e);
-      }
+      const input = {
+        error: e,
+        loggerFactory: this.config.loggerFactory,
+        router: this.router
+      };
+      this.config.initializationErrorAction(input);
     }
     this.initialSetupFinishedResolve(true);
   }
@@ -128,7 +133,7 @@ export class AuthService {
   private createInitializerInput(): InitializerInput {
     const initial = this.tokenStore.getLoginResult() ?? { isLoggedIn: false };
     const current = new URL(this.window.location.href);
-    const redirect = this.oidcLogin.redirectUrl;
+    const redirect = this.oidcLogin.getRedirectUrl();
 
     return {
       loggerFactory: this.config.loggerFactory,
@@ -204,7 +209,12 @@ export class AuthService {
    */
   public async logout(): Promise<void> {
     await this.initialSetupFinished$;
+    const input = this.createLogoutActionInput();
+    this.logoutWithoutAction();
+    await this.config.logoutAction(input);
+  }
 
+  private logoutWithoutAction() {
     this.tokenUpdater.stopAutoUpdate();
     this.sessionManagement.stopWatching();
     this.timeoutHandler.stop();
@@ -216,20 +226,20 @@ export class AuthService {
 
     const userInfo = this.getUserInfo();
     this.logger.info('Log out user', userInfo);
-    await this.oidcLogout.logout();
-
     const loginResult = { isLoggedIn: false };
     this.tokenStore.setLoginResult(loginResult);
     this.loginResult$.next(loginResult);
+  }
 
-    if (!this.config.logoutAction) {
-      this.logger.debug('Logged out, but no logout action is specified');
-    } else if (typeof this.config.logoutAction === 'string') {
-      this.logger.info('Redirect to', this.config.logoutAction);
-      this.router.navigateByUrl(this.config.logoutAction);
-    } else {
-      this.config.logoutAction();
-    }
+  private createLogoutActionInput(): LogoutActionInput {
+    const oldResult = this.tokenStore.getLoginResult();
+    return {
+      loggerFactory: this.config.loggerFactory,
+      router: this.router,
+      oldResult: oldResult,
+      singleLogout: (redirect) =>
+        this.oidcLogout.logout(oldResult.idToken, redirect)
+    };
   }
 
   /**

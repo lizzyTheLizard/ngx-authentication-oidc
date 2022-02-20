@@ -74,7 +74,8 @@ describe('OidcDiscovery', () => {
       authEndpoint: 'https://example.com/ae',
       alg: ['RSA256'],
       publicKeys: [],
-      checkSessionIframe: 'https://example.com/cs'
+      checkSessionIframe: 'https://example.com/cs',
+      endSessionEndpoint: 'https://example.com/es'
     });
   });
 
