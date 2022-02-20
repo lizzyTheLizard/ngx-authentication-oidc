@@ -8,7 +8,7 @@ import { AuthConfigService } from '../auth-config.service';
 
 const config = {
   silentLoginTimeoutInSecond: 1,
-  client: { clientId: 'id' },
+  clientId: 'id',
   provider: {
     tokenEndpoint: 'https://example.com/token'
   }
@@ -21,7 +21,10 @@ const oldLoginResult: LoginResult = {
   sessionState: 'SS'
 };
 
-const oidcResponse = jasmine.createSpyObj('oidcResponse', ['urlResponse']);
+const oidcResponse = jasmine.createSpyObj('oidcResponse', [
+  'tokenResponse',
+  'handleErrorResponse'
+]);
 
 let httpTestingController: HttpTestingController;
 let service: OidcRefresh;
@@ -61,7 +64,7 @@ describe('OidcRefresh', () => {
       .and.returnValue({ isLoggedIn: false });
     service.tokenRefresh(oldLoginResult).then(
       () => {
-        expect(oidcResponse.response).toHaveBeenCalledWith({
+        expect(oidcResponse.tokenResponse).toHaveBeenCalledWith({
           expires_in: 3600,
           id_token: 'id2',
           access_token: 'at2',
@@ -87,7 +90,7 @@ describe('OidcRefresh', () => {
       idToken: 'ud2',
       userInfo: { sub: '123' }
     };
-    oidcResponse.response = jasmine
+    oidcResponse.tokenResponse = jasmine
       .createSpy('response')
       .and.returnValue(newLoginResult);
     service.tokenRefresh(oldLoginResult).then(

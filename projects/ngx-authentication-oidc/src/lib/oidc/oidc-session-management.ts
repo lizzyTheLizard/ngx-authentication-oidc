@@ -118,7 +118,7 @@ export class OidcSessionManagement {
     }
 
     this.logger.debug('Start watching session');
-    const clientID = this.config.client.clientId;
+    const clientID = this.config.clientId;
     this.currentWatch = new CurrentWatch(
       iFrameUrl,
       clientID,

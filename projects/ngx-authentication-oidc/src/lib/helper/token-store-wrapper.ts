@@ -1,5 +1,4 @@
 import { Injectable } from '@angular/core';
-import { TokenStore } from '../configuration/oauth-config';
 import { AuthConfigService } from '../auth-config.service';
 import { LoginResult } from './login-result';
 
@@ -7,7 +6,7 @@ const prefix: string = 'auth.';
 
 @Injectable()
 export class TokenStoreWrapper {
-  private readonly tokenStore: TokenStore;
+  private readonly tokenStore: Storage;
 
   constructor(private readonly config: AuthConfigService) {
     this.tokenStore = config.tokenStore;

@@ -1,8 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Inject, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { catchError, concatMap, firstValueFrom, map } from 'rxjs';
 import { AuthConfigService } from '../auth-config.service';
-import { WindowToken } from '../authentication-module.tokens';
 import { Logger } from '../configuration/oauth-config';
 import { LoginResult } from '../helper/login-result';
 import { CustomHttpParamEncoder } from '../helper/custom-http-param-encoder';
@@ -29,15 +28,12 @@ export class OidcResponse {
   constructor(
     private readonly httpClient: HttpClient,
     private readonly config: AuthConfigService,
-    private readonly tokenValidator: OidcTokenValidator,
-    @Inject(WindowToken) private readonly window: Window
+    private readonly tokenValidator: OidcTokenValidator
   ) {
     this.logger = this.config.loggerFactory('OidcResponse');
   }
 
-  public urlResponse(urlStr?: string, redirect?: URL): Promise<LoginResult> {
-    const url = new URL(urlStr ?? this.window.location.href);
-    redirect = redirect ?? new URL(this.config.client.redirectUri);
+  public urlResponse(url: URL, redirect: URL): Promise<LoginResult> {
     if (url.pathname !== redirect.pathname) {
       this.logger.debug('Current URL is not redirectURL', url, redirect);
       return Promise.resolve({ isLoggedIn: false });
@@ -49,7 +45,7 @@ export class OidcResponse {
     return this.response(params, redirect);
   }
 
-  public async response(param: Response, redirect?: URL): Promise<LoginResult> {
+  public async response(param: Response, redirect: URL): Promise<LoginResult> {
     if (param.error) {
       return this.handleErrorResponse(param);
     }
@@ -59,7 +55,6 @@ export class OidcResponse {
       throw new Error('Login failed: Hybrid Flow not supported');
     }
     if (hasCode) {
-      redirect = redirect ?? new URL(this.config.client.redirectUri);
       return this.codeResponse(param, redirect);
     }
     if (hasToken) {
@@ -96,7 +91,7 @@ export class OidcResponse {
   // TODO: Implement confidential clients
   private codeResponse(params: Response, redirect: URL): Promise<LoginResult> {
     const payload = new HttpParams({ encoder: this.encoder })
-      .set('client_id', this.config.client.clientId)
+      .set('client_id', this.config.clientId)
       .set('grant_type', 'authorization_code')
       .set('code', params.code!)
       .set('redirect_uri', redirect.toString());
@@ -129,7 +124,7 @@ export class OidcResponse {
   }
 
   // TODO: UserInfo Endpoint (Chapter 5.3, https://openid.net/specs/openid-connect-core-1_0.html)
-  private async tokenResponse(response: Response): Promise<LoginResult> {
+  public async tokenResponse(response: Response): Promise<LoginResult> {
     const idToken = response.id_token ?? undefined;
     // TODO: Verify nonce
     const userInfo = await this.tokenValidator.verify(idToken);
@@ -151,7 +146,7 @@ export class OidcResponse {
     return result;
   }
 
-  private handleErrorResponse(params: Response): Promise<LoginResult> {
+  public handleErrorResponse(params: Response): Promise<LoginResult> {
     const error = params.error!;
     const description = params.error_description;
     const uri = params.error_uri;

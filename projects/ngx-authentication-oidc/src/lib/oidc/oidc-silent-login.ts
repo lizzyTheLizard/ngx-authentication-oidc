@@ -13,7 +13,7 @@ const silentRefreshIFrameName = 'silent-refresh-iframe';
 
 @Injectable()
 export class OidcSilentLogin {
-  private readonly silentRefreshUrl: URL;
+  private readonly silentRedirectUrl: URL;
   private logger: Logger;
   private loginEventListener?: (e: MessageEvent) => void;
 
@@ -25,10 +25,10 @@ export class OidcSilentLogin {
     @Inject(WindowToken) private readonly window: Window
   ) {
     this.logger = this.config.loggerFactory('OidcSilentLogin');
-    this.silentRefreshUrl = this.getSilentRefreshUrl();
+    this.silentRedirectUrl = this.getSilentRedirectUrl();
   }
 
-  private getSilentRefreshUrl(): URL {
+  private getSilentRedirectUrl(): URL {
     const urlStr =
       this.config.silentLogin.redirectUri ??
       this.location.prepareExternalUrl('assets/silent-refresh.html');
@@ -50,11 +50,11 @@ export class OidcSilentLogin {
   public async login(loginOptions: LoginOptions): Promise<LoginResult> {
     this.logger.info('Perform silent login');
     const silentLoginOptions = { ...loginOptions, prompt: 'none' };
-    const clientId = this.config.client.clientId;
+    const clientId = this.config.clientId;
     const authEndpoint = this.config.getProviderConfiguration().authEndpoint;
     const authenticationRequest = new AuthenticationRequest(
       silentLoginOptions,
-      this.silentRefreshUrl.toString(),
+      this.silentRedirectUrl.toString(),
       clientId,
       authEndpoint
     );
@@ -121,7 +121,7 @@ export class OidcSilentLogin {
       return;
     }
     this.window.removeEventListener('message', this.loginEventListener!);
-    this.oidcResponse.urlResponse(e.data, this.silentRefreshUrl).then(
+    this.oidcResponse.urlResponse(new URL(e.data), this.silentRedirectUrl).then(
       (result) => subject.next(result),
       (error) => {
         this.logger.debug('Could not silently log in: ', error);

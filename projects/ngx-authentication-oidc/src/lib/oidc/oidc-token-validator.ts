@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 // eslint-disable-next-line prettier/prettier
-import { JWTHeaderParameters, JWTPayload, KeyLike, importJWK, jwtVerify } from 'jose';
+import { JWK, JWTHeaderParameters, JWTPayload, KeyLike, base64url, importJWK, jwtVerify } from 'jose';
 import { AuthConfigService } from '../auth-config.service';
 import { Logger } from '../configuration/oauth-config';
 import { UserInfo } from '../helper/login-result';
@@ -17,25 +17,10 @@ export class OidcTokenValidator {
     if (!idToken) {
       throw new Error('No id token given');
     }
-
-    const verifyResult = await jwtVerify(
-      idToken,
-      (header) => this.getKey(header),
-      {}
-    );
-    const claims = verifyResult.payload;
-    const headers = verifyResult.protectedHeader;
-
-    if (!claims) {
-      throw new Error('No claims given');
-    }
-    if (!headers) {
-      throw new Error('No headers given');
-    }
+    const claims = await this.validateSignature(idToken);
     this.validateAccessTokenHash();
     this.validateIssuer(claims);
     this.validateAudience(claims);
-    this.validateAlgorithm(headers);
     this.validateTime(claims);
     this.validateNonce(claims, nonce);
 
@@ -49,30 +34,54 @@ export class OidcTokenValidator {
     };
   }
 
+  private async validateSignature(idToken: string): Promise<JWTPayload> {
+    let claims: JWTPayload;
+    const keys = this.config.getProviderConfiguration().publicKeys;
+    if (keys) {
+      const getKey = (header: JWTHeaderParameters) => this.getKey(header, keys);
+      const verifyResult = await jwtVerify(idToken, getKey, {});
+      const headers = verifyResult.protectedHeader;
+      if (!headers) {
+        throw new Error('No headers given');
+      }
+      this.validateAlgorithm(headers);
+      claims = verifyResult.payload;
+    } else {
+      this.logger.info('No keys defined, do not verify id token');
+      const decoder = new TextDecoder();
+      const { 1: encodedPayload } = idToken.split('.');
+      claims = JSON.parse(decoder.decode(base64url.decode(encodedPayload)));
+    }
+    if (!claims) {
+      throw new Error('No claims given');
+    }
+    return claims;
+  }
+
   private async getKey(
-    header: JWTHeaderParameters
+    headers: JWTHeaderParameters,
+    publicKeys: JWK[]
   ): Promise<KeyLike | Uint8Array> {
-    const publicKeys = this.config.getProviderConfiguration().publicKeys;
     const sigKeys = publicKeys
-      .filter((k) => !header.alg || !k.alg || k.alg === header.alg)
+      .filter((k) => !headers.alg || !k.alg || k.alg === headers.alg)
       .filter((k) => !k.use || k.use == 'sig');
     if (sigKeys.length === 0) {
       this.logger.error('No signature keys given');
       throw new Error('No valid signature key found');
     }
-    if (!header.kid && sigKeys.length == 1) {
+    if (!headers.kid && sigKeys.length == 1) {
       return importJWK(sigKeys[0]);
     }
-    if (!header.kid) {
+    if (!headers.kid) {
       this.logger.error(
         'Multiple signature keys but no kid keys given, take first'
       );
       return importJWK(sigKeys[0]);
     }
-    const keys = sigKeys.filter((k) => k.kid === header.kid);
+    const keys = sigKeys.filter((k) => k.kid === headers.kid);
     if (keys.length == 0) {
       this.logger.error(
-        'No key with kid ' + header.kid + ' could be found in the key set'
+        'No key with kid ' + headers.kid + ' could be found in the key set'
       );
       throw new Error('No valid key found');
     }
@@ -106,11 +115,11 @@ export class OidcTokenValidator {
     }
 
     if (typeof claims.aud === 'string') {
-      if (claims.aud !== this.config.client.clientId) {
+      if (claims.aud !== this.config.clientId) {
         throw new Error('ID-Token does not contain valid aud claim');
       }
     } else if (Array.isArray(claims.aud)) {
-      if (!(claims.aud as string[]).includes(this.config.client.clientId)) {
+      if (!(claims.aud as string[]).includes(this.config.clientId)) {
         throw new Error('ID-Token does not contain correct aud claim');
       }
     } else {

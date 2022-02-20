@@ -1,18 +1,19 @@
 /* global localStorage */
 // eslint-disable-next-line prettier/prettier
-import { TokenUpdateConfig as AutoUpdateConfig, ClientConfig, InactiveTimeoutConfig, Initializer, IssuerUrl, LoggerFactory, OauthConfig, ProviderConfig, SessionManagementConfig, SilentLoginConfig, TokenStore } from './configuration/oauth-config';
+import { TokenUpdateConfig as AutoUpdateConfig, InactiveTimeoutConfig, Initializer, LoggerFactory, OauthConfig, ProviderConfig, SessionManagementConfig, SilentLoginConfig } from './configuration/oauth-config';
 import { DEFAULT_INTERRUPTSOURCES } from '@ng-idle/core';
 // eslint-disable-next-line prettier/prettier
 import { consoleLoggerFactory } from './helper/console-logger';
 import { loginResponseCheck, silentLoginCheck } from './helper/initializer';
 
 export class AuthConfigService {
-  public readonly client: ClientConfig;
-  public readonly discoveryUrl?: IssuerUrl;
-  public readonly logoutAction?: string | (() => {});
-  public readonly initializationErrorAction?: string | ((e: any) => {});
+  public readonly clientId: string;
+  public readonly redirectUri?: string;
+  public readonly discoveryUrl?: string;
+  public readonly logoutAction?: string | (() => void);
+  public readonly initializationErrorAction?: string | ((e: any) => void);
   public readonly loggerFactory: LoggerFactory;
-  public readonly tokenStore: TokenStore;
+  public readonly tokenStore: Storage;
   public readonly silentLogin: SilentLoginConfig;
   public readonly inactiveTimeout: InactiveTimeoutConfig;
   public readonly autoUpdate: AutoUpdateConfig;
@@ -21,7 +22,8 @@ export class AuthConfigService {
   public readonly initializer: Initializer;
 
   constructor(config: OauthConfig) {
-    this.client = config.client;
+    this.clientId = config.clientId;
+    this.redirectUri = config.redirectUri;
     this.discoveryUrl = this.createDiscoveryUrl(config);
     this.logoutAction = config.logoutAction;
     this.initializationErrorAction = config.initializationErrorAction;
@@ -34,7 +36,7 @@ export class AuthConfigService {
     this.sessionManagement = this.createSessionMgm(config);
   }
 
-  private createDiscoveryUrl(config: OauthConfig): IssuerUrl | undefined {
+  private createDiscoveryUrl(config: OauthConfig): string | undefined {
     if (typeof config.provider === 'string') {
       return config.provider;
     } else {

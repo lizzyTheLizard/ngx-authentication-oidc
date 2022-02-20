@@ -8,10 +8,8 @@ import { OauthConfig } from '../configuration/oauth-config';
 import { OidcDiscovery } from './oidc-discovery';
 
 const config = {
-  client: {
-    clientId: 'test',
-    redirectUri: 'https://example.com/rd'
-  },
+  clientId: 'test',
+  redirectUri: 'https://example.com/rd',
   provider: 'https://example.com'
 };
 

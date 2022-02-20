@@ -22,10 +22,8 @@ const config = {
     ],
     maxAge: 10000
   },
-  client: {
-    redirectUri: 'https://example.com/rd',
-    clientId: 'id'
-  }
+  redirectUri: 'https://example.com/rd',
+  clientId: 'id'
 };
 
 const windowMock = {

@@ -112,7 +112,7 @@ describe('OidcSilentLogin', () => {
     const result = await service.login({});
 
     expect(oidcResponse.urlResponse.calls.mostRecent().args[0]).toEqual(
-      mock.data
+      new URL(mock.data)
     );
     expect(result).toEqual({ isLoggedIn: false });
   });
@@ -143,7 +143,7 @@ describe('OidcSilentLogin', () => {
     const result = await service.login({});
 
     expect(oidcResponse.urlResponse.calls.mostRecent().args[0]).toEqual(
-      mock.data
+      new URL(mock.data)
     );
     expect(result).toEqual({
       isLoggedIn: true,

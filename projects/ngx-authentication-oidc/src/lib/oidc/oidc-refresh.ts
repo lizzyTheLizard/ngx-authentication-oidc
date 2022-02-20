@@ -25,27 +25,30 @@ export class OidcRefresh {
       throw new Error('Could not refresh');
     }
     const payload = new HttpParams({ encoder: this.encoder })
-      .set('client_id', this.config.client.clientId)
+      .set('client_id', this.config.clientId)
       .set('grant_type', 'refresh_token')
       .set('refresh_token', oldLoginResult.refreshToken);
     const tokenEndpoint = this.config.getProviderConfiguration().tokenEndpoint;
     return await firstValueFrom(
-      this.httpClient.post(tokenEndpoint, payload).pipe(
-        map((r) => this.mergeWithOldResult(r, oldLoginResult)),
-        map((r) => this.oidcResponse.response(r))
-      )
+      this.httpClient
+        .post(tokenEndpoint, payload)
+        .pipe(map((r) => this.handleResponse(r, oldLoginResult)))
     );
   }
 
-  private mergeWithOldResult(
+  private handleResponse(
     response: Response,
-    oldLoginResult: LoginResult
-  ): Response {
-    return {
+    oldResult: LoginResult
+  ): Promise<LoginResult> {
+    if (response.error) {
+      return this.oidcResponse.handleErrorResponse(response);
+    }
+    const mergedResponse = {
       ...response,
-      refresh_token: response.refresh_token ?? oldLoginResult.refreshToken,
-      id_token: response.id_token ?? oldLoginResult.idToken,
-      session_state: response.session_state ?? oldLoginResult.sessionState
+      refresh_token: response.refresh_token ?? oldResult.refreshToken,
+      id_token: response.id_token ?? oldResult.idToken,
+      session_state: response.session_state ?? oldResult.sessionState
     };
+    return this.oidcResponse.tokenResponse(mergedResponse);
   }
 }

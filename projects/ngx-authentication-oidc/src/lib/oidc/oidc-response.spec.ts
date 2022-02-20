@@ -5,7 +5,6 @@ import { AuthConfigService } from '../auth-config.service';
 import { OauthConfig } from '../configuration/oauth-config';
 import { OidcResponse, Response } from './oidc-response';
 import { OidcTokenValidator } from './oidc-token-validator';
-import { WindowToken } from '../authentication-module.tokens';
 
 const config = {
   provider: {
@@ -16,20 +15,14 @@ const config = {
     publicKeys: [],
     maxAge: 10000
   },
-  client: {
-    redirectUri: 'https://example.com/rd',
-    clientId: 'id'
-  }
+  redirectUri: 'https://example.com/rd',
+  clientId: 'id'
 };
+
+const redirectUrl = new URL('https://example.com/rd');
 
 const token =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
-
-const windowMock = {
-  addEventListener: jasmine.createSpy('addEventListener'),
-  removeEventListener: jasmine.createSpy('removeEventListener '),
-  location: { href: 'http://localhost', origin: 'http://localhost' }
-};
 
 let httpTestingController: HttpTestingController;
 let service: OidcResponse;
@@ -43,7 +36,6 @@ describe('OidcResponse', () => {
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
       providers: [
-        { provide: WindowToken, useFactory: () => windowMock },
         { provide: OidcTokenValidator, useValue: validator },
         { provide: AuthConfigService, useValue: authConfig },
         OidcResponse
@@ -68,7 +60,7 @@ describe('OidcResponse', () => {
       access_token: 'SlAV32hkKG'
     };
 
-    const res = await service.response(params);
+    const res = await service.response(params, redirectUrl);
 
     expect(res.accessToken).toEqual('SlAV32hkKG');
     const expiresIn = Math.round(
@@ -89,7 +81,7 @@ describe('OidcResponse', () => {
       id_token: token,
       access_token: 'SlAV32hkKG'
     };
-    const res = await service.response(params);
+    const res = await service.response(params, redirectUrl);
 
     expect(res.redirectPath).toEqual('http://xy');
     expect(res.stateMessage).toEqual('tst');
@@ -100,7 +92,7 @@ describe('OidcResponse', () => {
       error: 'not_possible'
     };
 
-    service.response(params).then(
+    service.response(params, redirectUrl).then(
       () => done.fail(new Error('This should not work')),
       (e: Error) => {
         expect(e.message).toEqual('Login failed: not_possible');
@@ -115,7 +107,7 @@ describe('OidcResponse', () => {
       access_token: '123123'
     };
 
-    service.response(params).then(
+    service.response(params, redirectUrl).then(
       () => done.fail(new Error('This should not work')),
       (e: Error) => {
         expect(e.message).toEqual('Login failed: Hybrid Flow not supported');
@@ -133,7 +125,7 @@ describe('OidcResponse', () => {
     };
 
     service
-      .response(params)
+      .response(params, redirectUrl)
       .then((res) => {
         expect(res.accessToken).toEqual('SlAV32hkKG');
         const expiresIn = Math.round(
@@ -171,7 +163,7 @@ describe('OidcResponse', () => {
     };
 
     service
-      .response(params)
+      .response(params, redirectUrl)
       .then(() => {
         done.fail('This should not work');
       })
@@ -198,7 +190,7 @@ describe('OidcResponse', () => {
       finalUrl: 'http://xy'
     };
 
-    service.response(params).then((res) => {
+    service.response(params, redirectUrl).then((res) => {
       expect(res.redirectPath).toEqual('http://xy');
       expect(res.stateMessage).toEqual('tst');
     });
@@ -222,7 +214,7 @@ describe('OidcResponse', () => {
       code: '123-123'
     };
 
-    service.response(params).then(
+    service.response(params, redirectUrl).then(
       () => done.fail(new Error('This should not work')),
       (e: Error) => {
         expect(e.message).toEqual('Login failed: invalid_request');

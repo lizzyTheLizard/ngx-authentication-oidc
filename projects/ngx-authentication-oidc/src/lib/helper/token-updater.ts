@@ -63,7 +63,7 @@ export class TokenUpdater {
   private async updateSession(refreshToken: boolean): Promise<LoginResult> {
     const oldLoginResult = this.tokenStore.getLoginResult();
     if (!oldLoginResult.isLoggedIn) {
-      this.logger.info('Try to update token, but user is not logged in...');
+      this.logger.debug('Try to update token, but user is not logged in...');
       return { isLoggedIn: false };
     }
 

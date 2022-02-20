@@ -5,26 +5,29 @@ import { Logger } from '../configuration/oauth-config';
 import { LoginResult } from '../helper/login-result';
 import { WindowToken } from '../authentication-module.tokens';
 import { AuthenticationRequest } from '../helper/authentication-request';
+import { Location } from '@angular/common';
 
 @Injectable()
 export class OidcLogin {
   private readonly logger: Logger;
+  public readonly redirectUrl: URL;
 
   constructor(
+    private readonly location: Location,
     private readonly config: AuthConfigService,
     @Inject(WindowToken) private readonly window: Window
   ) {
     this.logger = this.config.loggerFactory('OidcLogin');
+    this.redirectUrl = this.getRedirectUrl();
   }
 
   public async login(loginOptions: LoginOptions): Promise<LoginResult> {
     this.logger.info('Perform login');
-    const redirectUri = this.config.client.redirectUri;
-    const clientId = this.config.client.clientId;
+    const clientId = this.config.clientId;
     const authEndpoint = this.config.getProviderConfiguration().authEndpoint;
     const url = new AuthenticationRequest(
       loginOptions,
-      redirectUri,
+      this.redirectUrl.toString(),
       clientId,
       authEndpoint
     ).toUrl();
@@ -33,5 +36,23 @@ export class OidcLogin {
     return new Promise<LoginResult>((_, reject) =>
       this.window.setTimeout(() => reject('Browser should be redirected'), 1000)
     );
+  }
+
+  private getRedirectUrl(): URL {
+    const urlStr =
+      this.config.redirectUri ?? this.location.prepareExternalUrl('');
+    try {
+      return new URL(urlStr);
+    } catch (e) {
+      const result = new URL(this.window.location.href);
+      result.pathname = '';
+      result.hash = '';
+      result.search = '';
+      this.logger.debug(
+        'redirectUri and base href are both not set, use origin as redirect URI',
+        result.toString()
+      );
+      return result;
+    }
   }
 }

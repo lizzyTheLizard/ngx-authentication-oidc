@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, Subject, filter, map } from 'rxjs';
 import { AuthConfigService } from './auth-config.service';
@@ -14,6 +14,7 @@ import { OidcResponse } from './oidc/oidc-response';
 import { OidcSessionManagement } from './oidc/oidc-session-management';
 import { TokenUpdater } from './helper/token-updater';
 import { InactiveTimeoutHandler } from './helper/inactive-timeout-handler';
+import { WindowToken } from './authentication-module.tokens';
 
 /**
  * Main facade of the library, can be used to check and perform logins.
@@ -54,7 +55,8 @@ export class AuthService {
     private readonly router: Router,
     private readonly tokenStore: TokenStoreWrapper,
     private readonly tokenUpdater: TokenUpdater,
-    private readonly timeoutHandler: InactiveTimeoutHandler
+    private readonly timeoutHandler: InactiveTimeoutHandler,
+    @Inject(WindowToken) private readonly window: Window
   ) {
     this.logger = this.config.loggerFactory('AuthService');
 
@@ -125,6 +127,9 @@ export class AuthService {
 
   private createInitializerInput(): InitializerInput {
     const initial = this.tokenStore.getLoginResult() ?? { isLoggedIn: false };
+    const current = new URL(this.window.location.href);
+    const redirect = this.oidcLogin.redirectUrl;
+
     return {
       loggerFactory: this.config.loggerFactory,
       initialLoginResult: initial,
@@ -132,7 +137,7 @@ export class AuthService {
         this.oidcLogin.login({ ...options, finalUrl: this.router.url }),
       silentLogin: (options: LoginOptions) =>
         this.oidcSilentLogin.login({ ...options, finalUrl: this.router.url }),
-      handleResponse: () => this.oidcResponse.urlResponse()
+      handleResponse: () => this.oidcResponse.urlResponse(current, redirect)
     };
   }
 
@@ -200,12 +205,12 @@ export class AuthService {
   public async logout(): Promise<void> {
     await this.initialSetupFinished$;
 
-    this.tokenUpdater.startAutoUpdate();
+    this.tokenUpdater.stopAutoUpdate();
     this.sessionManagement.stopWatching();
     this.timeoutHandler.stop();
 
     if (!this.isLoggedIn()) {
-      this.logger.info('No logout is started as user is already logged out');
+      this.logger.debug('No logout is started as user is already logged out');
       return;
     }
 

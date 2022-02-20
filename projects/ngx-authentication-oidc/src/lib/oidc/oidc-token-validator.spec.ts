@@ -19,10 +19,8 @@ const config = {
     ],
     maxAge: 10000
   },
-  client: {
-    clientId: 'id',
-    redirectUri: 'http://xxx'
-  }
+  clientId: 'id',
+  redirectUri: 'http://xxx'
 };
 
 const nonce = '12231232';
@@ -30,7 +28,7 @@ const nonce = '12231232';
 const claims = {
   sub: '1234',
   iss: config.provider.issuer,
-  aud: [config.client.clientId],
+  aud: [config.clientId],
   exp: getCurrentTime() + 10,
   iat: getCurrentTime() - 1,
   nbf: getCurrentTime() - 1,
@@ -84,7 +82,7 @@ describe('OidcTokenValidator', () => {
   });
 
   it('Single Audience', async () => {
-    const token = await writeToken({ ...claims, aud: config.client.clientId });
+    const token = await writeToken({ ...claims, aud: config.clientId });
     await expectAsync(service.verify(token, nonce)).toBeResolved();
   });
 
@@ -96,7 +94,7 @@ describe('OidcTokenValidator', () => {
   it('Multiple Audience', async () => {
     const token = await writeToken({
       ...claims,
-      aud: ['1', config.client.clientId]
+      aud: ['1', config.clientId]
     });
     await expectAsync(service.verify(token, nonce)).toBeResolved();
   });

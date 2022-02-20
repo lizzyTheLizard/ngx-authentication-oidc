@@ -10,9 +10,7 @@ const config = {
   provider: {
     checkSessionIframe: 'https://example.com/sc'
   },
-  client: {
-    clientId: 'id'
-  }
+  clientId: 'id'
 };
 
 let eventListener: EventListener;
@@ -75,7 +73,7 @@ describe('OidcSessionManagement', () => {
     tick(10000);
     expect(iframeMock.contentWindow.postMessage).toHaveBeenCalledTimes(1);
     expect(iframeMock.contentWindow.postMessage).toHaveBeenCalledWith(
-      config.client.clientId + ' ' + '123-123',
+      config.clientId + ' ' + '123-123',
       'https://example.com'
     );
     service.stopWatching();

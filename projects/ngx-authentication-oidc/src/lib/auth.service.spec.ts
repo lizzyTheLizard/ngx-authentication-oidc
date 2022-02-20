@@ -1,6 +1,5 @@
 /* global localStorage*/
 import { AuthService } from './auth.service';
-import { TokenStore } from './configuration/oauth-config';
 import { LoginResult } from './helper/login-result';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { AuthenticationModule } from './authentication-module';
@@ -21,7 +20,8 @@ import { InactiveTimeoutHandler } from './helper/inactive-timeout-handler';
 const config: OauthConfig = {
   initializationErrorAction: 'auth/error',
   logoutAction: 'auth/logout',
-  client: { clientId: 'id', redirectUri: 'url' },
+  clientId: 'id',
+  redirectUri: 'url',
   provider: {
     authEndpoint: 'auth',
     tokenEndpoint: 'token',
@@ -60,10 +60,11 @@ describe('AuthService', () => {
     silentLogin = jasmine.createSpy('silentLogin');
     discovery = jasmine.createSpy('discovery');
 
-    const windowMock = jasmine.createSpyObj('window', [
-      'setInterval',
-      'clearInterval'
-    ]);
+    const windowMock = {
+      setInterval: jasmine.createSpy('setInterval'),
+      clearInterval: jasmine.createSpy('clearInterval '),
+      location: { href: 'http://localhost', origin: 'http://localhost' }
+    };
 
     const timeoutHandler = {
       timeout$: sessionHandlerTimeout,
@@ -107,8 +108,8 @@ describe('AuthService', () => {
     service = TestBed.inject(AuthService);
     router = TestBed.inject(Router);
     localStorage.clear();
-    spyOn<TokenStore, any>(localStorage, 'setItem').and.callThrough();
-    spyOn<TokenStore, any>(localStorage, 'removeItem').and.callThrough();
+    spyOn<Storage, any>(localStorage, 'setItem').and.callThrough();
+    spyOn<Storage, any>(localStorage, 'removeItem').and.callThrough();
   });
 
   it('Discovery Failed', async () => {
