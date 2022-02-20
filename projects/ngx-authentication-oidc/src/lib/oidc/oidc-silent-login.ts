@@ -51,18 +51,14 @@ export class OidcSilentLogin {
         return of({ isLoggedIn: false });
       }
     };
-    return await firstValueFrom(result.pipe(timeout(timeoutOptions))).catch(
-      (e) => {
-        this.logger.error('Could not perform silent login', e);
-        return { isLoggedIn: false };
-      }
-    );
+    return await firstValueFrom(result.pipe(timeout(timeoutOptions))).catch((e) => {
+      this.logger.error('Could not perform silent login', e);
+      return { isLoggedIn: false };
+    });
   }
 
   private createIFrame(url: URL): HTMLIFrameElement {
-    const existingIframe = this.document.getElementById(
-      silentRefreshIFrameName
-    );
+    const existingIframe = this.document.getElementById(silentRefreshIFrameName);
     if (existingIframe) {
       this.document.body.removeChild(existingIframe);
     }
@@ -73,9 +69,7 @@ export class OidcSilentLogin {
     return iframe;
   }
 
-  private setupLoginEventListener(
-    iframe: HTMLIFrameElement
-  ): Observable<LoginResult> {
+  private setupLoginEventListener(iframe: HTMLIFrameElement): Observable<LoginResult> {
     if (this.loginEventListener) {
       this.window.removeEventListener('message', this.loginEventListener);
     }
@@ -96,10 +90,7 @@ export class OidcSilentLogin {
     if (!e || !e.data || typeof e.data !== 'string') {
       return;
     }
-    if (
-      !e.source ||
-      ((e.source as any) !== iframe && (e.source as any).parent !== this.window)
-    ) {
+    if (!e.source || ((e.source as any) !== iframe && (e.source as any).parent !== this.window)) {
       return;
     }
     this.window.removeEventListener('message', this.loginEventListener!);

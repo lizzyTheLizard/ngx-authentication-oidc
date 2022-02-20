@@ -55,9 +55,7 @@ export class TokenUpdater {
   }
 
   public async forceCheck(refreshToken: boolean) {
-    this.updateSession(refreshToken).then((res) =>
-      this.sessionUpdatedSub.next(res)
-    );
+    this.updateSession(refreshToken).then((res) => this.sessionUpdatedSub.next(res));
   }
 
   private async updateSession(refreshToken: boolean): Promise<LoginResult> {

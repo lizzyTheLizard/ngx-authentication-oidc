@@ -38,10 +38,7 @@ const documentMock = {
   createElement: jasmine.createSpy('createElement').and.returnValue(iframeMock)
 };
 
-const tokenStoreMock = jasmine.createSpyObj('tokenStoreMock', [
-  'getLoginResult',
-  'setLoginResult'
-]);
+const tokenStoreMock = jasmine.createSpyObj('tokenStoreMock', ['getLoginResult', 'setLoginResult']);
 
 let service: OidcSessionManagement;
 

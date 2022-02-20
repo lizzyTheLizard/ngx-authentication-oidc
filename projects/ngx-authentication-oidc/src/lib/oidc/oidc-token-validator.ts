@@ -73,16 +73,12 @@ export class OidcTokenValidator {
       return importJWK(sigKeys[0]);
     }
     if (!headers.kid) {
-      this.logger.error(
-        'Multiple signature keys but no kid keys given, take first'
-      );
+      this.logger.error('Multiple signature keys but no kid keys given, take first');
       return importJWK(sigKeys[0]);
     }
     const keys = sigKeys.filter((k) => k.kid === headers.kid);
     if (keys.length == 0) {
-      this.logger.error(
-        'No key with kid ' + headers.kid + ' could be found in the key set'
-      );
+      this.logger.error('No key with kid ' + headers.kid + ' could be found in the key set');
       throw new Error('No valid key found');
     }
     return importJWK(keys[0]);
@@ -151,10 +147,7 @@ export class OidcTokenValidator {
     }
     if (claims.exp <= actualTime) {
       throw new Error(
-        'exp claim is ' +
-          claims.exp +
-          ' which is in the past. Current time is ' +
-          actualTime
+        'exp claim is ' + claims.exp + ' which is in the past. Current time is ' + actualTime
       );
     }
     if (!claims.iat) {
@@ -162,10 +155,7 @@ export class OidcTokenValidator {
     }
     if (claims.iat > actualTime) {
       throw new Error(
-        'iat claim is ' +
-          claims.iat +
-          ' which is in the future. Current time is ' +
-          actualTime
+        'iat claim is ' + claims.iat + ' which is in the future. Current time is ' + actualTime
       );
     }
     const maxAge = this.config.getProviderConfiguration().maxAge;
@@ -181,10 +171,7 @@ export class OidcTokenValidator {
     }
     if (claims.nbf && claims.nbf >= actualTime) {
       throw new Error(
-        'nbf claim is ' +
-          claims.nbf +
-          ' which is in the future. Current time is ' +
-          actualTime
+        'nbf claim is ' + claims.nbf + ' which is in the future. Current time is ' + actualTime
       );
     }
     return;

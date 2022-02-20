@@ -21,10 +21,7 @@ const oldLoginResult: LoginResult = {
   sessionState: 'SS'
 };
 
-const oidcResponse = jasmine.createSpyObj('oidcResponse', [
-  'tokenResponse',
-  'handleErrorResponse'
-]);
+const oidcResponse = jasmine.createSpyObj('oidcResponse', ['tokenResponse', 'handleErrorResponse']);
 
 let httpTestingController: HttpTestingController;
 let service: OidcRefresh;
@@ -59,9 +56,7 @@ describe('OidcRefresh', () => {
   });
 
   it('Merge with old Session', (done) => {
-    oidcResponse.response = jasmine
-      .createSpy('response')
-      .and.returnValue({ isLoggedIn: false });
+    oidcResponse.response = jasmine.createSpy('response').and.returnValue({ isLoggedIn: false });
     service.tokenRefresh(oldLoginResult).then(
       () => {
         expect(oidcResponse.tokenResponse).toHaveBeenCalledWith({
@@ -90,9 +85,7 @@ describe('OidcRefresh', () => {
       idToken: 'ud2',
       userInfo: { sub: '123' }
     };
-    oidcResponse.tokenResponse = jasmine
-      .createSpy('response')
-      .and.returnValue(newLoginResult);
+    oidcResponse.tokenResponse = jasmine.createSpy('response').and.returnValue(newLoginResult);
     service.tokenRefresh(oldLoginResult).then(
       (res) => {
         expect(res).toEqual(newLoginResult);

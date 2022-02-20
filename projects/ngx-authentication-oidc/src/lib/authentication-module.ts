@@ -34,9 +34,7 @@ import { LocalUrl } from './helper/local-url';
   imports: [HttpClientModule, NgIdleModule.forRoot()]
 })
 export class AuthenticationModule {
-  static forRoot(
-    config: OauthConfig
-  ): ModuleWithProviders<AuthenticationModule> {
+  static forRoot(config: OauthConfig): ModuleWithProviders<AuthenticationModule> {
     const authConfig = new AuthConfigService(config);
     return {
       ngModule: AuthenticationModule,

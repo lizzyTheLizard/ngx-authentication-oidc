@@ -10,10 +10,7 @@ describe('TokenStoreWrapper', () => {
   beforeEach(() => {
     const configService = new AuthConfigService({} as OauthConfig);
     TestBed.configureTestingModule({
-      providers: [
-        { provide: AuthConfigService, useValue: configService },
-        TokenStoreWrapper
-      ]
+      providers: [{ provide: AuthConfigService, useValue: configService }, TokenStoreWrapper]
     });
     service = TestBed.inject(TokenStoreWrapper);
   });

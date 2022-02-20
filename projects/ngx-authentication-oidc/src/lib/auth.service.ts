@@ -237,8 +237,7 @@ export class AuthService {
       loggerFactory: this.config.loggerFactory,
       router: this.router,
       oldResult: oldResult,
-      singleLogout: (redirect) =>
-        this.oidcLogout.logout(oldResult.idToken, redirect)
+      singleLogout: (redirect) => this.oidcLogout.logout(oldResult.idToken, redirect)
     };
   }
 

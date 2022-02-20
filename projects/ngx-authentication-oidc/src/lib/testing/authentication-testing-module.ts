@@ -10,10 +10,7 @@ export class AuthenticationTestingModule {
   static forRoot(): ModuleWithProviders<AuthenticationTestingModule> {
     return {
       ngModule: AuthenticationTestingModule,
-      providers: [
-        AuthTestingService,
-        { provide: AuthService, useExisting: AuthTestingService }
-      ]
+      providers: [AuthTestingService, { provide: AuthService, useExisting: AuthTestingService }]
     };
   }
 

@@ -44,9 +44,7 @@ describe('OidcSilentLogin', () => {
   beforeEach(() => {
     const authConfig = new AuthConfigService(config as any);
     const localUrl = {
-      getLocalUrl: jasmine
-        .createSpy('getLocalUrl')
-        .and.returnValue(new URL('https://localhost'))
+      getLocalUrl: jasmine.createSpy('getLocalUrl').and.returnValue(new URL('https://localhost'))
     };
 
     TestBed.configureTestingModule({
@@ -64,18 +62,14 @@ describe('OidcSilentLogin', () => {
   });
 
   it('Silent Login Timeout', fakeAsync(() => {
-    windowMock.addEventListener = jasmine
-      .createSpy('addEventListener')
-      .and.callFake(() => {});
-    oidcResponse.urlResponse = jasmine
-      .createSpy('handleURLResponse')
-      .and.returnValue(
-        Promise.resolve({
-          isLoggedIn: true,
-          idToken: token,
-          accessToken: 'SlAV32hkKG'
-        })
-      );
+    windowMock.addEventListener = jasmine.createSpy('addEventListener').and.callFake(() => {});
+    oidcResponse.urlResponse = jasmine.createSpy('handleURLResponse').and.returnValue(
+      Promise.resolve({
+        isLoggedIn: true,
+        idToken: token,
+        accessToken: 'SlAV32hkKG'
+      })
+    );
 
     const result = service.login({});
     tick(6000);
@@ -98,9 +92,7 @@ describe('OidcSilentLogin', () => {
     await service.login({});
 
     expect(iframeMock.setAttribute.calls.mostRecent().args[0]).toEqual('src');
-    expect(iframeMock.setAttribute.calls.mostRecent().args[1]).toMatch(
-      'https://example.com/auth'
-    );
+    expect(iframeMock.setAttribute.calls.mostRecent().args[1]).toMatch('https://example.com/auth');
   });
 
   it('Silent Login Failed', async () => {
@@ -118,9 +110,7 @@ describe('OidcSilentLogin', () => {
 
     const result = await service.login({});
 
-    expect(oidcResponse.urlResponse.calls.mostRecent().args[0]).toEqual(
-      new URL(mock.data)
-    );
+    expect(oidcResponse.urlResponse.calls.mostRecent().args[0]).toEqual(new URL(mock.data));
     expect(result).toEqual({ isLoggedIn: false });
   });
 
@@ -137,21 +127,17 @@ describe('OidcSilentLogin', () => {
     windowMock.addEventListener = jasmine
       .createSpy('addEventListener')
       .and.callFake((m, l) => l(mock));
-    oidcResponse.urlResponse = jasmine
-      .createSpy('handleURLResponse')
-      .and.callFake(() => {
-        return Promise.resolve({
-          isLoggedIn: true,
-          idToken: token,
-          accessToken: 'SlAV32hkKG'
-        });
+    oidcResponse.urlResponse = jasmine.createSpy('handleURLResponse').and.callFake(() => {
+      return Promise.resolve({
+        isLoggedIn: true,
+        idToken: token,
+        accessToken: 'SlAV32hkKG'
       });
+    });
 
     const result = await service.login({});
 
-    expect(oidcResponse.urlResponse.calls.mostRecent().args[0]).toEqual(
-      new URL(mock.data)
-    );
+    expect(oidcResponse.urlResponse.calls.mostRecent().args[0]).toEqual(new URL(mock.data));
     expect(result).toEqual({
       isLoggedIn: true,
       idToken: token,

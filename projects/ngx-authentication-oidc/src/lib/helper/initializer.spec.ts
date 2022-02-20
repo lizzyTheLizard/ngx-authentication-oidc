@@ -13,12 +13,7 @@ let input: InitializerInput;
 
 describe('loginResponseCheck', async () => {
   beforeEach(() => {
-    input = jasmine.createSpyObj('input', [
-      'login',
-      'silentLogin',
-      'isResponse',
-      'handleResponse'
-    ]);
+    input = jasmine.createSpyObj('input', ['login', 'silentLogin', 'isResponse', 'handleResponse']);
     input.loggerFactory = () => console;
   });
 
@@ -69,22 +64,11 @@ describe('loginResponseCheck', async () => {
 
 describe('silentLoginCheck', () => {
   beforeEach(() => {
-    input = jasmine.createSpyObj('input', [
-      'login',
-      'silentLogin',
-      'isResponse',
-      'handleResponse'
-    ]);
+    input = jasmine.createSpyObj('input', ['login', 'silentLogin', 'isResponse', 'handleResponse']);
     input.loggerFactory = () => console;
-    input.login = jasmine
-      .createSpy('login')
-      .and.callFake(() => Promise.reject());
-    input.silentLogin = jasmine
-      .createSpy('silentLogin')
-      .and.callFake(() => Promise.reject());
-    input.handleResponse = jasmine
-      .createSpy('handleResponse')
-      .and.returnValue(failedLoginResult);
+    input.login = jasmine.createSpy('login').and.callFake(() => Promise.reject());
+    input.silentLogin = jasmine.createSpy('silentLogin').and.callFake(() => Promise.reject());
+    input.handleResponse = jasmine.createSpy('handleResponse').and.returnValue(failedLoginResult);
   });
 
   it('Silent login failed', async () => {
@@ -125,28 +109,15 @@ describe('silentLoginCheck', () => {
 
 describe('enforceLogin', () => {
   beforeEach(() => {
-    input = jasmine.createSpyObj('input', [
-      'login',
-      'silentLogin',
-      'isResponse',
-      'handleResponse'
-    ]);
+    input = jasmine.createSpyObj('input', ['login', 'silentLogin', 'isResponse', 'handleResponse']);
     input.loggerFactory = () => console;
-    input.login = jasmine
-      .createSpy('login')
-      .and.callFake(() => Promise.reject());
-    input.silentLogin = jasmine
-      .createSpy('silentLogin')
-      .and.callFake(() => Promise.reject());
-    input.handleResponse = jasmine
-      .createSpy('handleResponse')
-      .and.returnValue(failedLoginResult);
+    input.login = jasmine.createSpy('login').and.callFake(() => Promise.reject());
+    input.silentLogin = jasmine.createSpy('silentLogin').and.callFake(() => Promise.reject());
+    input.handleResponse = jasmine.createSpy('handleResponse').and.returnValue(failedLoginResult);
   });
 
   it('Login failed', (done) => {
-    input.login = jasmine
-      .createSpy('login')
-      .and.returnValue(Promise.resolve(failedLoginResult));
+    input.login = jasmine.createSpy('login').and.returnValue(Promise.resolve(failedLoginResult));
     input.initialLoginResult = failedLoginResult;
 
     enforceLogin(input)
@@ -184,22 +155,11 @@ describe('enforceLogin', () => {
 
 describe('silentLoginAndThenEnforce', () => {
   beforeEach(() => {
-    input = jasmine.createSpyObj('input', [
-      'login',
-      'silentLogin',
-      'isResponse',
-      'handleResponse'
-    ]);
+    input = jasmine.createSpyObj('input', ['login', 'silentLogin', 'isResponse', 'handleResponse']);
     input.loggerFactory = () => console;
-    input.login = jasmine
-      .createSpy('login')
-      .and.callFake(() => Promise.reject());
-    input.silentLogin = jasmine
-      .createSpy('silentLogin')
-      .and.callFake(() => Promise.reject());
-    input.handleResponse = jasmine
-      .createSpy('handleResponse')
-      .and.returnValue(failedLoginResult);
+    input.login = jasmine.createSpy('login').and.callFake(() => Promise.reject());
+    input.silentLogin = jasmine.createSpy('silentLogin').and.callFake(() => Promise.reject());
+    input.handleResponse = jasmine.createSpy('handleResponse').and.returnValue(failedLoginResult);
   });
 
   it('Silent Login success', async () => {
@@ -238,9 +198,7 @@ describe('silentLoginAndThenEnforce', () => {
     input.silentLogin = jasmine
       .createSpy('silentLogin')
       .and.returnValue(Promise.resolve(failedLoginResult));
-    input.login = jasmine
-      .createSpy('login')
-      .and.returnValue(Promise.resolve(failedLoginResult));
+    input.login = jasmine.createSpy('login').and.returnValue(Promise.resolve(failedLoginResult));
     input.initialLoginResult = failedLoginResult;
 
     silentCheckAndThenEnforce(input)

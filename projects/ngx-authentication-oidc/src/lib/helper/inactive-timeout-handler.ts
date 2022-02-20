@@ -12,10 +12,7 @@ export class InactiveTimeoutHandler {
   public readonly timeout$: Observable<void>;
   public readonly timeoutWarning$: Observable<number>;
 
-  constructor(
-    private readonly idle: Idle,
-    private readonly config: AuthConfigService
-  ) {
+  constructor(private readonly idle: Idle, private readonly config: AuthConfigService) {
     this.logger = this.config.loggerFactory('InactiveTimeoutHandler');
     this.timeoutSub = new Subject();
     this.timeout$ = this.timeoutSub.asObservable();
@@ -33,12 +30,8 @@ export class InactiveTimeoutHandler {
     this.idle.setTimeout(this.config.inactiveTimeout.timeoutSeconds);
     this.idle.setInterrupts(this.config.inactiveTimeout.interrupts);
     this.idle.onIdleStart.subscribe(() => this.logger.debug('User is idle'));
-    this.idle.onIdleEnd.subscribe(() =>
-      this.logger.debug('User is not idle any more')
-    );
-    this.idle.onTimeoutWarning.subscribe((countdown) =>
-      this.timeoutWarning(countdown)
-    );
+    this.idle.onIdleEnd.subscribe(() => this.logger.debug('User is not idle any more'));
+    this.idle.onTimeoutWarning.subscribe((countdown) => this.timeoutWarning(countdown));
     this.idle.onTimeout.subscribe(() => this.timeout());
   }
 
@@ -48,9 +41,7 @@ export class InactiveTimeoutHandler {
   }
 
   private timeoutWarning(secondsLeft: number) {
-    this.logger.debug(
-      'User is idle, you will be logged out in ' + secondsLeft + ' seconds'
-    );
+    this.logger.debug('User is idle, you will be logged out in ' + secondsLeft + ' seconds');
     this.timeoutWarningSub.next(secondsLeft);
   }
 

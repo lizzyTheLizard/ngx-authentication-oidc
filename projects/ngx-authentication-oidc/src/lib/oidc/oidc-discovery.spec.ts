@@ -37,10 +37,7 @@ describe('OidcDiscovery', () => {
     configService = new AuthConfigService(config as OauthConfig);
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
-      providers: [
-        { provide: AuthConfigService, useValue: configService },
-        OidcDiscovery
-      ]
+      providers: [{ provide: AuthConfigService, useValue: configService }, OidcDiscovery]
     });
 
     httpTestingController = TestBed.inject(HttpTestingController);

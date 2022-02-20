@@ -36,10 +36,7 @@ export class OidcRefresh {
     );
   }
 
-  private handleResponse(
-    response: Response,
-    oldResult: LoginResult
-  ): Promise<LoginResult> {
+  private handleResponse(response: Response, oldResult: LoginResult): Promise<LoginResult> {
     if (response.error) {
       return this.oidcResponse.handleErrorResponse(response);
     }

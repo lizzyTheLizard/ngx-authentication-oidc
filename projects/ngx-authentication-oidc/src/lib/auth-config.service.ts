@@ -27,10 +27,8 @@ export class AuthConfigService {
     this.clientId = config.clientId;
     this.redirectUri = config.redirectUri;
     this.discoveryUrl = this.createDiscoveryUrl(config);
-    this.logoutAction =
-      config.logoutAction ?? singleLogoutOrRedirect('/auth/logout');
-    this.initializationErrorAction =
-      config.initializationErrorAction ?? redirect('/auth/error');
+    this.logoutAction = config.logoutAction ?? singleLogoutOrRedirect('/auth/logout');
+    this.initializationErrorAction = config.initializationErrorAction ?? redirect('/auth/error');
     this.loggerFactory = config.loggerFactory ?? consoleLoggerFactory;
     this.tokenStore = config.tokenStore ?? localStorage;
     this.silentLogin = this.createSilentLogin(config);
@@ -38,8 +36,7 @@ export class AuthConfigService {
     this.autoUpdate = this.createAutoUpdate(config);
     this.initializer = this.createInitializer(config);
     this.sessionManagement = this.createSessionMgm(config);
-    this.userInfoSource =
-      config.userInfoSource ?? UserInfoSource.TOKEN_THEN_USER_INFO_ENDPOINT;
+    this.userInfoSource = config.userInfoSource ?? UserInfoSource.TOKEN_THEN_USER_INFO_ENDPOINT;
   }
 
   private createDiscoveryUrl(config: OauthConfig): string | undefined {
@@ -89,10 +86,7 @@ export class AuthConfigService {
   }
 
   private createInitializer(config: OauthConfig): Initializer {
-    return (
-      config.initializer ??
-      (this.silentLogin.enabled ? silentLoginCheck : loginResponseCheck)
-    );
+    return config.initializer ?? (this.silentLogin.enabled ? silentLoginCheck : loginResponseCheck);
   }
 
   public setProviderConfiguration(providerConfiguration: ProviderConfig) {

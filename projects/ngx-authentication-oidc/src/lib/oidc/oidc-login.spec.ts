@@ -40,9 +40,7 @@ let service: OidcLogin;
 describe('OidcLogin', () => {
   beforeEach(() => {
     const localUrl = {
-      getLocalUrl: jasmine
-        .createSpy('getLocalUrl')
-        .and.returnValue(new URL('https://localhost'))
+      getLocalUrl: jasmine.createSpy('getLocalUrl').and.returnValue(new URL('https://localhost'))
     };
     const authConfig = new AuthConfigService(config as OauthConfig);
     TestBed.configureTestingModule({
@@ -80,9 +78,7 @@ describe('OidcLogin', () => {
       stateMessage: 'test',
       finalUrl: 'https://example.com/final'
     });
-    expect(url.searchParams.get('redirect_uri')).toEqual(
-      'https://example.com/rd'
-    );
+    expect(url.searchParams.get('redirect_uri')).toEqual('https://example.com/rd');
     expect(url.searchParams.has('nonce')).toBeTrue();
   });
 });

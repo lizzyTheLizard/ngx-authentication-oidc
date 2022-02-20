@@ -170,9 +170,7 @@ describe('AuthService', () => {
   it('Initialization Failed', async () => {
     const navigateSpy = spyOn(router, 'navigateByUrl');
     discovery.and.returnValue(Promise.resolve());
-    initializer.and.returnValue(
-      Promise.reject('Cannot perform initialization')
-    );
+    initializer.and.returnValue(Promise.reject('Cannot perform initialization'));
 
     service.initialize();
     await service.initialSetupFinished$;

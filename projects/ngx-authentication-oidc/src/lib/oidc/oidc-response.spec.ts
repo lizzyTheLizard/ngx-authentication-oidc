@@ -50,9 +50,7 @@ describe('OidcResponse', () => {
   });
 
   it('Handle Implicit Response', async () => {
-    validator.verify = jasmine
-      .createSpy('validate')
-      .and.returnValue({ sub: '1234567890' });
+    validator.verify = jasmine.createSpy('validate').and.returnValue({ sub: '1234567890' });
     const params: Response = {
       stateMessage: 'af0ifjsldkj',
       expires_in: '3600',
@@ -63,9 +61,7 @@ describe('OidcResponse', () => {
     const res = await service.response(params, redirectUrl);
 
     expect(res.accessToken).toEqual('SlAV32hkKG');
-    const expiresIn = Math.round(
-      (res.expiresAt!.getTime() - Date.now()) / 1000
-    );
+    const expiresIn = Math.round((res.expiresAt!.getTime() - Date.now()) / 1000);
     expect(expiresIn).toEqual(3600);
     expect(res.idToken).toEqual(token);
     expect(res.isLoggedIn).toBeTrue();
@@ -117,9 +113,7 @@ describe('OidcResponse', () => {
   });
 
   it('Handle Code Response', (done) => {
-    validator.verify = jasmine
-      .createSpy('validate')
-      .and.returnValue({ sub: '1234567890' });
+    validator.verify = jasmine.createSpy('validate').and.returnValue({ sub: '1234567890' });
     const params: Response = {
       code: '123-123'
     };
@@ -128,9 +122,7 @@ describe('OidcResponse', () => {
       .response(params, redirectUrl)
       .then((res) => {
         expect(res.accessToken).toEqual('SlAV32hkKG');
-        const expiresIn = Math.round(
-          (res.expiresAt!.getTime() - Date.now()) / 1000
-        );
+        const expiresIn = Math.round((res.expiresAt!.getTime() - Date.now()) / 1000);
         expect(expiresIn).toEqual(3600);
         expect(res.idToken).toEqual(token);
         expect(res.isLoggedIn).toBeTrue();
@@ -155,9 +147,7 @@ describe('OidcResponse', () => {
   });
 
   it('Handle Code Response Invalid Token', (done) => {
-    validator.verify = jasmine
-      .createSpy('validate')
-      .and.throwError(new Error('Not valid'));
+    validator.verify = jasmine.createSpy('validate').and.throwError(new Error('Not valid'));
     const params: Response = {
       code: '123-123'
     };
@@ -227,9 +217,6 @@ describe('OidcResponse', () => {
     expect(req.request.body.toString()).toEqual(
       'client_id=id&grant_type=authorization_code&code=123-123&redirect_uri=https%3A%2F%2Fexample.com%2Frd'
     );
-    req.flush(
-      { error: 'invalid_request' },
-      { status: 400, statusText: 'Bad Request' }
-    );
+    req.flush({ error: 'invalid_request' }, { status: 400, statusText: 'Bad Request' });
   });
 });

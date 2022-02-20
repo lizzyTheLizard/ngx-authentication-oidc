@@ -67,11 +67,7 @@ export class OidcSessionManagement {
       this.logger.info('Session Management is disabled');
       return;
     }
-    window.addEventListener(
-      'message',
-      (e) => this.sessionChangeListener(e),
-      false
-    );
+    window.addEventListener('message', (e) => this.sessionChangeListener(e), false);
   }
 
   private sessionChangeListener(e: MessageEvent) {

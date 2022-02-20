@@ -53,10 +53,7 @@ describe('OidcTokenValidator', () => {
     const authConfig = new AuthConfigService(config);
 
     TestBed.configureTestingModule({
-      providers: [
-        { provide: AuthConfigService, useValue: authConfig },
-        OidcTokenValidator
-      ]
+      providers: [{ provide: AuthConfigService, useValue: authConfig }, OidcTokenValidator]
     });
     service = TestBed.inject(OidcTokenValidator);
   });

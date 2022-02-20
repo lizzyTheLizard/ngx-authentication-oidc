@@ -17,9 +17,7 @@ describe('AuthenticationRequest', () => {
     expect(result.searchParams.get('scope')).toEqual(DEFAULT_SCOPE);
     expect(result.searchParams.get('client_id')).toEqual('id');
     expect(JSON.parse(result.searchParams.get('state')!)).toEqual({});
-    expect(result.searchParams.get('redirect_uri')).toEqual(
-      'https://example.com/rd'
-    );
+    expect(result.searchParams.get('redirect_uri')).toEqual('https://example.com/rd');
     expect(result.searchParams.has('nonce')).toBeTrue();
   });
 
@@ -48,9 +46,7 @@ describe('AuthenticationRequest', () => {
     expect(JSON.parse(result.searchParams.get('state')!)).toEqual({
       finalUrl: 'https://example.com/final'
     });
-    expect(result.searchParams.get('redirect_uri')).toEqual(
-      'https://example.com/rd222'
-    );
+    expect(result.searchParams.get('redirect_uri')).toEqual('https://example.com/rd222');
     expect(result.searchParams.has('nonce')).toBeTrue();
     expect(result.searchParams.get('prompt')).toEqual('none');
     expect(result.searchParams.get('ui_locales')).toEqual('de');

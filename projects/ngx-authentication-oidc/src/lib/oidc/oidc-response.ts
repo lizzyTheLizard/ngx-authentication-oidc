@@ -60,9 +60,7 @@ export class OidcResponse {
     if (hasToken) {
       return this.tokenResponse(param);
     }
-    this.logger.debug(
-      'This is not a redirect as URL as no return params can be detected'
-    );
+    this.logger.debug('This is not a redirect as URL as no return params can be detected');
     return Promise.resolve({ isLoggedIn: false });
   }
 
@@ -125,14 +123,10 @@ export class OidcResponse {
   public async tokenResponse(response: Response): Promise<LoginResult> {
     const idToken = response.id_token ?? undefined;
     // TODO: Verify nonce
-    const userInfoFromToken = idToken
-      ? await this.tokenValidator.verify(idToken)
-      : undefined;
+    const userInfoFromToken = idToken ? await this.tokenValidator.verify(idToken) : undefined;
     const userInfo = await this.getUserInfo(response, userInfoFromToken);
     const expiresIn = response.expires_in;
-    const expiresAt = expiresIn
-      ? new Date(Date.now() + parseInt(expiresIn) * 1000)
-      : undefined;
+    const expiresAt = expiresIn ? new Date(Date.now() + parseInt(expiresIn) * 1000) : undefined;
     const result = {
       isLoggedIn: true,
       accessToken: response.access_token,
@@ -175,9 +169,7 @@ export class OidcResponse {
     }
   }
 
-  private async userInfoRequest(
-    response: Response
-  ): Promise<UserInfo | undefined> {
+  private async userInfoRequest(response: Response): Promise<UserInfo | undefined> {
     const endpoint = this.config.getProviderConfiguration().userInfoEndpoint;
     if (!endpoint) {
       this.logger.info('No endpoint given, cannot get user information');
@@ -188,9 +180,7 @@ export class OidcResponse {
         Authorization: 'Bearer' + response.access_token
       })
     };
-    return firstValueFrom(
-      this.httpClient.post<UserInfo>(endpoint, null, options)
-    ).catch((e) => {
+    return firstValueFrom(this.httpClient.post<UserInfo>(endpoint, null, options)).catch((e) => {
       this.logger.error('Invalid response, cannot get user information', e);
       return undefined;
     });

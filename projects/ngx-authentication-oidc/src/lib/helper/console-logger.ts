@@ -12,5 +12,4 @@ class ConsoleLogger implements Logger {
 /**
  * A {@link Logger} that just logs to the console
  */
-export const consoleLoggerFactory: LoggerFactory = (name) =>
-  new ConsoleLogger(name);
+export const consoleLoggerFactory: LoggerFactory = (name) => new ConsoleLogger(name);

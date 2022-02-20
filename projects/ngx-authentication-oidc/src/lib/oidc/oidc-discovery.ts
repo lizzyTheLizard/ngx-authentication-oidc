@@ -26,10 +26,7 @@ const WELL_KNOWN_POSTFIX = '/.well-known/openid-configuration';
 export class OidcDiscovery {
   private readonly logger: Logger;
 
-  constructor(
-    private readonly httpClient: HttpClient,
-    private readonly config: AuthConfigService
-  ) {
+  constructor(private readonly httpClient: HttpClient, private readonly config: AuthConfigService) {
     this.logger = this.config.loggerFactory('OidcDiscovery');
   }
 
@@ -54,9 +51,7 @@ export class OidcDiscovery {
   }
 
   private getWellKnownUrl(issuer: string) {
-    const issuesWithoutTrailingSlash = issuer.endsWith('/')
-      ? issuer.slice(0, -1)
-      : issuer;
+    const issuesWithoutTrailingSlash = issuer.endsWith('/') ? issuer.slice(0, -1) : issuer;
     return issuesWithoutTrailingSlash + WELL_KNOWN_POSTFIX;
   }
 
@@ -66,23 +61,13 @@ export class OidcDiscovery {
       throw new Error('Returned metadata from ' + url + ' is empty');
     }
     if (!Object.prototype.hasOwnProperty.call(metadata, 'issuer')) {
-      throw new Error(
-        'Returned metadata from ' + url + ' does not contain issuer'
-      );
+      throw new Error('Returned metadata from ' + url + ' does not contain issuer');
     }
     if (!Object.prototype.hasOwnProperty.call(metadata, 'token_endpoint')) {
-      throw new Error(
-        'Returned metadata from ' + url + ' does not contain token_endpoint'
-      );
+      throw new Error('Returned metadata from ' + url + ' does not contain token_endpoint');
     }
-    if (
-      !Object.prototype.hasOwnProperty.call(metadata, 'authorization_endpoint')
-    ) {
-      throw new Error(
-        'Returned metadata from ' +
-          url +
-          ' does not contain authorization_endpoint'
-      );
+    if (!Object.prototype.hasOwnProperty.call(metadata, 'authorization_endpoint')) {
+      throw new Error('Returned metadata from ' + url + ' does not contain authorization_endpoint');
     }
     return metadata;
   }
