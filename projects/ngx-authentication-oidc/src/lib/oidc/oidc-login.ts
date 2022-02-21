@@ -6,6 +6,7 @@ import { LoginResult } from '../helper/login-result';
 import { WindowToken } from '../authentication-module.tokens';
 import { AuthenticationRequest } from '../helper/authentication-request';
 import { LocalUrl } from '../helper/local-url';
+import { TokenStoreWrapper } from '../helper/token-store-wrapper';
 
 @Injectable()
 export class OidcLogin {
@@ -14,6 +15,7 @@ export class OidcLogin {
   constructor(
     private readonly config: AuthConfigService,
     private readonly localUrl: LocalUrl,
+    private readonly tokenStore: TokenStoreWrapper,
     @Inject(WindowToken) private readonly window: Window
   ) {
     this.logger = this.config.loggerFactory('OidcLogin');
@@ -34,8 +36,9 @@ export class OidcLogin {
       this.getRedirectUrl().toString(),
       clientId,
       authEndpoint
-    ).toUrl();
-    this.logger.info('Start a login request to', url);
+    );
+    this.tokenStore.saveNonce(url.nonce);
+    this.logger.info('Start a login request to', url.toString());
     this.window.location.href = url.toString();
     return new Promise<LoginResult>((_, reject) =>
       this.window.setTimeout(() => reject('Browser should be redirected'), 1000)

@@ -6,12 +6,19 @@ export const DEFAULT_SCOPE = 'openid profile email phone';
 export const DEFAULT_FLOW = ResponseType.AUTH_CODE_FLOW;
 
 export class AuthenticationRequest {
+  public readonly nonce: string;
   constructor(
     private readonly loginOptions: LoginOptions,
     private readonly redirectUri: string,
     private readonly clientId: string,
     private readonly authEndpoint: string
-  ) {}
+  ) {
+    this.nonce = this.createNonce();
+  }
+
+  toString(): string {
+    return this.toUrl().toString();
+  }
 
   toUrl(): URL {
     const scope = this.generateString(this.loginOptions.scope) ?? DEFAULT_SCOPE;
@@ -22,7 +29,7 @@ export class AuthenticationRequest {
     param.set('client_id', this.clientId);
     param.set('redirect_uri', this.redirectUri);
     param.set('state', this.getState());
-    param.set('nonce', this.createNonce());
+    param.set('nonce', this.nonce);
     param.set('display', this.loginOptions.display?.toString());
     param.set('prompt', this.generateString(this.loginOptions.prompts));
     param.set('max_age', this.loginOptions.max_age?.toString());

@@ -7,6 +7,7 @@ import { LoginResult, UserInfo } from '../helper/login-result';
 import { CustomHttpParamEncoder } from '../helper/custom-http-param-encoder';
 import { State } from '../helper/state';
 import { OidcTokenValidator } from './oidc-token-validator';
+import { TokenStoreWrapper } from '../helper/token-store-wrapper';
 
 export interface Response extends State {
   error_description?: string;
@@ -28,6 +29,7 @@ export class OidcResponse {
   constructor(
     private readonly httpClient: HttpClient,
     private readonly config: AuthConfigService,
+    private readonly tokenStore: TokenStoreWrapper,
     private readonly tokenValidator: OidcTokenValidator
   ) {
     this.logger = this.config.loggerFactory('OidcResponse');
@@ -122,8 +124,10 @@ export class OidcResponse {
 
   public async tokenResponse(response: Response): Promise<LoginResult> {
     const idToken = response.id_token ?? undefined;
-    // TODO: Verify nonce
-    const userInfoFromToken = idToken ? await this.tokenValidator.verify(idToken) : undefined;
+    const nonce = this.tokenStore.getStoredNonce();
+    const userInfoFromToken = idToken
+      ? await this.tokenValidator.verify(idToken, nonce)
+      : undefined;
     const userInfo = await this.getUserInfo(response, userInfoFromToken);
     const expiresIn = response.expires_in;
     const expiresAt = expiresIn ? new Date(Date.now() + parseInt(expiresIn) * 1000) : undefined;

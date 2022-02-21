@@ -8,6 +8,7 @@ import { LoginResult } from '../helper/login-result';
 import { OidcResponse } from './oidc-response';
 import { AuthenticationRequest } from '../helper/authentication-request';
 import { LocalUrl } from '../helper/local-url';
+import { TokenStoreWrapper } from '../helper/token-store-wrapper';
 
 const silentRefreshIFrameName = 'silent-refresh-iframe';
 
@@ -19,6 +20,7 @@ export class OidcSilentLogin {
   constructor(
     private readonly localUrl: LocalUrl,
     private readonly oidcResponse: OidcResponse,
+    private readonly tokenStore: TokenStoreWrapper,
     private readonly config: AuthConfigService,
     @Inject(DocumentToken) private readonly document: Document,
     @Inject(WindowToken) private readonly window: Window
@@ -40,6 +42,7 @@ export class OidcSilentLogin {
       clientId,
       authEndpoint
     );
+    this.tokenStore.saveNonce(authenticationRequest.nonce);
     const url = authenticationRequest.toUrl();
     const iframe = this.createIFrame(url);
     const result = this.setupLoginEventListener(iframe);

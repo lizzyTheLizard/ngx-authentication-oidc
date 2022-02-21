@@ -24,20 +24,6 @@ export class TokenStoreWrapper {
     };
   }
 
-  private getString(name: string): string | undefined {
-    return this.tokenStore.getItem(prefix + name) ?? undefined;
-  }
-
-  private getObject<T>(name: string): T | undefined {
-    const str = this.getString(name);
-    return str ? JSON.parse(str) : undefined;
-  }
-
-  private getDate(name: string): Date | undefined {
-    const str = this.getString(name);
-    return str ? new Date(str) : undefined;
-  }
-
   public setLoginResult(loginResult: LoginResult): void {
     this.setObject('isLoggedIn', loginResult.isLoggedIn);
     this.setString('accessToken', loginResult.accessToken);
@@ -46,6 +32,24 @@ export class TokenStoreWrapper {
     this.setString('sessionState', loginResult.sessionState);
     this.setDate('expiresAt', loginResult.expiresAt);
     this.setString('refreshToken', loginResult.refreshToken);
+  }
+
+  saveNonce(nonce: string) {
+    this.setString('nonce', nonce);
+  }
+  getStoredNonce(): string | undefined {
+    return this.getString('nonce');
+  }
+
+  public cleanTokenStore(): void {
+    this.tokenStore.removeItem(prefix + 'isLoggedIn');
+    this.tokenStore.removeItem(prefix + 'accessToken');
+    this.tokenStore.removeItem(prefix + 'idToken');
+    this.tokenStore.removeItem(prefix + 'userInfo');
+    this.tokenStore.removeItem(prefix + 'sessionState');
+    this.tokenStore.removeItem(prefix + 'expiresAt');
+    this.tokenStore.removeItem(prefix + 'refreshToken');
+    this.tokenStore.removeItem(prefix + 'nonce');
   }
 
   private setObject<T>(name: string, item: T | undefined): void {
@@ -66,13 +70,17 @@ export class TokenStoreWrapper {
     }
   }
 
-  public cleanTokenStore(): void {
-    this.tokenStore.removeItem(prefix + 'isLoggedIn');
-    this.tokenStore.removeItem(prefix + 'accessToken');
-    this.tokenStore.removeItem(prefix + 'idToken');
-    this.tokenStore.removeItem(prefix + 'userInfo');
-    this.tokenStore.removeItem(prefix + 'sessionState');
-    this.tokenStore.removeItem(prefix + 'expiresAt');
-    this.tokenStore.removeItem(prefix + 'refreshToken');
+  private getString(name: string): string | undefined {
+    return this.tokenStore.getItem(prefix + name) ?? undefined;
+  }
+
+  private getObject<T>(name: string): T | undefined {
+    const str = this.getString(name);
+    return str ? JSON.parse(str) : undefined;
+  }
+
+  private getDate(name: string): Date | undefined {
+    const str = this.getString(name);
+    return str ? new Date(str) : undefined;
   }
 }
