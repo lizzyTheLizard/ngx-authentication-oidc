@@ -6,7 +6,9 @@
     "declaration": true,
     "declarationMap": true,
     "inlineSources": true,
-    "types": []
+    "types": [
+      "./src/types"
+    ],
   },
   "exclude": [
     "src/test.ts",

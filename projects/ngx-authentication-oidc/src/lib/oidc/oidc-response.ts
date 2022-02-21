@@ -125,15 +125,16 @@ export class OidcResponse {
   public async tokenResponse(response: Response): Promise<LoginResult> {
     const idToken = response.id_token ?? undefined;
     const nonce = this.tokenStore.getStoredNonce();
+    const accessToken = response.access_token ?? undefined;
     const userInfoFromToken = idToken
-      ? await this.tokenValidator.verify(idToken, nonce)
+      ? await this.tokenValidator.verify(idToken, nonce, accessToken)
       : undefined;
     const userInfo = await this.getUserInfo(response, userInfoFromToken);
     const expiresIn = response.expires_in;
     const expiresAt = expiresIn ? new Date(Date.now() + parseInt(expiresIn) * 1000) : undefined;
     const result = {
       isLoggedIn: true,
-      accessToken: response.access_token,
+      accessToken: accessToken,
       refreshToken: response.refresh_token,
       idToken: idToken,
       expiresAt: expiresAt,

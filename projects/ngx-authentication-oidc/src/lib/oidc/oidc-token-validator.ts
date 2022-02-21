@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
 // eslint-disable-next-line prettier/prettier
-import { JWK, JWTHeaderParameters, JWTPayload, KeyLike, base64url, importJWK, jwtVerify } from 'jose';
+import { JWK, JWTHeaderParameters, JWTPayload, JWTVerifyResult, KeyLike, base64url, importJWK, jwtVerify } from 'jose';
 import { AuthConfigService } from '../auth-config.service';
 import { Logger } from '../configuration/oauth-config';
 import { UserInfo } from '../helper/login-result';
+import { oidcTokenHash } from 'oidc-token-hash';
 
 @Injectable()
 export class OidcTokenValidator {
@@ -13,29 +14,28 @@ export class OidcTokenValidator {
     this.logger = this.config.loggerFactory('OidcTokenValidator');
   }
 
-  public async verify(idToken?: string, nonce?: string): Promise<UserInfo> {
+  public async verify(idToken?: string, nonce?: string, accessToken?: string): Promise<UserInfo> {
     if (!idToken) {
       throw new Error('No id token given');
     }
-    const claims = await this.validateSignature(idToken);
-    this.validateAccessTokenHash();
-    this.validateIssuer(claims);
-    this.validateAudience(claims);
-    this.validateTime(claims);
-    this.validateNonce(claims, nonce);
+    const result = await this.validateSignature(idToken);
+    this.validateAccessTokenHash(result.payload, result.protectedHeader, accessToken);
+    this.validateIssuer(result.payload);
+    this.validateAudience(result.payload);
+    this.validateTime(result.payload);
+    this.validateNonce(result.payload, nonce);
 
-    if (!claims.sub) {
+    if (!result.payload.sub) {
       throw new Error('No sub given');
     }
 
     return {
-      ...claims,
-      sub: claims.sub!
+      ...result.payload,
+      sub: result.payload.sub!
     };
   }
 
-  private async validateSignature(idToken: string): Promise<JWTPayload> {
-    let claims: JWTPayload;
+  private async validateSignature(idToken: string): Promise<JWTVerifyResult> {
     const keys = this.config.getProviderConfiguration().publicKeys;
     if (keys) {
       const getKey = (header: JWTHeaderParameters) => this.getKey(header, keys);
@@ -45,17 +45,15 @@ export class OidcTokenValidator {
         throw new Error('No headers given');
       }
       this.validateAlgorithm(headers);
-      claims = verifyResult.payload;
+      return verifyResult;
     } else {
       this.logger.info('No keys defined, do not verify id token');
       const decoder = new TextDecoder();
-      const { 1: encodedPayload } = idToken.split('.');
-      claims = JSON.parse(decoder.decode(base64url.decode(encodedPayload)));
+      const { 0: encodedHeader, 1: encodedPayload } = idToken.split('.');
+      const header = JSON.parse(decoder.decode(base64url.decode(encodedHeader)));
+      const claims = JSON.parse(decoder.decode(base64url.decode(encodedPayload)));
+      return { payload: claims, protectedHeader: header };
     }
-    if (!claims) {
-      throw new Error('No claims given');
-    }
-    return claims;
   }
 
   private async getKey(
@@ -84,15 +82,23 @@ export class OidcTokenValidator {
     return importJWK(keys[0]);
   }
 
-  private validateAccessTokenHash() {
-    // TODO: Validate at_hash according to 3.2.2.9
-    /*
-     * Hash the octets of the ASCII representation of the access_token with the hash algorithm
-     * specified in JWA [JWA] for the alg Header Parameter of the ID Token's JOSE Header.
-     * For instance, if the alg is RS256, the hash algorithm used is SHA-256.
-     * Take the left-most half of the hash and base64url encode it.
-     * The value of at_hash in the ID Token MUST match the value produced in the previous step.
-     */
+  private validateAccessTokenHash(
+    claims: JWTPayload,
+    headers: JWTHeaderParameters,
+    accessToken?: string
+  ) {
+    if (!accessToken && claims['at_hash']) {
+      throw new Error('at_hash set but no access token given');
+    }
+    if (!accessToken) {
+      return;
+    }
+    oidcTokenHash.validate(
+      { claim: 'at_hash', source: 'access_token' },
+      claims['at_hash'] as string,
+      accessToken,
+      headers.alg
+    );
   }
 
   private validateIssuer(claims: JWTPayload) {
