@@ -1,10 +1,12 @@
 import { APP_BASE_HREF } from '@angular/common';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { DocumentToken, WindowToken } from '../authentication-module.tokens';
-import { OidcResponse } from './oidc-response';
 import { OidcSilentLogin } from './oidc-silent-login';
 import { AuthConfigService } from '../auth-config.service';
 import { LocalUrl } from '../helper/local-url';
+import { TokenStoreWrapper } from '../helper/token-store-wrapper';
+import { OidcTokenResponse } from './oidc-token-response';
+import { OidcCodeResponse } from './oidc-code-response';
 
 const token =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.GjKRxKZWcBLTjWTOPSwFBoRsu0zuMkK-uh-7gdfiNDA';
@@ -36,7 +38,8 @@ const documentMock = {
   createElement: jasmine.createSpy('createElement').and.returnValue(iframeMock)
 };
 
-const oidcResponse = jasmine.createSpyObj('oidcResponse', ['urlResponse']);
+const oidcTokenResponse = jasmine.createSpyObj('oidcTokenResponse', ['response']);
+const oidcCodeResponse = jasmine.createSpyObj('oidcCodeResponse', ['response']);
 
 let service: OidcSilentLogin;
 
@@ -47,14 +50,18 @@ describe('OidcSilentLogin', () => {
       getLocalUrl: jasmine.createSpy('getLocalUrl').and.returnValue(new URL('https://localhost'))
     };
 
+    const tokenStoreWrapper = jasmine.createSpyObj('TokenStoreWrapper', ['saveNonce']);
+
     TestBed.configureTestingModule({
       providers: [
         { provide: APP_BASE_HREF, useFactory: () => 'http://localhost/temp/' },
-        { provide: OidcResponse, useValue: oidcResponse },
+        { provide: OidcTokenResponse, useValue: oidcTokenResponse },
+        { provide: OidcCodeResponse, useValue: oidcCodeResponse },
         { provide: WindowToken, useFactory: () => windowMock },
         { provide: DocumentToken, useFactory: () => documentMock },
         { provide: AuthConfigService, useValue: authConfig },
         { provide: LocalUrl, useValue: localUrl },
+        { provide: TokenStoreWrapper, useValue: tokenStoreWrapper },
         OidcSilentLogin
       ]
     });
@@ -63,7 +70,7 @@ describe('OidcSilentLogin', () => {
 
   it('Silent Login Timeout', fakeAsync(() => {
     windowMock.addEventListener = jasmine.createSpy('addEventListener').and.callFake(() => {});
-    oidcResponse.urlResponse = jasmine.createSpy('handleURLResponse').and.returnValue(
+    oidcTokenResponse.response = jasmine.createSpy('handleURLResponse').and.returnValue(
       Promise.resolve({
         isLoggedIn: true,
         idToken: token,
@@ -85,8 +92,8 @@ describe('OidcSilentLogin', () => {
     windowMock.addEventListener = jasmine
       .createSpy('addEventListener')
       .and.callFake((m, l) => l(mock));
-    oidcResponse.urlResponse = jasmine
-      .createSpy('handleURLResponse')
+    oidcTokenResponse.response = jasmine
+      .createSpy('response')
       .and.returnValue(Promise.resolve({ isLoggedIn: false }));
 
     await service.login({});
@@ -104,13 +111,13 @@ describe('OidcSilentLogin', () => {
     windowMock.addEventListener = jasmine
       .createSpy('addEventListener')
       .and.callFake((m, l) => l(mock));
-    oidcResponse.urlResponse = jasmine
-      .createSpy('handleURLResponse')
+    oidcTokenResponse.response = jasmine
+      .createSpy('response')
       .and.returnValue(Promise.resolve({ isLoggedIn: false }));
 
     const result = await service.login({});
 
-    expect(oidcResponse.urlResponse.calls.mostRecent().args[0]).toEqual(new URL(mock.data));
+    expect(oidcTokenResponse.response.calls.mostRecent().args[0]).toEqual({ error: 'failed' });
     expect(result).toEqual({ isLoggedIn: false });
   });
 
@@ -127,7 +134,7 @@ describe('OidcSilentLogin', () => {
     windowMock.addEventListener = jasmine
       .createSpy('addEventListener')
       .and.callFake((m, l) => l(mock));
-    oidcResponse.urlResponse = jasmine.createSpy('handleURLResponse').and.callFake(() => {
+    oidcTokenResponse.response = jasmine.createSpy('response').and.callFake(() => {
       return Promise.resolve({
         isLoggedIn: true,
         idToken: token,
@@ -137,7 +144,13 @@ describe('OidcSilentLogin', () => {
 
     const result = await service.login({});
 
-    expect(oidcResponse.urlResponse.calls.mostRecent().args[0]).toEqual(new URL(mock.data));
+    expect(oidcTokenResponse.response.calls.mostRecent().args[0]).toEqual({
+      stateMessage: 'af0ifjsldkj',
+      expires_in: '3600',
+      id_token:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.GjKRxKZWcBLTjWTOPSwFBoRsu0zuMkK-uh-7gdfiNDA',
+      access_token: 'SlAV32hkKG'
+    });
     expect(result).toEqual({
       isLoggedIn: true,
       idToken: token,

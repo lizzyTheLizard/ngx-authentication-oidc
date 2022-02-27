@@ -1,16 +1,20 @@
-import { Injectable } from '@angular/core';
+/* global crypto */
+import { Inject, Injectable } from '@angular/core';
 // eslint-disable-next-line prettier/prettier
 import { JWK, JWTHeaderParameters, JWTPayload, JWTVerifyResult, KeyLike, base64url, importJWK, jwtVerify } from 'jose';
 import { AuthConfigService } from '../auth-config.service';
+import { WindowToken } from '../authentication-module.tokens';
 import { Logger } from '../configuration/oauth-config';
 import { UserInfo } from '../helper/login-result';
-import { oidcTokenHash } from 'oidc-token-hash';
 
 @Injectable()
 export class OidcTokenValidator {
   private readonly logger: Logger;
 
-  constructor(private readonly config: AuthConfigService) {
+  constructor(
+    private readonly config: AuthConfigService,
+    @Inject(WindowToken) private readonly window: Window
+  ) {
     this.logger = this.config.loggerFactory('OidcTokenValidator');
   }
 
@@ -19,7 +23,7 @@ export class OidcTokenValidator {
       throw new Error('No id token given');
     }
     const result = await this.validateSignature(idToken);
-    this.validateAccessTokenHash(result.payload, result.protectedHeader, accessToken);
+    await this.validateAccessTokenHash(result.payload, result.protectedHeader, accessToken);
     this.validateIssuer(result.payload);
     this.validateAudience(result.payload);
     this.validateTime(result.payload);
@@ -82,7 +86,7 @@ export class OidcTokenValidator {
     return importJWK(keys[0]);
   }
 
-  private validateAccessTokenHash(
+  private async validateAccessTokenHash(
     claims: JWTPayload,
     headers: JWTHeaderParameters,
     accessToken?: string
@@ -93,12 +97,61 @@ export class OidcTokenValidator {
     if (!accessToken) {
       return;
     }
-    oidcTokenHash.validate(
-      { claim: 'at_hash', source: 'access_token' },
-      claims['at_hash'] as string,
-      accessToken,
-      headers.alg
-    );
+
+    const hashAlgorithm = this.getHashAlgorithm(headers.alg);
+    const actualHash = await this.computeHash(accessToken, hashAlgorithm);
+    const expectedHash = this.base64UrlDecode(claims['at_hash'] as string);
+    const len = actualHash.byteLength;
+    for (var i = 0; i < len; i++) {
+      if (actualHash[i] !== expectedHash[i]) {
+        console.log('Difference', i, actualHash[i], expectedHash[i]);
+        throw new Error('At-Hash not correct');
+      }
+    }
+  }
+
+  private getHashAlgorithm(jwtAlgorithm: string): string {
+    switch (jwtAlgorithm) {
+      case 'HS256':
+      case 'RS256':
+      case 'PS256':
+      case 'ES256':
+      case 'ES256K':
+        return 'SHA-256';
+      case 'HS384':
+      case 'RS384':
+      case 'PS384':
+      case 'ES384':
+        return 'SHA-384';
+      case 'HS512':
+      case 'RS512':
+      case 'PS512':
+      case 'ES512':
+        return 'SHA-512';
+      case 'EdDSA':
+        throw new Error('EdDSA not supported');
+      default:
+        throw new Error('unrecognized or invalid JWS algorithm provided');
+    }
+  }
+
+  private async computeHash(accessToken: string, hashAlgorithm: string): Promise<Uint8Array> {
+    const inputBuffer = new Uint8Array(accessToken.length);
+    for (var i2 = 0, strLen = accessToken.length; i2 < strLen; i2++) {
+      inputBuffer[i2] = accessToken.charCodeAt(i2);
+    }
+    const digest = await crypto.subtle.digest(hashAlgorithm, inputBuffer);
+    return new Uint8Array(digest.slice(0, digest.byteLength / 2));
+  }
+
+  private base64UrlDecode(base64UrlStr: string): Uint8Array {
+    const base64Str = base64UrlStr.replace(/-/g, '+').replace(/_/g, '/');
+    const binary = this.window.atob(base64Str);
+    const result = new Uint8Array(binary.length);
+    for (var i = 0, strLen = binary.length; i < strLen; i++) {
+      result[i] = binary.charCodeAt(i);
+    }
+    return result;
   }
 
   private validateIssuer(claims: JWTPayload) {

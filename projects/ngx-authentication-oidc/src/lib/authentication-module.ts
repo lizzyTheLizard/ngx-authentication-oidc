@@ -10,7 +10,6 @@ import { OauthConfig } from './configuration/oauth-config';
 import { OidcDiscovery } from './oidc/oidc-discovery';
 import { OidcLogin } from './oidc/oidc-login';
 import { OidcLogout } from './oidc/oidc-logout';
-import { OidcResponse } from './oidc/oidc-response';
 import { OidcSessionManagement } from './oidc/oidc-session-management';
 import { OidcSilentLogin } from './oidc/oidc-silent-login';
 import { OidcTokenValidator } from './oidc/oidc-token-validator';
@@ -20,6 +19,8 @@ import { NgIdleModule } from '@ng-idle/core';
 import { OidcRefresh } from './oidc/oidc-refresh';
 import { TokenUpdater } from './helper/token-updater';
 import { LocalUrl } from './helper/local-url';
+import { OidcCodeResponse } from './oidc/oidc-code-response';
+import { OidcTokenResponse } from './oidc/oidc-token-response';
 
 // TODO: Request interceptor
 
@@ -47,13 +48,14 @@ export class AuthenticationModule {
         InactiveTimeoutHandler,
         AuthService,
         OidcDiscovery,
-        OidcResponse,
         OidcLogin,
         OidcLogout,
         OidcSilentLogin,
         OidcTokenValidator,
         OidcSessionManagement,
         OidcRefresh,
+        OidcCodeResponse,
+        OidcTokenResponse,
         TokenStoreWrapper,
         TokenUpdater,
         LocalUrl

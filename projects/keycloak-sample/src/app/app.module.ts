@@ -13,8 +13,8 @@ import { PublicPage } from './pages/public/public.page';
 const config: OauthConfig = {
   clientId: 'keycloak-sample',
   provider: "http://localhost:8080/auth/realms/Test-Application",
-  logoutAction: () => alert("You are logged out!"),
-  initializationErrorAction: (e: ErrorActionInput) => alert("Error while initialize Login: " + e.error)
+  //logoutAction: () => alert("You are logged out!"),
+  initializationErrorAction: (e: ErrorActionInput) => alert("Error while initialize Login: " + e.error),
 }
 
 @NgModule({

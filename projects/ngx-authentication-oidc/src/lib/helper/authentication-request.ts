@@ -16,11 +16,11 @@ export class AuthenticationRequest {
     this.nonce = this.createNonce();
   }
 
-  toString(): string {
+  public toString(): string {
     return this.toUrl().toString();
   }
 
-  toUrl(): URL {
+  public toUrl(): URL {
     const scope = this.generateString(this.loginOptions.scope) ?? DEFAULT_SCOPE;
     const responseType = this.loginOptions.response_type ?? DEFAULT_FLOW;
     const param: Map<string, string | undefined> = new Map();

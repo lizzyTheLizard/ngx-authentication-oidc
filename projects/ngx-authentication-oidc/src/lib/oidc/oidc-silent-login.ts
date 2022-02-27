@@ -2,24 +2,28 @@ import { Inject, Injectable } from '@angular/core';
 import { Observable, Subject, firstValueFrom, of, timeout } from 'rxjs';
 import { AuthConfigService } from '../auth-config.service';
 import { DocumentToken, WindowToken } from '../authentication-module.tokens';
-import { LoginOptions } from '../configuration/login-options';
+import { LoginOptions, Prompt } from '../configuration/login-options';
 import { Logger } from '../configuration/oauth-config';
 import { LoginResult } from '../helper/login-result';
-import { OidcResponse } from './oidc-response';
 import { AuthenticationRequest } from '../helper/authentication-request';
 import { LocalUrl } from '../helper/local-url';
 import { TokenStoreWrapper } from '../helper/token-store-wrapper';
+import { OidcTokenResponse } from './oidc-token-response';
+import { ResponseParameterParser } from '../helper/response-parameter-parser';
+import { OidcCodeResponse } from './oidc-code-response';
 
 const silentRefreshIFrameName = 'silent-refresh-iframe';
 
 @Injectable()
 export class OidcSilentLogin {
+  private readonly responseParameterParser: ResponseParameterParser = new ResponseParameterParser();
   private logger: Logger;
   private loginEventListener?: (e: MessageEvent) => void;
 
   constructor(
     private readonly localUrl: LocalUrl,
-    private readonly oidcResponse: OidcResponse,
+    private readonly oidcTokenResponse: OidcTokenResponse,
+    private readonly oidcCodeResponse: OidcCodeResponse,
     private readonly tokenStore: TokenStoreWrapper,
     private readonly config: AuthConfigService,
     @Inject(DocumentToken) private readonly document: Document,
@@ -30,7 +34,7 @@ export class OidcSilentLogin {
 
   public async login(loginOptions: LoginOptions): Promise<LoginResult> {
     this.logger.info('Perform silent login');
-    const silentLoginOptions = { ...loginOptions, prompt: 'none' };
+    const silentLoginOptions = { ...loginOptions, prompts: Prompt.NONE };
     const clientId = this.config.clientId;
     const authEndpoint = this.config.getProviderConfiguration().authEndpoint;
     const redirectUrl =
@@ -97,12 +101,17 @@ export class OidcSilentLogin {
       return;
     }
     this.window.removeEventListener('message', this.loginEventListener!);
+    const url = new URL(e.data);
+    const params = this.responseParameterParser.parseUrl(url);
     const redirectUrl = this.config.silentLogin.redirectUri
       ? new URL(this.config.silentLogin.redirectUri)
       : this.localUrl.getLocalUrl('assets/silent-refresh.html');
-    this.oidcResponse.urlResponse(new URL(e.data), redirectUrl).then(
-      (result) => subject.next(result),
-      (error) => {
+    const promise = params.code
+      ? this.oidcCodeResponse.response(params, redirectUrl)
+      : this.oidcTokenResponse.response(params);
+    promise.then(
+      (result: LoginResult) => subject.next(result),
+      (error: Error) => {
         this.logger.debug('Could not silently log in: ', error);
         subject.next({ isLoggedIn: false });
       }

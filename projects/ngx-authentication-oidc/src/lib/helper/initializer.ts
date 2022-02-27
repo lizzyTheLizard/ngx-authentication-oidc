@@ -38,9 +38,9 @@ export const silentLoginCheck: Initializer = async (input) => {
     .silentLogin({})
     .then((r) => {
       if (r.isLoggedIn) {
-        logger.info('User is silently logged in', loginResult);
+        logger.debug('User is silently logged in', loginResult);
       } else {
-        logger.info('Single login failed');
+        logger.debug('Single login failed');
       }
       return r;
     })
@@ -67,7 +67,7 @@ export const enforceLogin: Initializer = async (input) => {
   logger.debug('Try login with user interaction');
   return input.login({}).then((r) => {
     if (r.isLoggedIn) {
-      logger.info('User is logged in', loginResult);
+      logger.debug('User is logged in', loginResult);
       return r;
     } else {
       throw new Error('Cannot log in user');
@@ -94,7 +94,7 @@ export const silentCheckAndThenEnforce: Initializer = async (input) => {
   logger.debug('Try login with user interaction');
   return input.login({}).then((r) => {
     if (r.isLoggedIn) {
-      logger.info('User is logged in', loginResult);
+      logger.debug('User is logged in', loginResult);
       return r;
     } else {
       throw new Error('Cannot log in user');

@@ -6,6 +6,7 @@ import { OidcLogin } from './oidc-login';
 import { WindowToken } from '../authentication-module.tokens';
 import { AuthConfigService } from '../auth-config.service';
 import { LocalUrl } from '../helper/local-url';
+import { TokenStoreWrapper } from '../helper/token-store-wrapper';
 
 const config = {
   provider: {
@@ -43,12 +44,15 @@ describe('OidcLogin', () => {
       getLocalUrl: jasmine.createSpy('getLocalUrl').and.returnValue(new URL('https://localhost'))
     };
     const authConfig = new AuthConfigService(config as OauthConfig);
+    const tokenStoreWrapper = jasmine.createSpyObj('TokenStoreWrapper', ['saveNonce']);
+
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
       providers: [
         { provide: WindowToken, useFactory: () => windowMock },
         { provide: AuthConfigService, useValue: authConfig },
         { provide: LocalUrl, useValue: localUrl },
+        { provide: TokenStoreWrapper, useValue: tokenStoreWrapper },
         OidcLogin
       ]
     });

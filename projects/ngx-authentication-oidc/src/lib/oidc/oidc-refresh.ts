@@ -5,7 +5,8 @@ import { AuthConfigService } from '../auth-config.service';
 import { Logger } from '../configuration/oauth-config';
 import { LoginResult } from '../helper/login-result';
 import { CustomHttpParamEncoder } from '../helper/custom-http-param-encoder';
-import { OidcResponse, Response } from './oidc-response';
+import { OidcTokenResponse } from './oidc-token-response';
+import { Response } from '../helper/response-parameter-parser';
 
 @Injectable()
 export class OidcRefresh {
@@ -15,7 +16,7 @@ export class OidcRefresh {
   constructor(
     private readonly httpClient: HttpClient,
     private readonly config: AuthConfigService,
-    private readonly oidcResponse: OidcResponse
+    private readonly oidcTokenResponse: OidcTokenResponse
   ) {
     this.logger = this.config.loggerFactory('OidcRefresh');
   }
@@ -31,21 +32,18 @@ export class OidcRefresh {
     const tokenEndpoint = this.config.getProviderConfiguration().tokenEndpoint;
     return await firstValueFrom(
       this.httpClient
-        .post(tokenEndpoint, payload)
+        .post<Response>(tokenEndpoint, payload)
         .pipe(map((r) => this.handleResponse(r, oldLoginResult)))
     );
   }
 
   private handleResponse(response: Response, oldResult: LoginResult): Promise<LoginResult> {
-    if (response.error) {
-      return this.oidcResponse.handleErrorResponse(response);
-    }
     const mergedResponse = {
       ...response,
       refresh_token: response.refresh_token ?? oldResult.refreshToken,
       id_token: response.id_token ?? oldResult.idToken,
       session_state: response.session_state ?? oldResult.sessionState
     };
-    return this.oidcResponse.tokenResponse(mergedResponse);
+    return this.oidcTokenResponse.response(mergedResponse);
   }
 }

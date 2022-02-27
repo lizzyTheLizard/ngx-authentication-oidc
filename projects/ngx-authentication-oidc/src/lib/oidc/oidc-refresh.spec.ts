@@ -2,9 +2,9 @@
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { OidcRefresh } from './oidc-refresh';
-import { OidcResponse } from './oidc-response';
 import { LoginResult } from '../helper/login-result';
 import { AuthConfigService } from '../auth-config.service';
+import { OidcTokenResponse } from './oidc-token-response';
 
 const config = {
   silentLoginTimeoutInSecond: 1,
@@ -21,7 +21,7 @@ const oldLoginResult: LoginResult = {
   sessionState: 'SS'
 };
 
-const oidcResponse = jasmine.createSpyObj('oidcResponse', ['tokenResponse', 'handleErrorResponse']);
+const oidcTokenResponse = jasmine.createSpyObj('oidcTokenResponse', ['response']);
 
 let httpTestingController: HttpTestingController;
 let service: OidcRefresh;
@@ -33,7 +33,7 @@ describe('OidcRefresh', () => {
       imports: [HttpClientTestingModule],
       providers: [
         { provide: AuthConfigService, useValue: authConfig },
-        { provide: OidcResponse, useValue: oidcResponse },
+        { provide: OidcTokenResponse, useValue: oidcTokenResponse },
         OidcRefresh
       ]
     });
@@ -56,10 +56,12 @@ describe('OidcRefresh', () => {
   });
 
   it('Merge with old Session', (done) => {
-    oidcResponse.response = jasmine.createSpy('response').and.returnValue({ isLoggedIn: false });
+    oidcTokenResponse.response = jasmine
+      .createSpy('response')
+      .and.returnValue({ isLoggedIn: false });
     service.tokenRefresh(oldLoginResult).then(
       () => {
-        expect(oidcResponse.tokenResponse).toHaveBeenCalledWith({
+        expect(oidcTokenResponse.response).toHaveBeenCalledWith({
           expires_in: 3600,
           id_token: 'id2',
           access_token: 'at2',
@@ -85,7 +87,7 @@ describe('OidcRefresh', () => {
       idToken: 'ud2',
       userInfo: { sub: '123' }
     };
-    oidcResponse.tokenResponse = jasmine.createSpy('response').and.returnValue(newLoginResult);
+    oidcTokenResponse.response = jasmine.createSpy('response').and.returnValue(newLoginResult);
     service.tokenRefresh(oldLoginResult).then(
       (res) => {
         expect(res).toEqual(newLoginResult);

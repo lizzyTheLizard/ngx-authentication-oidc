@@ -10,12 +10,14 @@ import { OidcLogin } from './oidc/oidc-login';
 import { OidcLogout } from './oidc/oidc-logout';
 import { OidcSilentLogin } from './oidc/oidc-silent-login';
 import { TokenStoreWrapper } from './helper/token-store-wrapper';
-import { OidcResponse } from './oidc/oidc-response';
 import { OidcSessionManagement } from './oidc/oidc-session-management';
 import { TokenUpdater } from './helper/token-updater';
 import { InactiveTimeoutHandler } from './helper/inactive-timeout-handler';
 import { WindowToken } from './authentication-module.tokens';
 import { LogoutActionInput } from './configuration/oauth-config';
+import { ResponseParameterParser } from './helper/response-parameter-parser';
+import { OidcTokenResponse } from './oidc/oidc-token-response';
+import { OidcCodeResponse } from './oidc/oidc-code-response';
 
 /**
  * Main facade of the library, can be used to check and perform logins.
@@ -43,6 +45,7 @@ export class AuthService {
 
   private readonly logger: Logger;
   private readonly loginResult$: Subject<LoginResult>;
+  private readonly responseParameterParser: ResponseParameterParser = new ResponseParameterParser();
   private initialSetupFinishedResolve: (e: any) => void = () => {};
 
   constructor(
@@ -50,7 +53,8 @@ export class AuthService {
     private readonly oidcSilentLogin: OidcSilentLogin,
     private readonly oidcDiscovery: OidcDiscovery,
     private readonly oidcLogout: OidcLogout,
-    private readonly oidcResponse: OidcResponse,
+    private readonly oidcTokenResponse: OidcTokenResponse,
+    private readonly oidcCodeResponse: OidcCodeResponse,
     private readonly sessionManagement: OidcSessionManagement,
     private readonly config: AuthConfigService,
     private readonly router: Router,
@@ -92,6 +96,7 @@ export class AuthService {
       const input = this.createLogoutActionInput();
       this.logoutWithoutAction();
       this.config.inactiveTimeout.timeoutAction(input);
+      return;
     }
     this.logger.debug('The session has been updated');
     this.tokenStore.setLoginResult(newLoginResult);
@@ -132,8 +137,6 @@ export class AuthService {
 
   private createInitializerInput(): InitializerInput {
     const initial = this.tokenStore.getLoginResult() ?? { isLoggedIn: false };
-    const current = new URL(this.window.location.href);
-    const redirect = this.oidcLogin.getRedirectUrl();
 
     return {
       loggerFactory: this.config.loggerFactory,
@@ -142,8 +145,32 @@ export class AuthService {
         this.oidcLogin.login({ ...options, finalUrl: this.router.url }),
       silentLogin: (options: LoginOptions) =>
         this.oidcSilentLogin.login({ ...options, finalUrl: this.router.url }),
-      handleResponse: () => this.oidcResponse.urlResponse(current, redirect)
+      handleResponse: () => this.handleResponse()
     };
+  }
+
+  private handleResponse(): Promise<LoginResult> {
+    const current = new URL(this.window.location.href);
+    const redirect = this.oidcLogin.getRedirectUrl();
+    if (current.pathname !== redirect.pathname) {
+      this.logger.debug('Current URL is not redirectURL', current, redirect);
+      return Promise.resolve({ isLoggedIn: false });
+    }
+    const params = this.responseParameterParser.parseUrl(current);
+    if (params.code) {
+      return this.oidcCodeResponse.response(params, redirect);
+    }
+    if (params.id_token || params.access_token) {
+      return this.oidcTokenResponse.response(params);
+    }
+    if (params.error) {
+      try {
+        this.oidcTokenResponse.handleErrorResponse(params);
+      } catch (e) {
+        this.logger.debug('If this was a login response, it has failed', e);
+      }
+    }
+    return Promise.resolve({ isLoggedIn: false });
   }
 
   /**
