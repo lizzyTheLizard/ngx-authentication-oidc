@@ -5,12 +5,13 @@ import { NotFoundPage } from './pages/not-found/not-found.page';
 import { PrivatePage } from './pages/private/private.page';
 import { PublicPage } from './pages/public/public.page';
 import { Public2Page } from './pages/public2/public2.page';
+import { PrivateGuard } from 'ngx-authentication-oidc';
 
 const routes: Routes = [
   { path: 'public', component: PublicPage },
   { path: 'public2', component: Public2Page },
   { path: 'auth/error', component: AuthErrorPage },
-  { path: 'private', component: PrivatePage },
+  { path: 'private', component: PrivatePage, canActivate: [PrivateGuard] },
   { path: '', component: PublicPage },
   { path: '**', component: NotFoundPage },
 ];

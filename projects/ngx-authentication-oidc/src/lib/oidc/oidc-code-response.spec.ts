@@ -37,10 +37,11 @@ let service: OidcCodeResponse;
 describe('OidcCodeResponse', () => {
   beforeEach(() => {
     const authConfig = new AuthConfigService(config as OauthConfig);
-    tokenResponse = jasmine.createSpyObj('OidcTokenResponse', ['response']);
+    tokenResponse = jasmine.createSpyObj('OidcTokenResponse', ['response', 'handleErrorResponse']);
     tokenResponse.response = jasmine
       .createSpy('response')
       .and.returnValue(Promise.resolve(loginResult));
+    tokenResponse.handleErrorResponse = jasmine.createSpy('handleErrorResponse');
 
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
@@ -59,6 +60,9 @@ describe('OidcCodeResponse', () => {
   });
 
   it('Handle Error Response', (done) => {
+    tokenResponse.handleErrorResponse = jasmine
+      .createSpy('handleErrorResponse')
+      .and.throwError(new Error('Login failed: not_possible'));
     const params: Response = {
       error: 'not_possible'
     };

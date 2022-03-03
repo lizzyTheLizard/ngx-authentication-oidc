@@ -61,6 +61,14 @@ export interface OauthConfig {
   autoUpdate?: Partial<AutoUpdateConfig>;
   /** Session management configuration, check {@link SessionManagementConfig} */
   sessionManagement?: Partial<SessionManagementConfig>;
+  /**
+   * URL-Prefixes to whom the access token shall be send as authentication header.
+   * To avoid sending the token to wrong hosts, use only at least FQDNs here,
+   * like "https://test.example.com/path/". The prefix has to match the beginning of the URL
+   * exactly, no pattern matching or similar allowed.
+   * If multiple prefixes are defined, the token is send if ONE matches the URL
+   */
+  accessTokenUrlPrefixes?: string | string[];
 }
 
 /**

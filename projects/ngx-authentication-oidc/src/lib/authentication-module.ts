@@ -21,10 +21,9 @@ import { TokenUpdater } from './helper/token-updater';
 import { LocalUrl } from './helper/local-url';
 import { OidcCodeResponse } from './oidc/oidc-code-response';
 import { OidcTokenResponse } from './oidc/oidc-token-response';
-
-// TODO: Request interceptor
-
-// TODO: Auth guard?
+import { AccessTokenInterceptor } from './guard/interceptor';
+import { PrivateGuard } from './guard/private.guard';
+import { EnforceLoginGuard } from './guard/enforce-login.guard';
 
 /**
  * Main module of the library, has to be imported into our application. The configuration
@@ -58,7 +57,10 @@ export class AuthenticationModule {
         OidcTokenResponse,
         TokenStoreWrapper,
         TokenUpdater,
-        LocalUrl
+        LocalUrl,
+        AccessTokenInterceptor,
+        PrivateGuard,
+        EnforceLoginGuard
       ]
     };
   }

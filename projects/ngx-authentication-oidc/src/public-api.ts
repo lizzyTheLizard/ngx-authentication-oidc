@@ -14,3 +14,6 @@ export * from './lib/helper/console-logger';
 export * from './lib/helper/initializer';
 export * from './lib/helper/defaultActions';
 export * from './lib/helper/login-result';
+
+export * from './lib/guard/private.guard';
+export * from './lib/guard/enforce-login.guard';
