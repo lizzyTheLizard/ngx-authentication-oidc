@@ -1,5 +1,5 @@
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { AuthConfigService } from '../auth-config.service';
 import { OauthConfig, UserInfoSource } from '../configuration/oauth-config';
 import { Response } from '../helper/response-parameter-parser';
@@ -11,6 +11,7 @@ const config = {
   provider: {
     authEndpoint: 'http://xx',
     tokenEndpoint: 'http://xx',
+    userInfoEndpoint: 'http://xx/ui',
     issuer: 'http://xx',
     alg: ['HS256'],
     publicKeys: [],
@@ -18,7 +19,7 @@ const config = {
   },
   redirectUri: 'https://example.com/rd',
   clientId: 'id',
-  userInfoSource: UserInfoSource.TOKEN
+  userInfoSource: UserInfoSource.TOKEN_THEN_USER_INFO_ENDPOINT
 };
 
 const token =
@@ -52,7 +53,7 @@ describe('OidcTokenResponse', () => {
     httpTestingController.verify();
   });
 
-  it('Handle Implicit Response', async () => {
+  it('Handle Token Response', async () => {
     validator.verify = jasmine.createSpy('validate').and.returnValue({ sub: '1234567890' });
     const params: Response = {
       stateMessage: 'af0ifjsldkj',
@@ -72,7 +73,7 @@ describe('OidcTokenResponse', () => {
     expect(res.userInfo).toEqual({ sub: '1234567890' });
   });
 
-  it('Handle Implicit Response State', async () => {
+  it('Handle Token Response State', async () => {
     validator.verify = jasmine.createSpy('validate').and.returnValue({ sub: '1234567890' });
     const params: Response = {
       stateMessage: 'tst',
@@ -88,15 +89,60 @@ describe('OidcTokenResponse', () => {
     expect(res.stateMessage).toEqual('tst');
   });
 
+  it('Handle UserInfo Response', fakeAsync(async () => {
+    validator.verify = jasmine.createSpy('validate').and.returnValue({ sub: '1234567890' });
+    const params: Response = {
+      stateMessage: 'tst',
+      finalUrl: 'http://xy',
+      expires_in: '3600',
+      access_token: 'SlAV32hkKG'
+    };
+
+    const promise = service.response(params);
+    tick(10);
+
+    const req = httpTestingController.expectOne(config.provider.userInfoEndpoint);
+    expect(req.request.method).toEqual('POST');
+    req.flush({
+      sub: '1234567890'
+    });
+
+    const res = await promise;
+
+    expect(res.accessToken).toEqual('SlAV32hkKG');
+    const expiresIn = Math.round((res.expiresAt!.getTime() - Date.now()) / 1000);
+    expect(expiresIn).toEqual(3600);
+    expect(res.idToken).toBeUndefined();
+    expect(res.isLoggedIn).toBeTrue();
+    expect(res.redirectPath).toEqual(params.finalUrl);
+    expect(res.userInfo).toEqual({ sub: '1234567890' });
+  }));
+
   it('Handle Error Response', (done) => {
     const params: Response = {
-      error: 'not_possible'
+      error: 'not_possible',
+      error_description: 'desc',
+      error_uri: 'uri'
     };
 
     service.response(params).then(
       () => done.fail(new Error('This should not work')),
       (e: Error) => {
         expect(e.message).toEqual('Login failed: not_possible');
+        done();
+      }
+    );
+  });
+
+  it('Handle Non Token Response', (done) => {
+    const params: Response = {
+      code: 'asd'
+    };
+
+    service.response(params).then(
+      () => done.fail(new Error('This should not work')),
+      (e: Error) => {
+        expect(e.message).toEqual('This is not a token response');
         done();
       }
     );

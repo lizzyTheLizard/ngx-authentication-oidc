@@ -3,11 +3,11 @@ import { JWK } from 'jose';
 import { LoginResult } from '../helper/login-result';
 import { LoginOptions } from './login-options';
 // eslint-disable-next-line prettier/prettier, @typescript-eslint/no-unused-vars
-import { enforceLogin, loginResponseCheck, silentCheckAndThenEnforce, silentLoginCheck } from '../helper/initializer';
+import { enforceLogin, loginResponseCheck, silentCheckAndThenEnforce, silentLoginCheck } from '../configuration/initializer';
 // eslint-disable-next-line prettier/prettier, @typescript-eslint/no-unused-vars
-import { redirect, singleLogout } from '../helper/defaultActions';
+import { redirect, singleLogout } from '../configuration/defaultActions';
 // eslint-disable-next-line prettier/prettier, @typescript-eslint/no-unused-vars
-import { consoleLoggerFactory } from '../helper/console-logger';
+import { consoleLoggerFactory } from '../configuration/console-logger';
 import { Router } from '@angular/router';
 
 /** General configuration object, needed to initialize {@link AuthenticationModule} */
@@ -39,6 +39,12 @@ export interface OauthConfig {
    * When not set {@link errorRedirect} to '/auth/logout' is used
    */
   initializationErrorAction?: ErrorAction;
+  /**
+   * URL to redirect if the use is not allowed to see a route,
+   * used by the provided guards
+   * When not set '/auth/forbidden' is used
+   */
+  notAllowedUri?: string;
   /**
    * Function to initialize the library. Either use a default like {@link silentLoginCheck},
    * {@link enforceLogin}, {@link silentCheckAndThenEnforce}, {@link loginResponseCheck} or
@@ -149,9 +155,9 @@ export interface InactiveTimeoutConfig {
   /** The interrupts regarded as "user activity" */
   interrupts: Array<InterruptSource>;
   /**
-   * Action to be performed after a timeout. Either use a default like {@link singleLogout},
-   * {@link logoutRedirect} or define your own function.
-   * When not set {@link logoutRedirect} to '/auth/logout' is used
+   * Action to be performed after a logout due to a timeout.
+   * Either use a default like {@link singleLogout}, {@link logoutRedirect}
+   * or define your own function. When not set {@link logoutRedirect} to '/auth/logout' is used
    */
   timeoutAction: LogoutAction;
 }
@@ -199,7 +205,7 @@ export interface LogoutActionInput {
   /** The angular router */
   router: Router;
 }
-export type LogoutAction = (input: LogoutActionInput) => void;
+export type LogoutAction = (input: LogoutActionInput) => Promise<void>;
 
 export interface ErrorActionInput {
   /** The error */

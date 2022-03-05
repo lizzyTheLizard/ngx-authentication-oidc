@@ -134,13 +134,13 @@ describe('OidcSilentLogin', () => {
     windowMock.addEventListener = jasmine
       .createSpy('addEventListener')
       .and.callFake((m, l) => l(mock));
-    oidcTokenResponse.response = jasmine.createSpy('response').and.callFake(() => {
-      return Promise.resolve({
+    oidcTokenResponse.response = jasmine.createSpy('response').and.returnValue(
+      Promise.resolve({
         isLoggedIn: true,
         idToken: token,
         accessToken: 'SlAV32hkKG'
-      });
-    });
+      })
+    );
 
     const result = await service.login({});
 

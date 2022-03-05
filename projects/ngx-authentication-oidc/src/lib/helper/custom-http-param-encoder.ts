@@ -1,5 +1,6 @@
 import { HttpParameterCodec } from '@angular/common/http';
 
+/* istanbul ignore next  */
 export class CustomHttpParamEncoder implements HttpParameterCodec {
   encodeKey(key: string): string {
     return encodeURIComponent(key);

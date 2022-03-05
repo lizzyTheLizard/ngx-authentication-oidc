@@ -7,6 +7,22 @@ import { WindowToken } from '../authentication-module.tokens';
 import { Logger } from '../configuration/oauth-config';
 import { UserInfo } from '../helper/login-result';
 
+const hashAlgorithms = new Map<string, string>([
+  ['HS256', 'SHA-256'],
+  ['RS256', 'SHA-256'],
+  ['PS256', 'SHA-256'],
+  ['ES256', 'SHA-256'],
+  ['ES256K', 'SHA-256'],
+  ['HS384', 'SHA-384'],
+  ['RS384', 'SHA-384'],
+  ['PS384', 'SHA-384'],
+  ['ES384', 'SHA-384'],
+  ['HS512', 'SHA-512'],
+  ['RS512', 'SHA-512'],
+  ['PS512', 'SHA-512'],
+  ['ES512', 'SHA-512']
+]);
+
 @Injectable()
 export class OidcTokenValidator {
   private readonly logger: Logger;
@@ -41,22 +57,20 @@ export class OidcTokenValidator {
 
   private async validateSignature(idToken: string): Promise<JWTVerifyResult> {
     const keys = this.config.getProviderConfiguration().publicKeys;
-    if (keys) {
+    if (keys && keys.length > 0) {
       const getKey = (header: JWTHeaderParameters) => this.getKey(header, keys);
       const verifyResult = await jwtVerify(idToken, getKey, {});
       const headers = verifyResult.protectedHeader;
-      if (!headers) {
-        throw new Error('No headers given');
-      }
       this.validateAlgorithm(headers);
       return verifyResult;
     } else {
       this.logger.info('No keys defined, do not verify id token');
       const decoder = new TextDecoder();
       const { 0: encodedHeader, 1: encodedPayload } = idToken.split('.');
-      const header = JSON.parse(decoder.decode(base64url.decode(encodedHeader)));
+      const headers = JSON.parse(decoder.decode(base64url.decode(encodedHeader)));
+      this.validateAlgorithm(headers);
       const claims = JSON.parse(decoder.decode(base64url.decode(encodedPayload)));
-      return { payload: claims, protectedHeader: header };
+      return { payload: claims, protectedHeader: headers };
     }
   }
 
@@ -104,35 +118,17 @@ export class OidcTokenValidator {
     const len = actualHash.byteLength;
     for (var i = 0; i < len; i++) {
       if (actualHash[i] !== expectedHash[i]) {
-        console.log('Difference', i, actualHash[i], expectedHash[i]);
         throw new Error('At-Hash not correct');
       }
     }
   }
 
   private getHashAlgorithm(jwtAlgorithm: string): string {
-    switch (jwtAlgorithm) {
-      case 'HS256':
-      case 'RS256':
-      case 'PS256':
-      case 'ES256':
-      case 'ES256K':
-        return 'SHA-256';
-      case 'HS384':
-      case 'RS384':
-      case 'PS384':
-      case 'ES384':
-        return 'SHA-384';
-      case 'HS512':
-      case 'RS512':
-      case 'PS512':
-      case 'ES512':
-        return 'SHA-512';
-      case 'EdDSA':
-        throw new Error('EdDSA not supported');
-      default:
-        throw new Error('unrecognized or invalid JWS algorithm provided');
+    const result = hashAlgorithms.get(jwtAlgorithm);
+    if (!result) {
+      throw new Error('Algorithm ' + jwtAlgorithm + ' not supported');
     }
+    return result;
   }
 
   private async computeHash(accessToken: string, hashAlgorithm: string): Promise<Uint8Array> {
@@ -165,10 +161,6 @@ export class OidcTokenValidator {
   }
 
   private validateAudience(claims: JWTPayload) {
-    if (!claims.aud) {
-      throw new Error('ID-Token does not contain valid aud claim');
-    }
-
     if (typeof claims.aud === 'string') {
       if (claims.aud !== this.config.clientId) {
         throw new Error('ID-Token does not contain valid aud claim');
@@ -185,15 +177,11 @@ export class OidcTokenValidator {
   private validateAlgorithm(headers: JWTHeaderParameters) {
     const alg = this.config.getProviderConfiguration().alg;
     if (!alg && headers.alg !== 'RS256') {
+      this.logger.info('Configured is RS256 (default), but used is ' + headers.alg);
       throw Error('Wrong ID-Token algorithm');
-    }
-    if (!headers.alg) {
-      throw Error('No algorithm defined');
     }
     if (alg && !alg.includes(headers.alg)) {
-      throw Error('Wrong ID-Token algorithm');
-    }
-    if (!alg && headers.alg !== 'RS256') {
+      this.logger.info('Configured is ' + alg + ', but used is ' + headers.alg);
       throw Error('Wrong ID-Token algorithm');
     }
     return;

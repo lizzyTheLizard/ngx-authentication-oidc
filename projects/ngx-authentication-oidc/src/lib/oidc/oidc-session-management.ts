@@ -1,141 +1,104 @@
 import { Inject, Injectable } from '@angular/core';
-import { Observable, Subject } from 'rxjs';
+import { Observable, Subject, Subscriber, TeardownLogic } from 'rxjs';
 import { AuthConfigService } from '../auth-config.service';
 import { DocumentToken, WindowToken } from '../authentication-module.tokens';
 import { Logger } from '../configuration/oauth-config';
-import { TokenStoreWrapper } from '../helper/token-store-wrapper';
 
 const watchSessionIframeName = 'watchSessionIFrame';
 
-class CurrentWatch {
-  public readonly opFrameOrigin: string;
-  private readonly opIFrame: HTMLIFrameElement;
-  private readonly checkSessionTimer: number;
+type EventListener = (e: MessageEvent) => void;
+
+export class SessionWatch extends Observable<void> {
   constructor(
-    private readonly iFrameUrl: string,
-    private readonly clientId: string,
-    private readonly sessionState: string,
-    private readonly document: Document,
-    private readonly window: Window,
-    private readonly checkIntervalSeconds: number
+    subscribe: (this: Observable<void>, subscriber: Subscriber<void>) => TeardownLogic,
+    public readonly iframe?: HTMLIFrameElement,
+    public readonly eventListener?: EventListener,
+    public readonly timer?: number
   ) {
-    this.opIFrame = this.createOpIFrame();
-    this.opFrameOrigin = new URL(iFrameUrl).origin;
-    this.checkSessionTimer = this.createCheckSessionTimer();
-    this.document.body.appendChild(this.opIFrame);
-  }
-
-  public stop() {
-    this.window.clearInterval(this.checkSessionTimer);
-    this.document.body.removeChild(this.opIFrame);
-  }
-
-  private createOpIFrame(): HTMLIFrameElement {
-    const opIframe = this.document.createElement('iframe');
-    opIframe.id = watchSessionIframeName;
-    opIframe.title = watchSessionIframeName;
-    opIframe.style['display'] = 'none';
-    opIframe.setAttribute('src', this.iFrameUrl.toString());
-    return opIframe;
-  }
-
-  private createCheckSessionTimer(): number {
-    const mes = this.clientId + ' ' + this.sessionState;
-    return this.window.setInterval(() => {
-      this.opIFrame!.contentWindow!.postMessage(mes, this.opFrameOrigin);
-    }, this.checkIntervalSeconds * 1000);
+    super(subscribe);
   }
 }
 
 @Injectable()
 export class OidcSessionManagement {
   private readonly logger: Logger;
-  public changed$: Observable<void>;
-  private sessionChangedSub: Subject<void>;
-  private currentWatch?: CurrentWatch;
 
   constructor(
     private readonly config: AuthConfigService,
-    private readonly tokenStore: TokenStoreWrapper,
     @Inject(DocumentToken) private readonly document: Document,
     @Inject(WindowToken) private readonly window: Window
   ) {
     this.logger = this.config.loggerFactory('OidcSessionManagement');
-    this.sessionChangedSub = new Subject();
-    this.changed$ = this.sessionChangedSub.asObservable();
-    if (!this.config.sessionManagement.enabled) {
-      this.logger.info('Session Management is disabled');
-      return;
-    }
-    window.addEventListener('message', (e) => this.sessionChangeListener(e), false);
   }
 
-  private sessionChangeListener(e: MessageEvent) {
-    const currentWatch = this.currentWatch;
-    if (!currentWatch) {
-      return;
-    }
-    if (e.origin !== currentWatch.opFrameOrigin) {
-      return;
-    }
-    if (e.data === 'unchanged') {
-      this.logger.debug('Session is unchanged');
-      return;
-    }
-    if (e.data === 'error') {
-      this.logger.info('Error while watching session', e);
-      this.sessionChangedSub.error(e);
-      return;
-    }
-    if (e.data !== 'changed') {
-      this.logger.info('Invalid response from session management ' + e.data);
-      this.sessionChangedSub.error(e);
-      return;
-    }
-    this.logger.info('Session Change detected');
-    this.sessionChangedSub.next();
-  }
-
-  public startWatching() {
-    if (!this.config.sessionManagement.enabled) {
-      this.logger.debug('Session Management is disabled');
-      return;
-    }
-    this.stopWatching();
-    const sessionState = this.tokenStore.getLoginResult().sessionState;
-    if (!sessionState) {
-      this.logger.info('Session does not support session management');
-      return;
-    }
+  public watchSession(sessionState: string): SessionWatch {
+    const subject = new Subject<void>();
     const iFrameUrl = this.config.getProviderConfiguration().checkSessionIframe;
     if (!iFrameUrl) {
       this.logger.info('Provider does not support session management');
-      return;
+      return new SessionWatch((obs) => subject.subscribe(obs));
     }
-
     this.logger.debug('Start watching session');
-    const clientID = this.config.clientId;
-    this.currentWatch = new CurrentWatch(
-      iFrameUrl,
-      clientID,
-      sessionState,
-      this.document,
-      this.window,
-      this.config.sessionManagement.checkIntervalSeconds
-    );
+    const iframe = this.createOpIFrame(sessionState, iFrameUrl);
+    const timer = this.createCheckSessionTimer(sessionState, iframe);
+    const eventListener = this.createEventListener(iframe, subject);
+    this.window.addEventListener('message', eventListener);
+    this.document.body.appendChild(iframe);
+    return new SessionWatch((obs) => subject.subscribe(obs), iframe, eventListener, timer);
   }
 
-  public stopWatching() {
-    if (!this.config.sessionManagement.enabled) {
-      this.logger.debug('Session Management is disabled');
-      return;
+  public stopWatching(sessionWatch: SessionWatch) {
+    if (sessionWatch.timer) {
+      this.window.clearInterval(sessionWatch.timer);
     }
-    const currentWatch = this.currentWatch;
-    if (!currentWatch) {
-      return;
+    if (sessionWatch.iframe) {
+      this.document.body.removeChild(sessionWatch.iframe);
     }
-    this.logger.debug('Stop watching session');
-    currentWatch.stop();
-    this.currentWatch = undefined;
+    if (sessionWatch.eventListener) {
+      this.window.removeEventListener('message', sessionWatch.eventListener);
+    }
+  }
+
+  private createOpIFrame(sessionState: string, iFrameUrl: string): HTMLIFrameElement {
+    const opIframe = this.document.createElement('iframe');
+    opIframe.id = watchSessionIframeName + sessionState;
+    opIframe.title = watchSessionIframeName + sessionState;
+    opIframe.style['display'] = 'none';
+    opIframe.setAttribute('src', iFrameUrl);
+    return opIframe;
+  }
+
+  private createCheckSessionTimer(sessionState: string, opIFrame: HTMLIFrameElement): number {
+    const iFrameUrl = opIFrame.getAttribute('src')!;
+    const clientId = this.config.clientId;
+    const opFrameOrigin = new URL(iFrameUrl).origin;
+    const mes = clientId + ' ' + sessionState;
+    const interval = this.config.sessionManagement.checkIntervalSeconds * 1000;
+    return this.window.setInterval(() => {
+      opIFrame!.contentWindow!.postMessage(mes, opFrameOrigin);
+    }, interval);
+  }
+
+  private createEventListener(iframe: HTMLIFrameElement, subject: Subject<void>): EventListener {
+    const iFrameUrl = iframe.getAttribute('src')!;
+    const opFrameOrigin = new URL(iFrameUrl).origin;
+    const eventListener = (e: MessageEvent) => {
+      if (e.origin !== opFrameOrigin) {
+        return;
+      }
+      if (e.data === 'unchanged') {
+        this.logger.debug('Session is unchanged');
+        return;
+      }
+      if (e.data === 'error') {
+        this.logger.info('Error while watching session, assuming session has ended', e);
+      } else if (e.data !== 'changed') {
+        this.logger.info('Invalid response, assuming session has ended ' + e.data);
+      } else {
+        this.logger.info('Session Change detected');
+      }
+      subject.next();
+    };
+    return eventListener;
   }
 }

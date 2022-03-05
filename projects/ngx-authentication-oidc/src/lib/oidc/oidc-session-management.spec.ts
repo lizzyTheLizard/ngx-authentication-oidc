@@ -2,7 +2,6 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { DocumentToken, WindowToken } from '../authentication-module.tokens';
 import { OidcSessionManagement } from './oidc-session-management';
-import { TokenStoreWrapper } from '../helper/token-store-wrapper';
 import { AuthConfigService } from '../auth-config.service';
 import { OauthConfig } from '../configuration/oauth-config';
 
@@ -19,6 +18,7 @@ const windowMock = {
   addEventListener: jasmine
     .createSpy('addEventListener')
     .and.callFake((m, l) => (eventListener = l)),
+  removeEventListener: jasmine.createSpy('removeEventListener'),
   postMessage: jasmine.createSpy('postMessage'),
   setInterval: (a: () => void, b: number) => setInterval(a, b),
   clearInterval: (a: number) => clearInterval(a),
@@ -27,6 +27,7 @@ const windowMock = {
 
 const iframeMock = {
   setAttribute: jasmine.createSpy('setAttribute'),
+  getAttribute: jasmine.createSpy('getAttribute').and.returnValue('https://example.com'),
   contentWindow: {
     postMessage: jasmine.createSpy('postMessage')
   },
@@ -38,8 +39,6 @@ const documentMock = {
   createElement: jasmine.createSpy('createElement').and.returnValue(iframeMock)
 };
 
-const tokenStoreMock = jasmine.createSpyObj('tokenStoreMock', ['getLoginResult', 'setLoginResult']);
-
 let service: OidcSessionManagement;
 
 describe('OidcSessionManagement', () => {
@@ -47,9 +46,8 @@ describe('OidcSessionManagement', () => {
     const authConfig = new AuthConfigService(config as OauthConfig);
     TestBed.configureTestingModule({
       providers: [
-        { provide: WindowToken, useFactory: () => windowMock },
-        { provide: DocumentToken, useFactory: () => documentMock },
-        { provide: TokenStoreWrapper, useFactory: () => tokenStoreMock },
+        { provide: WindowToken, useValue: windowMock },
+        { provide: DocumentToken, useValue: documentMock },
         { provide: AuthConfigService, useValue: authConfig },
         OidcSessionManagement
       ]
@@ -57,80 +55,54 @@ describe('OidcSessionManagement', () => {
     service = TestBed.inject(OidcSessionManagement);
   });
 
-  it('Create', () => {
-    expect(service).toBeTruthy();
-  });
-
   it('Post message to opIframe when watching', fakeAsync(() => {
-    tokenStoreMock.getLoginResult = jasmine
-      .createSpy('getLoginResult')
-      .and.returnValue({ isLoggedIn: true, sessionState: '123-123' });
     iframeMock.contentWindow.postMessage.calls.reset();
-    service.startWatching();
-    tick(10000);
+
+    const watch = service.watchSession('123-123');
+    tick(11000);
+
     expect(iframeMock.contentWindow.postMessage).toHaveBeenCalledTimes(1);
     expect(iframeMock.contentWindow.postMessage).toHaveBeenCalledWith(
       config.clientId + ' ' + '123-123',
       'https://example.com'
     );
-    service.stopWatching();
-    tick(6000);
-    expect(iframeMock.contentWindow.postMessage).toHaveBeenCalledTimes(1);
+
+    iframeMock.contentWindow.postMessage.calls.reset();
+    service.stopWatching(watch);
+    tick(11000);
+
+    expect(iframeMock.contentWindow.postMessage).toHaveBeenCalledTimes(0);
   }));
 
-  it('Notification if session changed', async () => {
-    tokenStoreMock.getLoginResult = jasmine
-      .createSpy('getLoginResult')
-      .and.returnValue({ isLoggedIn: true, sessionState: '123-123' });
-    service.startWatching();
-    let changes = 0;
-    service.changed$.subscribe(() => changes++);
+  it('Notification if session changed', () => {
+    const updateToken = jasmine.createSpy('updateToken');
+    iframeMock.contentWindow.postMessage.calls.reset();
+
+    const result = service.watchSession('123-123');
+    result.subscribe(() => updateToken());
     eventListener(
       new MessageEvent('message', {
         origin: 'https://example.com',
         data: 'changed'
       })
     );
-    expect(changes).toEqual(1);
+
+    expect(updateToken).toHaveBeenCalledTimes(1);
   });
 
-  it('Notification if error', async () => {
-    tokenStoreMock.getLoginResult = jasmine
-      .createSpy('getLoginResult')
-      .and.returnValue({ isLoggedIn: true, sessionState: '123-123' });
-    service.startWatching();
-    let changes = 0;
-    let errors = 0;
-    service.changed$.subscribe({
-      error: () => errors++,
-      next: () => changes++
-    });
+  it('Notification if error', () => {
+    const updateToken = jasmine.createSpy('updateToken');
+    iframeMock.contentWindow.postMessage.calls.reset();
+
+    const result = service.watchSession('123-123');
+    result.subscribe(() => updateToken());
     eventListener(
       new MessageEvent('message', {
         origin: 'https://example.com',
         data: 'error'
       })
     );
-    expect(changes).toEqual(0);
-    expect(errors).toEqual(1);
-  });
 
-  it('Ignore if no session state', fakeAsync(() => {
-    tokenStoreMock.getLoginResult = jasmine
-      .createSpy('getLoginResult')
-      .and.returnValue({ isLoggedIn: true });
-    iframeMock.contentWindow.postMessage.calls.reset();
-    service.startWatching();
-    tick(6000);
-    expect(iframeMock.contentWindow.postMessage).toHaveBeenCalledTimes(0);
-    let changes = 0;
-    service.changed$.subscribe(() => changes++);
-    eventListener(
-      new MessageEvent('message', {
-        origin: 'https:/example.com',
-        data: 'changed'
-      })
-    );
-    expect(changes).toEqual(0);
-  }));
+    expect(updateToken).toHaveBeenCalledTimes(1);
+  });
 });

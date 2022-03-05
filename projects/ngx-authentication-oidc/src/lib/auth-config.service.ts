@@ -2,14 +2,14 @@
 // eslint-disable-next-line prettier/prettier
 import { AutoUpdateConfig, ErrorAction, InactiveTimeoutConfig, Initializer, Logger, LoggerFactory, LogoutAction, OauthConfig, ProviderConfig, SessionManagementConfig, SilentLoginConfig, UserInfoSource } from './configuration/oauth-config';
 import { DEFAULT_INTERRUPTSOURCES } from '@ng-idle/core';
-import { consoleLoggerFactory } from './helper/console-logger';
-import { loginResponseCheck, silentLoginCheck } from './helper/initializer';
-// eslint-disable-next-line prettier/prettier
-import { redirect, singleLogoutOrRedirect } from './helper/defaultActions';
+import { consoleLoggerFactory } from './configuration/console-logger';
+import { loginResponseCheck, silentLoginCheck } from './configuration/initializer';
+import { redirect, singleLogoutOrRedirect } from './configuration/defaultActions';
 
 export class AuthConfigService {
   public readonly clientId: string;
   public readonly redirectUri?: string;
+  public readonly notAllowedUri: string;
   public readonly discoveryUrl?: string;
   public readonly logoutAction: LogoutAction;
   public readonly initializationErrorAction: ErrorAction;
@@ -41,6 +41,7 @@ export class AuthConfigService {
     this.sessionManagement = this.createSessionMgm();
     this.accessTokenUrlPrefixes = this.createAccessTokenUrlPrefixes();
     this.userInfoSource = config.userInfoSource ?? UserInfoSource.USER_INFO_ENDPOINT;
+    this.notAllowedUri = config.notAllowedUri ?? '/auth/forbidden';
     this.logger.debug('Configuration set to', this);
   }
 

@@ -1,8 +1,9 @@
 import { Inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, Subject, filter, map } from 'rxjs';
+import { Observable, Subject, map, BehaviorSubject } from 'rxjs';
 import { AuthConfigService } from './auth-config.service';
 import { LoginOptions } from './configuration/login-options';
+import { LogoutAction } from './configuration/oauth-config';
 import { InitializerInput, Logger } from './configuration/oauth-config';
 import { LoginResult, UserInfo } from './helper/login-result';
 import { OidcDiscovery } from './oidc/oidc-discovery';
@@ -10,9 +11,6 @@ import { OidcLogin } from './oidc/oidc-login';
 import { OidcLogout } from './oidc/oidc-logout';
 import { OidcSilentLogin } from './oidc/oidc-silent-login';
 import { TokenStoreWrapper } from './helper/token-store-wrapper';
-import { OidcSessionManagement } from './oidc/oidc-session-management';
-import { TokenUpdater } from './helper/token-updater';
-import { InactiveTimeoutHandler } from './helper/inactive-timeout-handler';
 import { WindowToken } from './authentication-module.tokens';
 import { LogoutActionInput } from './configuration/oauth-config';
 import { ResponseParameterParser } from './helper/response-parameter-parser';
@@ -25,6 +23,11 @@ import { OidcCodeResponse } from './oidc/oidc-code-response';
  */
 @Injectable()
 export class AuthService {
+  private readonly logger: Logger;
+  private readonly loginResult$: BehaviorSubject<LoginResult>;
+  private readonly responseParameterParser: ResponseParameterParser = new ResponseParameterParser();
+  private initialSetupFinishedResolve: (e: any) => void = () => {};
+
   /** Observable to check if a user is currently logged in */
   public readonly isLoggedIn$: Observable<boolean>;
 
@@ -34,19 +37,8 @@ export class AuthService {
    */
   public readonly userInfo$: Observable<UserInfo | undefined>;
 
-  /**
-   * Observable fires when the user is about to be logged out due to inactivity
-   * Parameter is the number of seconds until logout.
-   */
-  public readonly inactiveLogoutWarning$: Observable<number>;
-
-  /** Promise returning  true as soon as the setup has finished */
+  /** Promise returning true as soon as the setup has finished */
   public readonly initialSetupFinished$: Promise<boolean>;
-
-  private readonly logger: Logger;
-  private readonly loginResult$: Subject<LoginResult>;
-  private readonly responseParameterParser: ResponseParameterParser = new ResponseParameterParser();
-  private initialSetupFinishedResolve: (e: any) => void = () => {};
 
   constructor(
     private readonly oidcLogin: OidcLogin,
@@ -55,12 +47,9 @@ export class AuthService {
     private readonly oidcLogout: OidcLogout,
     private readonly oidcTokenResponse: OidcTokenResponse,
     private readonly oidcCodeResponse: OidcCodeResponse,
-    private readonly sessionManagement: OidcSessionManagement,
     private readonly config: AuthConfigService,
     private readonly router: Router,
     private readonly tokenStore: TokenStoreWrapper,
-    private readonly tokenUpdater: TokenUpdater,
-    private readonly timeoutHandler: InactiveTimeoutHandler,
     @Inject(WindowToken) private readonly window: Window
   ) {
     this.logger = this.config.loggerFactory('AuthService');
@@ -71,40 +60,9 @@ export class AuthService {
     });
 
     // Set up Observables
-    this.loginResult$ = new Subject();
+    this.loginResult$ = new BehaviorSubject<LoginResult>({ isLoggedIn: false });
     this.isLoggedIn$ = this.loginResult$.pipe(map((t) => t.isLoggedIn));
     this.userInfo$ = this.loginResult$.pipe(map((t) => t.userInfo));
-    this.inactiveLogoutWarning$ = this.timeoutHandler.timeoutWarning$.pipe(
-      filter(() => this.isLoggedIn())
-    );
-
-    // Subscribe to others
-    this.sessionManagement.changed$.subscribe(() => this.updateSession(false));
-    this.tokenUpdater.updated$.subscribe((res) => this.sessionUpdated(res));
-    this.timeoutHandler.timeout$.subscribe(() => {
-      this.logger.debug('The user session has timed out');
-      const input = this.createLogoutActionInput();
-      this.logoutWithoutAction();
-      this.config.inactiveTimeout.timeoutAction(input);
-    });
-  }
-
-  private sessionUpdated(newLoginResult: LoginResult) {
-    const oldLoginResult = this.tokenStore.getLoginResult();
-    if (!newLoginResult.isLoggedIn) {
-      this.logger.debug('The user is not logged in any more');
-      const input = this.createLogoutActionInput();
-      this.logoutWithoutAction();
-      this.config.inactiveTimeout.timeoutAction(input);
-      return;
-    }
-    this.logger.debug('The session has been updated');
-    this.tokenStore.setLoginResult(newLoginResult);
-    this.loginResult$.next(newLoginResult);
-    if (oldLoginResult.sessionState !== newLoginResult.sessionState) {
-      this.logger.debug('Session state has changed, watch new session');
-      this.sessionManagement.startWatching();
-    }
   }
 
   /**
@@ -118,7 +76,7 @@ export class AuthService {
       const initializerInput = this.createInitializerInput();
       const loginResult = await this.config.initializer(initializerInput);
       if (loginResult.isLoggedIn) {
-        this.handleSuccessfulLoginResult(loginResult);
+        this.setLoginResult(loginResult);
         this.logger.debug('Finished initialization, user is logged in');
       } else {
         this.logger.debug('Finished initialization, user is not logged in');
@@ -189,7 +147,7 @@ export class AuthService {
     };
     const loginResult = await this.oidcLogin.login(loginOptions);
     if (loginResult.isLoggedIn) {
-      this.handleSuccessfulLoginResult(loginResult);
+      this.setLoginResult(loginResult);
     } else {
       this.logger.info('Login was not successful, user is not logged in');
     }
@@ -209,20 +167,21 @@ export class AuthService {
     };
     const loginResult = await this.oidcSilentLogin.login(loginOptions);
     if (loginResult.isLoggedIn) {
-      this.handleSuccessfulLoginResult(loginResult);
+      this.setLoginResult(loginResult);
     } else {
       this.logger.info('Login was not successful, user is not logged in');
     }
     return loginResult.isLoggedIn;
   }
 
-  private handleSuccessfulLoginResult(loginResult: LoginResult): void {
+  /**
+   * Set a specific login result. Usually this will only be used internally,
+   * but you can use it to set some specific state from outside as well.
+   * @param {LoginResult} loginResult The login result to be set
+   */
+  public setLoginResult(loginResult: LoginResult): void {
     this.tokenStore.setLoginResult(loginResult);
     this.loginResult$.next(loginResult);
-
-    this.sessionManagement.startWatching();
-    this.tokenUpdater.startAutoUpdate();
-    this.timeoutHandler.start();
 
     const userInfo = this.getUserInfo();
     this.logger.info('Login was successful, user is logged in', userInfo);
@@ -233,29 +192,21 @@ export class AuthService {
 
   /**
    * Logout the current user
+   * @param {LogoutAction}  logoutAction Action to be performed after a logout.
+   * If non given, default will be used.
    */
-  public async logout(): Promise<void> {
+  public async logout(logoutAction?: LogoutAction): Promise<void> {
     await this.initialSetupFinished$;
     const input = this.createLogoutActionInput();
-    this.logoutWithoutAction();
-    await this.config.logoutAction(input);
-  }
-
-  private logoutWithoutAction() {
-    this.tokenUpdater.stopAutoUpdate();
-    this.sessionManagement.stopWatching();
-    this.timeoutHandler.stop();
-
-    if (!this.isLoggedIn()) {
-      this.logger.debug('No logout is started as user is already logged out');
-      return;
+    if (this.isLoggedIn()) {
+      const userInfo = this.getUserInfo();
+      this.logger.info('Log out user', userInfo);
+      const loginResult = { isLoggedIn: false };
+      this.tokenStore.setLoginResult(loginResult);
+      this.loginResult$.next(loginResult);
     }
-
-    const userInfo = this.getUserInfo();
-    this.logger.info('Log out user', userInfo);
-    const loginResult = { isLoggedIn: false };
-    this.tokenStore.setLoginResult(loginResult);
-    this.loginResult$.next(loginResult);
+    logoutAction = logoutAction ?? this.config.logoutAction;
+    return logoutAction(input);
   }
 
   private createLogoutActionInput(): LogoutActionInput {
@@ -266,15 +217,6 @@ export class AuthService {
       oldResult: oldResult,
       singleLogout: (redirect) => this.oidcLogout.logout(oldResult.idToken, redirect)
     };
-  }
-
-  /**
-   * Update the access token, this will be triggered automatically
-   * but can be triggered manually as well
-   * @param {boolean?} shouldUseRefreshToken Should a refresh token be used? Default is true
-   */
-  public async updateSession(shouldUseRefreshToken?: boolean): Promise<void> {
-    this.tokenUpdater.forceCheck(shouldUseRefreshToken ?? true);
   }
 
   /**
@@ -318,5 +260,13 @@ export class AuthService {
    */
   public getExpiresAt(): Date | undefined {
     return this.tokenStore.getLoginResult().expiresAt;
+  }
+
+  /**
+   * Get the current login result with all fields
+   * @returns { LoginResult } Current Login result
+   */
+  public getLoginResult(): LoginResult {
+    return this.tokenStore.getLoginResult();
   }
 }

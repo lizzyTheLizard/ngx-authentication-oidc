@@ -22,14 +22,13 @@ describe('TokenStoreWrapper', () => {
   it('Empty', () => {
     service.cleanTokenStore();
     expect(service.getLoginResult()).toEqual({
-      isLoggedIn: false,
-      accessToken: undefined,
-      expiresAt: undefined,
-      idToken: undefined,
-      sessionState: undefined,
-      userInfo: undefined,
-      refreshToken: undefined
+      isLoggedIn: false
     });
+  });
+
+  it('Nonce', () => {
+    service.saveNonce('nonce');
+    expect(service.getStoredNonce()).toEqual('nonce');
   });
 
   it('Store and reset', () => {

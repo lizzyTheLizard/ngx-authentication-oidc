@@ -1,1 +1,3 @@
 <p>private works!</p>
+{{ authService.userInfo$ | async | json }}
+<button (click)="makeRequest()">Make request</button>

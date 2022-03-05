@@ -9,7 +9,7 @@ import { LogoutAction, LogoutActionInput } from '../configuration/oauth-config';
  * @returns {LogoutAction} The action to be used in the configuration
  */
 export function singleLogout(singleLogoutRedirectUri?: string): LogoutAction {
-  return (input: LogoutActionInput): void => {
+  return async (input: LogoutActionInput): Promise<void> => {
     input.singleLogout(singleLogoutRedirectUri);
   };
 }
@@ -21,7 +21,7 @@ export function singleLogout(singleLogoutRedirectUri?: string): LogoutAction {
  *        as {@link LogoutAction} or as {@link ErrorAction}
  */
 export function redirect(redirectUri: string | UrlTree): RedirectAction {
-  return (input: RedirectInput): void => {
+  return async (input: RedirectInput): Promise<void> => {
     input.router.navigateByUrl(redirectUri);
   };
 }
@@ -29,7 +29,7 @@ export function redirect(redirectUri: string | UrlTree): RedirectAction {
 export interface RedirectInput {
   router: Router;
 }
-export type RedirectAction = (input: RedirectInput) => void;
+export type RedirectAction = (input: RedirectInput) => Promise<void>;
 
 /**
  * Logs out the user at the authentication server as well ("single logout") if supported by the
@@ -44,12 +44,10 @@ export function singleLogoutOrRedirect(
   redirectUri: string | UrlTree,
   singleLogoutRedirectUri?: string
 ): LogoutAction {
-  return (input: LogoutActionInput): Promise<void> => {
-    return input.singleLogout(singleLogoutRedirectUri).then((r) => {
-      if (!r) {
-        return input.router.navigateByUrl(redirectUri).then(() => {});
-      }
-      return;
-    });
+  return async (input: LogoutActionInput): Promise<void> => {
+    const res = await input.singleLogout(singleLogoutRedirectUri);
+    if (!res) {
+      await input.router.navigateByUrl(redirectUri);
+    }
   };
 }

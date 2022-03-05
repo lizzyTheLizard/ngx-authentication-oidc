@@ -61,7 +61,7 @@ describe('OidcDiscovery', () => {
       const req2 = httpTestingController.expectOne('https://example.com/jwks');
       expect(req2.request.method).toEqual('GET');
       req2.flush(jwksMock);
-    }, 100);
+    }, 1);
 
     await promise;
 
@@ -90,7 +90,20 @@ describe('OidcDiscovery', () => {
     expect(() => configService.getProviderConfiguration()).toThrow();
   });
 
-  it('Invalid Answer', (done) => {
+  it('Empty Answer', (done) => {
+    const promise = service.discover();
+
+    const req = httpTestingController.expectOne(
+      'https://example.com/.well-known/openid-configuration'
+    );
+    expect(req.request.method).toEqual('GET');
+    req.flush(null);
+
+    promise.then(() => done.fail('This should not work')).catch(() => done());
+    expect(() => configService.getProviderConfiguration()).toThrow();
+  });
+
+  it('Missing Issuer', (done) => {
     const promise = service.discover();
 
     const req = httpTestingController.expectOne(
@@ -98,6 +111,19 @@ describe('OidcDiscovery', () => {
     );
     expect(req.request.method).toEqual('GET');
     req.flush({ something: 'Weird' });
+
+    promise.then(() => done.fail('This should not work')).catch(() => done());
+    expect(() => configService.getProviderConfiguration()).toThrow();
+  });
+
+  it('Missing Endpoint', (done) => {
+    const promise = service.discover();
+
+    const req = httpTestingController.expectOne(
+      'https://example.com/.well-known/openid-configuration'
+    );
+    expect(req.request.method).toEqual('GET');
+    req.flush({ issuer: 'http://example.com/test' });
 
     promise.then(() => done.fail('This should not work')).catch(() => done());
     expect(() => configService.getProviderConfiguration()).toThrow();
@@ -116,7 +142,7 @@ describe('OidcDiscovery', () => {
       const req2 = httpTestingController.expectOne('https://example.com/jwks');
       expect(req2.request.method).toEqual('GET');
       req2.flush({}, { status: 500, statusText: 'Error' });
-    }, 100);
+    }, 1);
 
     promise.then(() => done.fail('This should not work')).catch(() => done());
     expect(() => configService.getProviderConfiguration()).toThrow();

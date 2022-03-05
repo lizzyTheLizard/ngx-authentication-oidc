@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { AuthConfigService } from '../auth-config.service';
-import { LoginResult } from './login-result';
+import { LoginResult, UserInfo } from './login-result';
 
 const prefix: string = 'auth.';
 
@@ -13,15 +13,34 @@ export class TokenStoreWrapper {
   }
 
   public getLoginResult(): LoginResult {
-    return {
-      isLoggedIn: this.getObject('isLoggedIn') ?? false,
-      idToken: this.getString('idToken'),
-      accessToken: this.getString('accessToken'),
-      userInfo: this.getObject('userInfo'),
-      sessionState: this.getString('sessionState'),
-      expiresAt: this.getDate('expiresAt'),
-      refreshToken: this.getString('refreshToken')
+    const result: LoginResult = {
+      isLoggedIn: this.getObject('isLoggedIn') ?? false
     };
+    const idToken = this.getString('idToken');
+    if (idToken) {
+      result.idToken = idToken;
+    }
+    const accessToken = this.getString('accessToken');
+    if (accessToken) {
+      result.accessToken = accessToken;
+    }
+    const sessionState = this.getString('sessionState');
+    if (sessionState) {
+      result.sessionState = sessionState;
+    }
+    const refreshToken = this.getString('refreshToken');
+    if (refreshToken) {
+      result.refreshToken = refreshToken;
+    }
+    const userInfo = this.getObject<UserInfo>('userInfo');
+    if (userInfo) {
+      result.userInfo = userInfo;
+    }
+    const expiresAt = this.getDate('expiresAt');
+    if (expiresAt) {
+      result.expiresAt = expiresAt;
+    }
+    return result;
   }
 
   public setLoginResult(loginResult: LoginResult): void {

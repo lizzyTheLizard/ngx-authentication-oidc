@@ -9,11 +9,12 @@ import { PrivatePage } from './pages/private/private.page';
 import { Public2Page } from './pages/public2/public2.page';
 import { NotFoundPage } from './pages/not-found/not-found.page';
 import { PublicPage } from './pages/public/public.page';
+import { HttpClientModule } from '@angular/common/http';
 
 const config: OauthConfig = {
   clientId: 'keycloak-sample',
   provider: "http://localhost:8080/auth/realms/Test-Application",
-  //logoutAction: () => alert("You are logged out!"),
+  accessTokenUrlPrefixes: 'http://localhost:3000/',
   initializationErrorAction: (e: ErrorActionInput) => alert("Error while initialize Login: " + e.error),
 }
 
@@ -29,6 +30,7 @@ const config: OauthConfig = {
   imports: [
     BrowserModule,
     AppRoutingModule,
+    HttpClientModule,
     AuthenticationModule.forRoot(config),
   ],
   bootstrap: [AppComponent]

@@ -76,6 +76,19 @@ describe('OidcCodeResponse', () => {
     );
   });
 
+  it('Handle Code Response without code', (done) => {
+    const params: Response = {
+      finalUrl: 'test'
+    };
+    service.response(params, redirectUrl).then(
+      () => done.fail(new Error('This should not work')),
+      (e: Error) => {
+        expect(e.message).toEqual('This is not a code response');
+        done();
+      }
+    );
+  });
+
   it('Handle Code Response makes token request', () => {
     service.response(params, redirectUrl);
 

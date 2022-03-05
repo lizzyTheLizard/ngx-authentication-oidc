@@ -7,9 +7,10 @@ module.exports = function (config) {
     frameworks: ['jasmine', '@angular-devkit/build-angular'],
     plugins: [
       require('karma-jasmine'),
-      require('karma-chrome-launcher'),
+      require('karma-firefox-launcher'),
       require('karma-jasmine-html-reporter'),
-      require("karma-coverage-istanbul-reporter"),
+      require('karma-spec-reporter'),
+      require("karma-coverage"),
       require('@angular-devkit/build-angular/plugins/karma')
     ],
     client: {
@@ -24,23 +25,24 @@ module.exports = function (config) {
     jasmineHtmlReporter: {
       suppressAll: true // removes the duplicated traces
     },
-    coverageIstanbulReporter: {
-      dir: require("path").join(__dirname, "./coverage/debug-tests"),
-      reports: ["html", "lcovonly", "text-summary"],
-      fixWebpackSourcePaths: true,
+    coverageReporter: {
+      reporters: [
+        { type: "html" },
+        { type: "text-summary" },
+      ],
     },
-    reporters: ['progress', 'kjhtml'],
+    specReporter: {
+      maxLogLines: 0,
+      showSpecTiming: true,
+    },    
+    reporters: ['spec', 'kjhtml', 'coverage'],
     port: 9876,
     colors: true,
-    logLevel: config.LOG_INFO,
+    browserConsoleLogOptions: {
+      level: "debug", format: "%b %T: %m", terminal: false
+    },
     autoWatch: true,
-    browsers: ['ChromeDebugging', ''],
-    customLaunchers: {
-      ChromeDebugging: {
-        base: 'Chrome',
-        flags: [ '--remote-debugging-port=9333' ]
-      }
-    },    
+    browsers: [],
     singleRun: false,
     restartOnFileChange: true,
   });

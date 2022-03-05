@@ -34,20 +34,14 @@ export const silentLoginCheck: Initializer = async (input) => {
   }
 
   logger.debug('Try login without user interaction');
-  return input
-    .silentLogin({})
-    .then((r) => {
-      if (r.isLoggedIn) {
-        logger.debug('User is silently logged in', loginResult);
-      } else {
-        logger.debug('Single login failed');
-      }
-      return r;
-    })
-    .catch((e) => {
-      logger.info('Could not perform a silent login: ' + e.message);
-      return { isLoggedIn: false };
-    });
+  return input.silentLogin({}).then((r) => {
+    if (r.isLoggedIn) {
+      logger.debug('User is silently logged in', loginResult);
+    } else {
+      logger.debug('Single login failed');
+    }
+    return r;
+  });
 };
 
 /**

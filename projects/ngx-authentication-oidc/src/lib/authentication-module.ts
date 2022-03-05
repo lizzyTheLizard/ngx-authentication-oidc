@@ -1,7 +1,6 @@
 /* global window, document */
-// eslint-disable-next-line prettier/prettier
 import { Location, LocationStrategy, PathLocationStrategy } from '@angular/common';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { ModuleWithProviders, NgModule } from '@angular/core';
 import { AuthConfigService } from './auth-config.service';
 import { AuthService } from './auth.service';
@@ -13,17 +12,16 @@ import { OidcLogout } from './oidc/oidc-logout';
 import { OidcSessionManagement } from './oidc/oidc-session-management';
 import { OidcSilentLogin } from './oidc/oidc-silent-login';
 import { OidcTokenValidator } from './oidc/oidc-token-validator';
-import { InactiveTimeoutHandler } from './helper/inactive-timeout-handler';
 import { TokenStoreWrapper } from './helper/token-store-wrapper';
 import { NgIdleModule } from '@ng-idle/core';
 import { OidcRefresh } from './oidc/oidc-refresh';
-import { TokenUpdater } from './helper/token-updater';
 import { LocalUrl } from './helper/local-url';
 import { OidcCodeResponse } from './oidc/oidc-code-response';
 import { OidcTokenResponse } from './oidc/oidc-token-response';
-import { AccessTokenInterceptor } from './guard/interceptor';
+import { AccessTokenInterceptor } from './guard/access-token-interceptor';
 import { PrivateGuard } from './guard/private.guard';
 import { EnforceLoginGuard } from './guard/enforce-login.guard';
+import { SessionService } from './session.service';
 
 /**
  * Main module of the library, has to be imported into our application. The configuration
@@ -44,7 +42,11 @@ export class AuthenticationModule {
         { provide: AuthConfigService, useValue: authConfig },
         { provide: WindowToken, useValue: window },
         { provide: DocumentToken, useValue: document },
-        InactiveTimeoutHandler,
+        {
+          provide: HTTP_INTERCEPTORS,
+          useClass: AccessTokenInterceptor,
+          multi: true
+        },
         AuthService,
         OidcDiscovery,
         OidcLogin,
@@ -56,16 +58,17 @@ export class AuthenticationModule {
         OidcCodeResponse,
         OidcTokenResponse,
         TokenStoreWrapper,
-        TokenUpdater,
+        SessionService,
         LocalUrl,
-        AccessTokenInterceptor,
         PrivateGuard,
         EnforceLoginGuard
       ]
     };
   }
 
-  constructor(authService: AuthService) {
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  // Inject those services as we need to have an instance of them!
+  constructor(authService: AuthService, _tokenUpdater: SessionService) {
     authService.initialize().catch((e) => console.log(e));
   }
 }
