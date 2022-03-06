@@ -10,20 +10,40 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Build and Test Job
+    name: Build and Test
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - name: Setup Node.js 14
+      - name: Setup Node
         uses: actions/setup-node@v1
         with:
           node-version: 14.15.1
       - name: Install Dependencies
-        run: npm install
-      - name: Build Project
-        run: npm run build
-      - name: Run all Tests
-        run: npm run test:nowatch
-      - name: Check Lint
+        run: npm ci
+      - name: Audit Dependencies
+        run: npm audit --omit dev
+      - name: Lint
         run: npm run lint:nofix
+      - name: Build
+        run: npm run build
+      - name: Test
+        run: npm run test:nowatch
+  publish:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    name: Publish
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.15.1
+      - name: Update version
+        run: npm version patch
+      - name: Tag version
+        run: git tag -a `npm view . version` -m 'Create Tag'
+      - name: Publish Version
+        run: npm publish
