@@ -12,8 +12,8 @@ import { PublicPage } from './pages/public/public.page';
 import { HttpClientModule } from '@angular/common/http';
 
 const config: OauthConfig = {
-  clientId: 'keycloak-sample',
-  provider: 'http://localhost:8080/auth/realms/Test-Application',
+  clientId: '472ab98a-e1c9-4eda-b6d1-646a4cce3093',
+  provider: 'https://login.microsoftonline.com/7bd72b43-52f6-4dc6-a856-5704e0f925bd/v2.0/',
   accessTokenUrlPrefixes: 'http://localhost:3000/',
 };
 

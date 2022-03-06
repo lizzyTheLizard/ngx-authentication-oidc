@@ -60,7 +60,7 @@ TODO
 ## Examples
 The following examples are provided:
 * **[keycloak-sample](projects/keycloak-sample/README.md)**: Simple integration using [Keycloak](https://www.keycloak.org/)
-* TODO: Azure
+* **[azure-sample](projects/azure-sample/README.md)**: Simple integration using [Azure AD](https://azure.microsoft.com/en-us/services/active-directory/)
 * TODO: Full Config Example
 * TODO: Okta? Google?
   

@@ -63,7 +63,11 @@
             "polyfills": "projects/keycloak-sample/src/polyfills.ts",
             "tsConfig": "projects/keycloak-sample/tsconfig.app.json",
             "assets": [
-              { "input": "dist/ngx-authentication-oidc/assets", "glob": "**/*", "output": "assets" },
+              {
+                "input": "dist/ngx-authentication-oidc/assets",
+                "glob": "**/*",
+                "output": "assets"
+              },
               "projects/keycloak-sample/src/favicon.ico",
               "projects/keycloak-sample/src/assets"
             ],
@@ -146,6 +150,113 @@
             "lintFilePatterns": [
               "projects/keycloak-sample/**/*.ts",
               "projects/keycloak-sample/**/*.html"
+            ]
+          }
+        }
+      }
+    },
+    "azure-sample": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:application": {
+          "strict": true
+        }
+      },
+      "root": "projects/azure-sample",
+      "sourceRoot": "projects/azure-sample/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:browser",
+          "options": {
+            "outputPath": "dist/azure-sample",
+            "index": "projects/azure-sample/src/index.html",
+            "main": "projects/azure-sample/src/main.ts",
+            "polyfills": "projects/azure-sample/src/polyfills.ts",
+            "tsConfig": "projects/azure-sample/tsconfig.app.json",
+            "assets": [
+              "projects/azure-sample/src/favicon.ico",
+              "projects/azure-sample/src/assets"
+            ],
+            "styles": [
+              "projects/azure-sample/src/styles.css"
+            ],
+            "scripts": []
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kb",
+                  "maximumError": "1mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "2kb",
+                  "maximumError": "4kb"
+                }
+              ],
+              "fileReplacements": [
+                {
+                  "replace": "projects/azure-sample/src/environments/environment.ts",
+                  "with": "projects/azure-sample/src/environments/environment.prod.ts"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "buildOptimizer": false,
+              "optimization": false,
+              "vendorChunk": true,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "namedChunks": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "configurations": {
+            "production": {
+              "browserTarget": "azure-sample:build:production"
+            },
+            "development": {
+              "browserTarget": "azure-sample:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "extract-i18n": {
+          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "options": {
+            "browserTarget": "azure-sample:build"
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "projects/azure-sample/src/test.ts",
+            "polyfills": "projects/azure-sample/src/polyfills.ts",
+            "tsConfig": "projects/azure-sample/tsconfig.spec.json",
+            "karmaConfig": "projects/azure-sample/karma.conf.js",
+            "assets": [
+              "projects/azure-sample/src/favicon.ico",
+              "projects/azure-sample/src/assets"
+            ],
+            "styles": [
+              "projects/azure-sample/src/styles.css"
+            ],
+            "scripts": []
+          }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": [
+              "projects/azure-sample/**/*.ts",
+              "projects/azure-sample/**/*.html"
             ]
           }
         }
