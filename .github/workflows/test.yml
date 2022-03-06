@@ -42,9 +42,14 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 16.14.0
-      - name: Update version
-        run: npm version patch
+          registry-url: 'https://registry.npmjs.org'
       - name: Tag version
-        run: git tag -a `npm view . version` -m 'Create Tag'
+        run: |
+          git config --global user.name 'lizzyTheLizard'
+          git config --global user.email 'lizzyTheLizard@users.noreply.github.com>'
+          git tag -a `npm view . version` -m 'Create Tag'
+          git push origin --tags
       - name: Publish Version
         run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
