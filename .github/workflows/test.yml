@@ -1,0 +1,10 @@
+name: Build and Run all Tests
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: npm install
+      - run: npm build
+      - run: npm run test:nowatch
+      - run: npm run lint:nofix

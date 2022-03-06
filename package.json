@@ -2,16 +2,26 @@
   "name": "ngx-authentication-oidc",
   "version": "0.0.1",
   "description": "Full fledged authentication solution for Angular using OIDC",
+  "author": "Matthias Graf",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lizzyTheLizard/ngx-authentication-oidc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lizzyTheLizard/ngx-authentication-oidc/issues"
+  },
+  "homepage": "https://github.com/lizzyTheLizard/ngx-authentication-oidc/",
+  "license": "MIT",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test-debug": "ng test --code-coverage",
-    "test": "ng test --browsers FirefoxHeadless --no-watch --code-coverage",
-    "lint": "ng lint --fix"
+    "test": "ng test --code-coverage",
+    "test:nowatch": "ng test --browsers FirefoxHeadless --no-watch --code-coverage",
+    "lint": "ng lint --fix",
+    "lint:nofix": "ng lint"
   },
-  "private": true,
   "dependencies": {
     "@angular/animations": "~13.2.3",
     "@angular/common": "~13.2.3",
