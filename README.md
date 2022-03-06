@@ -1,6 +1,5 @@
 # Angular OIDC Authentication
-![example workflow](https://github.com/<OWNER>/<REPOSITORY>/actions/workflows/<WORKFLOW_FILE>/badge.svg)
-
+![workflow](https://github.com/lizzyTheLizard/ngx-authentication-oidc/actions/workflows/test.yml/badge.svg)
 
 ngx-authentication-oidc is a full fledged authentication solution for Angular using OIDC
 
@@ -60,7 +59,7 @@ TODO
 
 ## Examples
 The following examples are provided:
-* **[keycloak-sample](projects/keycloak-sample)**: Simple integration using [Keycloak](https://www.keycloak.org/)
+* **[keycloak-sample](projects/keycloak-sample/README.md)**: Simple integration using [Keycloak](https://www.keycloak.org/)
 * TODO: Azure
 * TODO: Full Config Example
 * TODO: Okta? Google?

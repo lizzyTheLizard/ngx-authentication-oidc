@@ -19,12 +19,6 @@ const config: OauthConfig = {
   clientId: 'keycloak-sample',
   provider: 'http://localhost:8080/auth/realms/Test-Application',
   accessTokenUrlPrefixes: 'http://localhost:3000/',
-  inactiveTimeout: {
-    idleTimeSeconds: 60,
-    timeoutSeconds: 60,
-  },
-  initializationErrorAction: (e: ErrorActionInput) =>
-    alert('Error while initialize Login: ' + e.error),
 };
 
 @NgModule({
