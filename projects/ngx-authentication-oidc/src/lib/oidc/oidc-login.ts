@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@angular/core';
 import { AuthConfigService } from '../auth-config.service';
 import { LoginOptions } from '../configuration/login-options';
 import { Logger } from '../configuration/oauth-config';
-import { LoginResult } from '../helper/login-result';
+import { LoginResult } from '../login-result';
 import { WindowToken } from '../authentication-module.tokens';
 import { AuthenticationRequest } from '../helper/authentication-request';
 import { LocalUrl } from '../helper/local-url';

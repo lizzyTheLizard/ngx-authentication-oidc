@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { AuthConfigService } from '../auth-config.service';
 import { OauthConfig } from '../configuration/oauth-config';
-import { LoginResult } from './login-result';
+import { LoginResult } from '../login-result';
 import { TokenStoreWrapper } from './token-store-wrapper';
 
 let service: TokenStoreWrapper;

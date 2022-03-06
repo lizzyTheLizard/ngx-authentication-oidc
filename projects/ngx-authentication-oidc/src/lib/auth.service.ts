@@ -1,11 +1,11 @@
 import { Inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, Subject, map, BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable, map } from 'rxjs';
 import { AuthConfigService } from './auth-config.service';
 import { LoginOptions } from './configuration/login-options';
 import { LogoutAction } from './configuration/oauth-config';
 import { InitializerInput, Logger } from './configuration/oauth-config';
-import { LoginResult, UserInfo } from './helper/login-result';
+import { LoginResult, UserInfo } from './login-result';
 import { OidcDiscovery } from './oidc/oidc-discovery';
 import { OidcLogin } from './oidc/oidc-login';
 import { OidcLogout } from './oidc/oidc-logout';

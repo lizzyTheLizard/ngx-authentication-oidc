@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { AuthConfigService } from '../auth-config.service';
-import { LoginResult, UserInfo } from './login-result';
+import { LoginResult, UserInfo } from '../login-result';
 
 const prefix: string = 'auth.';
 

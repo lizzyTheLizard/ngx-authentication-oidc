@@ -8,9 +8,8 @@ describe('AuthErrorPage', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ AuthErrorPage ]
-    })
-      .compileComponents();
+      declarations: [AuthErrorPage],
+    }).compileComponents();
   });
 
   beforeEach(() => {

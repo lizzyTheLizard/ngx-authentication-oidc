@@ -4,7 +4,7 @@ import { AuthConfigService } from '../auth-config.service';
 import { DocumentToken, WindowToken } from '../authentication-module.tokens';
 import { LoginOptions, Prompt } from '../configuration/login-options';
 import { Logger } from '../configuration/oauth-config';
-import { LoginResult } from '../helper/login-result';
+import { LoginResult } from '../login-result';
 import { AuthenticationRequest } from '../helper/authentication-request';
 import { LocalUrl } from '../helper/local-url';
 import { TokenStoreWrapper } from '../helper/token-store-wrapper';

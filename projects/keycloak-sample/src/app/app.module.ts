@@ -1,6 +1,10 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { AuthenticationModule, OauthConfig, ErrorActionInput } from 'ngx-authentication-oidc';
+import {
+  AuthenticationModule,
+  ErrorActionInput,
+  OauthConfig,
+} from 'ngx-authentication-oidc';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -13,10 +17,15 @@ import { HttpClientModule } from '@angular/common/http';
 
 const config: OauthConfig = {
   clientId: 'keycloak-sample',
-  provider: "http://localhost:8080/auth/realms/Test-Application",
+  provider: 'http://localhost:8080/auth/realms/Test-Application',
   accessTokenUrlPrefixes: 'http://localhost:3000/',
-  initializationErrorAction: (e: ErrorActionInput) => alert("Error while initialize Login: " + e.error),
-}
+  inactiveTimeout: {
+    idleTimeSeconds: 60,
+    timeoutSeconds: 60,
+  },
+  initializationErrorAction: (e: ErrorActionInput) =>
+    alert('Error while initialize Login: ' + e.error),
+};
 
 @NgModule({
   declarations: [
@@ -25,7 +34,7 @@ const config: OauthConfig = {
     AuthErrorPage,
     PrivatePage,
     Public2Page,
-    NotFoundPage
+    NotFoundPage,
   ],
   imports: [
     BrowserModule,
@@ -33,6 +42,6 @@ const config: OauthConfig = {
     HttpClientModule,
     AuthenticationModule.forRoot(config),
   ],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
 })
-export class AppModule { }
+export class AppModule {}

@@ -4,6 +4,7 @@
 export * from './lib/authentication-module';
 export * from './lib/auth.service';
 export * from './lib/session.service';
+export * from './lib/login-result';
 
 export * from './lib/testing/authentication-testing-module';
 export * from './lib/testing/auth-testing.service';

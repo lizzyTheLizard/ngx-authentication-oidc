@@ -5,7 +5,7 @@ import { OauthConfig } from '../public-api';
 import { AuthConfigService } from './auth-config.service';
 import { AuthService } from './auth.service';
 import { WindowToken } from './authentication-module.tokens';
-import { LoginResult } from './helper/login-result';
+import { LoginResult } from './login-result';
 import { OidcRefresh } from './oidc/oidc-refresh';
 import { OidcSessionManagement } from './oidc/oidc-session-management';
 import { OidcSilentLogin } from './oidc/oidc-silent-login';

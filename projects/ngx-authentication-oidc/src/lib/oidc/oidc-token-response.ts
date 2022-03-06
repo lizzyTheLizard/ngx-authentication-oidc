@@ -2,7 +2,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { AuthConfigService } from '../auth-config.service';
 import { Logger, UserInfoSource } from '../configuration/oauth-config';
-import { LoginResult, UserInfo } from '../helper/login-result';
+import { LoginResult, UserInfo } from '../login-result';
 import { OidcTokenValidator } from './oidc-token-validator';
 import { TokenStoreWrapper } from '../helper/token-store-wrapper';
 import { Injectable } from '@angular/core';

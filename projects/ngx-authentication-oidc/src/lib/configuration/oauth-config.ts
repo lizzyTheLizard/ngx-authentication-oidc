@@ -1,14 +1,16 @@
 import { InterruptSource } from '@ng-idle/core';
 import { JWK } from 'jose';
-import { LoginResult } from '../helper/login-result';
+import { LoginResult } from '../login-result';
 import { LoginOptions } from './login-options';
+import { Router } from '@angular/router';
 // eslint-disable-next-line prettier/prettier, @typescript-eslint/no-unused-vars
 import { enforceLogin, loginResponseCheck, silentCheckAndThenEnforce, silentLoginCheck } from '../configuration/initializer';
 // eslint-disable-next-line prettier/prettier, @typescript-eslint/no-unused-vars
 import { redirect, singleLogout } from '../configuration/defaultActions';
 // eslint-disable-next-line prettier/prettier, @typescript-eslint/no-unused-vars
 import { consoleLoggerFactory } from '../configuration/console-logger';
-import { Router } from '@angular/router';
+// eslint-disable-next-line prettier/prettier, @typescript-eslint/no-unused-vars
+import { DEFAULT_INTERRUPTSOURCES } from '@ng-idle/core';
 
 /** General configuration object, needed to initialize {@link AuthenticationModule} */
 export interface OauthConfig {
@@ -48,7 +50,8 @@ export interface OauthConfig {
   /**
    * Function to initialize the library. Either use a default like {@link silentLoginCheck},
    * {@link enforceLogin}, {@link silentCheckAndThenEnforce}, {@link loginResponseCheck} or
-   * define your own function. When not set {@link silentLoginCheck} is used when silent login
+   * define your own function.
+   * When not set {@link silentLoginCheck} is used when silent login
    * is enabled and {@link loginResponseCheck} otherwise
    */
   initializer?: Initializer;
@@ -86,7 +89,10 @@ export interface ProviderConfig {
   issuer: string;
   /** Algorithm to be used in the ID-Tokens. If not given, all algorithms will be accepted */
   alg?: string[];
-  /** Max age of the ID-Token in seconds. Token older than this will be rejected */
+  /**
+   * Max age of the ID-Token in seconds. Token older than this will be rejected.
+   * If not given, no max age is enforced
+   */
   maxAge?: number;
   /** URL of the token endpoint */
   tokenEndpoint: string;
@@ -98,7 +104,7 @@ export interface ProviderConfig {
   checkSessionIframe?: string;
   /** URL of the end session endpoint. If not given, no single logout be used */
   endSessionEndpoint?: string;
-  /** URL of the user info session endpoint. */
+  /** URL of the user info session endpoint. If not given, no user info call is made*/
   userInfoEndpoint?: string;
 }
 
@@ -148,11 +154,11 @@ export interface InactiveTimeoutConfig {
    * If enabled, a session will be terminated when the user is inactive
    */
   enabled: boolean;
-  /** Number of seconds of inactivity until a user is assumed to be inactive */
+  /** Number of seconds of inactivity until a user is assumed to be inactive. Default is 300 */
   idleTimeSeconds: number;
-  /** Number of seconds until a user is logged out when he is inactive */
+  /** Number of seconds until a user is logged out when he is inactive. Default is 60 */
   timeoutSeconds: number;
-  /** The interrupts regarded as "user activity" */
+  /** The interrupts regarded as "user activity". Default is {@link DEFAULT_INTERRUPTSOURCES} */
   interrupts: Array<InterruptSource>;
   /**
    * Action to be performed after a logout due to a timeout.
@@ -169,11 +175,12 @@ export interface AutoUpdateConfig {
    * If enabled, tokens will be updated automatically
    */
   enabled: boolean;
-  /** Update interval in seconds */
+  /** Update interval in seconds, default is 60*/
   updateIntervalSeconds: number;
   /**
    * Minimal validity of token in seconds.
    * If the remaining token validity is small that this, the token will be updated
+   * Default is 90
    */
   minimalValiditySeconds: number;
 }
@@ -188,7 +195,7 @@ export interface SessionManagementConfig {
    * as well
    */
   enabled: boolean;
-  /** Update interval in seconds */
+  /** Update interval in seconds, default is 10 */
   checkIntervalSeconds: number;
 }
 
@@ -219,7 +226,10 @@ export type ErrorAction = (input: ErrorActionInput) => void;
 
 /** Sources where to get user information from */
 export enum UserInfoSource {
+  /** Only use the information in the ID-Token */
   TOKEN = 'token',
+  /** Only use the information from the userinfo endpoint*/
   USER_INFO_ENDPOINT = 'userinfo',
+  /** Use the information in the token if given and the userinfo endpoint otherwise */
   TOKEN_THEN_USER_INFO_ENDPOINT = 'token_then_userinfo'
 }

@@ -2,7 +2,7 @@
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { OidcRefresh } from './oidc-refresh';
-import { LoginResult } from '../helper/login-result';
+import { LoginResult } from '../login-result';
 import { AuthConfigService } from '../auth-config.service';
 import { OidcTokenResponse } from './oidc-token-response';
 

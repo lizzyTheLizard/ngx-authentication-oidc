@@ -7,9 +7,10 @@ module.exports = function (config) {
     frameworks: ['jasmine', '@angular-devkit/build-angular'],
     plugins: [
       require('karma-jasmine'),
-      require('karma-chrome-launcher'),
+      require('karma-firefox-launcher'),
       require('karma-jasmine-html-reporter'),
-      require('karma-coverage'),
+      require('karma-spec-reporter'),
+      require("karma-coverage"),
       require('@angular-devkit/build-angular/plugins/karma')
     ],
     client: {
@@ -25,26 +26,24 @@ module.exports = function (config) {
       suppressAll: true // removes the duplicated traces
     },
     coverageReporter: {
-      dir: require('path').join(__dirname, '../../coverage/keycloak-sample'),
-      subdir: '.',
       reporters: [
-        { type: 'html' },
-        { type: 'text-summary' }
-      ]
+        { type: "html" },
+        { type: "text-summary" },
+      ],
     },
-    reporters: ['progress', 'kjhtml'],
+    specReporter: {
+      maxLogLines: 0,
+      showSpecTiming: true,
+    },    
+    reporters: ['spec', 'kjhtml', 'coverage'],
     port: 9876,
     colors: true,
-    logLevel: config.LOG_INFO,
+    browserConsoleLogOptions: {
+      level: "debug", format: "%b %T: %m", terminal: false
+    },
     autoWatch: true,
-    browsers: ['ChromeDebugging', ''],
-    customLaunchers: {
-      ChromeDebugging: {
-        base: 'Chrome',
-        flags: [ '--remote-debugging-port=9333' ]
-      }
-    },    
+    browsers: [],
     singleRun: false,
-    restartOnFileChange: true
+    restartOnFileChange: true,
   });
 };

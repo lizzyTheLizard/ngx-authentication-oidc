@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { firstValueFrom, map } from 'rxjs';
 import { AuthConfigService } from '../auth-config.service';
 import { Logger } from '../configuration/oauth-config';
-import { LoginResult } from '../helper/login-result';
+import { LoginResult } from '../login-result';
 import { CustomHttpParamEncoder } from '../helper/custom-http-param-encoder';
 import { OidcTokenResponse } from './oidc-token-response';
 import { Response } from '../helper/response-parameter-parser';

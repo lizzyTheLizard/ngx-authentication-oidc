@@ -1,6 +1,6 @@
 /* global localStorage*/
 import { AuthService } from './auth.service';
-import { LoginResult } from './helper/login-result';
+import { LoginResult } from './login-result';
 import { TestBed } from '@angular/core/testing';
 import { AuthenticationModule } from './authentication-module';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -295,9 +295,9 @@ describe('AuthService', () => {
     expect(service.getIdToken()).toEqual(loginResult.idToken);
     expect(service.getUserInfo()).toEqual(loginResult.userInfo);
     expect(service.isLoggedIn()).toEqual(true);
-    expect(isLoggedInChanged).toHaveBeenCalledTimes(1);
+    expect(isLoggedInChanged).toHaveBeenCalledTimes(2);
     expect(isLoggedInChanged).toHaveBeenCalledWith(true);
-    expect(isUserInfoChanged).toHaveBeenCalledTimes(1);
+    expect(isUserInfoChanged).toHaveBeenCalledTimes(2);
     expect(isUserInfoChanged).toHaveBeenCalledWith(loginResult.userInfo);
     isLoggedInChanged.calls.reset();
     isUserInfoChanged.calls.reset();

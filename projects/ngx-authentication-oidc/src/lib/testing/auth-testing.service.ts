@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, map } from 'rxjs';
-import { LoginResult, UserInfo } from '../helper/login-result';
+import { LoginResult, UserInfo } from '../login-result';
 
 /**
  * A testing service that can be used in your unit tests. This will be injected instead of

@@ -5,7 +5,7 @@ import { JWK, JWTHeaderParameters, JWTPayload, JWTVerifyResult, KeyLike, base64u
 import { AuthConfigService } from '../auth-config.service';
 import { WindowToken } from '../authentication-module.tokens';
 import { Logger } from '../configuration/oauth-config';
-import { UserInfo } from '../helper/login-result';
+import { UserInfo } from '../login-result';
 
 const hashAlgorithms = new Map<string, string>([
   ['HS256', 'SHA-256'],

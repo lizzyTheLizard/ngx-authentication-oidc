@@ -1,6 +1,6 @@
 /* global window, document */
 import { Location, LocationStrategy, PathLocationStrategy } from '@angular/common';
-import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { ModuleWithProviders, NgModule } from '@angular/core';
 import { AuthConfigService } from './auth-config.service';
 import { AuthService } from './auth.service';

@@ -8,9 +8,8 @@ describe('Public2Page', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ Public2Page ]
-    })
-      .compileComponents();
+      declarations: [Public2Page],
+    }).compileComponents();
   });
 
   beforeEach(() => {

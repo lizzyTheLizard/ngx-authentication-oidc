@@ -1,4 +1,4 @@
-import { LoginResult } from '../helper/login-result';
+import { LoginResult } from '../login-result';
 // eslint-disable-next-line prettier/prettier
 import { enforceLogin, loginResponseCheck, silentCheckAndThenEnforce, silentLoginCheck } from './initializer';
 import { InitializerInput } from './oauth-config';

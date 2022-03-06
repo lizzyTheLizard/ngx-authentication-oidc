@@ -1,4 +1,6 @@
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { AuthenticationTestingModule } from 'ngx-authentication-oidc';
 
 import { PrivatePage } from './private.page';
 
@@ -8,9 +10,9 @@ describe('PrivatePage', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ PrivatePage ]
-    })
-      .compileComponents();
+      imports: [HttpClientTestingModule, AuthenticationTestingModule],
+      declarations: [PrivatePage],
+    }).compileComponents();
   });
 
   beforeEach(() => {

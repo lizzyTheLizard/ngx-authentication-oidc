@@ -1,3 +1,6 @@
 <p>private works!</p>
-{{ authService.userInfo$ | async | json }}
-<button (click)="makeRequest()">Make request</button>
+{{ userInfo$ | async | json }}<br>
+<p *ngIf="logoutWarning$ | async; else elseBlock">Logout in {{logoutWarning$ | async }}</p><br>
+<ng-template #elseBlock><p>User is active, therefore no logout warning is pending</p></ng-template>
+<button (click)="makeRequest()">Make request With Token</button><br>
+<button (click)="makeRequestWithout()">Make request Without Token</button><br>

@@ -4,7 +4,7 @@ import { Logger } from './configuration/oauth-config';
 import { OidcSilentLogin } from './oidc/oidc-silent-login';
 import { OidcRefresh } from './oidc/oidc-refresh';
 import { AuthService } from './auth.service';
-import { LoginResult } from './helper/login-result';
+import { LoginResult } from './login-result';
 import { Observable, Subject } from 'rxjs';
 import { WindowToken } from './authentication-module.tokens';
 import { Idle } from '@ng-idle/core';
