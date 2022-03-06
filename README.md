@@ -1,27 +1,74 @@
-# AngularOidc
+# Angular OIDC Authentication
+![example workflow](https://github.com/<OWNER>/<REPOSITORY>/actions/workflows/<WORKFLOW_FILE>/badge.svg)
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 13.0.1.
 
-## Development server
+ngx-authentication-oidc is a full fledged authentication solution for Angular using OIDC
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+## Features
+The following OIDC features are supported:
+* Automatic provider discovery using [OIDC Discovery](https://openid.net/specs/openid-connect-discovery-1_0.html)
+* Login using [Authorization Code Flow](https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth), [Implicit Flow](https://openid.net/specs/openid-connect-core-1_0.html#ImplicitFlowAuth) and [Hybrid Flow](https://openid.net/specs/openid-connect-core-1_0.html#HybridFlowAuth). 
+* Automatic token updates using [Refresh Tokens](https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens) or silent login
+* [Client initiated logout](https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
+* [Session Management](https://openid.net/specs/openid-connect-session-1_0.html)
 
-## Code scaffolding
+Additionally this library features:
+* Automatic logout after an inactivity timeout
+* Automatic session detection at startup using silent logins
+* Automatic access token injection for well defined domains
+* Pre-Configured [AuthGuards](https://angular.io/api/router/CanActivate)
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+The library aims to have a simple yet complete interface for those features consisting of [AuthService](projects/ngx-authentication-oidc/src/lib/auth.service.ts) and [SessionService](projects/ngx-authentication-oidc/src/lib/session.service.ts) and a comprehensive [configuration](projects/ngx-authentication-oidc/src/lib/configuration/oauth-config.ts) using meaningful default values.
+## Installation
+The library can be installed using
+```sh
+npm i angular-oauth2-oidc --save
+```
 
-## Build
+You then have to add the [AuthenticationModule](projects/ngx-authentication-oidc/src/lib/authentication-module.ts) to your own application
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+```Typescript
+import { BrowserModule } from '@angular/platform-browser';
+import { AuthenticationModule } from 'ngx-authentication-oidc';
 
-## Running unit tests
+const config = {
+  //minimal configuration
+  clientId: 'sample-application',
+  provider: 'http://localhost:8080/auth/realms/Test-Application',
+};
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+@NgModule({
+  imports: [
+    HttpClientModule,
+    AuthenticationModule.forRoot(config),
+    // etc...
+  ],
+  declarations: [
+    AppComponent,
+    // etc...
+  ],
+  bootstrap: [AppComponent],
+})
+export class AppModule {}
+```
 
-## Running end-to-end tests
+## Usage
+TODO
 
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
+## Documentation
+TODO
 
-## Further help
+## Examples
+The following examples are provided:
+* **[keycloak-sample](projects/keycloak-sample)**: Simple integration using [Keycloak](https://www.keycloak.org/)
+* TODO: Azure
+* TODO: Full Config Example
+* TODO: Okta? Google?
+  
+## Contributing
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+Please make sure to update tests as appropriate.
+
+## License
+[MIT](LICENSE)
