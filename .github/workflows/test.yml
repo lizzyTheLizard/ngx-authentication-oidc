@@ -1,10 +1,29 @@
 name: Build and Run all Tests
-on: [push]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches:
+      - main
 jobs:
   build:
     runs-on: ubuntu-latest
+    name: Build and Test Job
     steps:
-      - run: npm install
-      - run: npm build
-      - run: npm run test:nowatch
-      - run: npm run lint:nofix
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Setup Node.js 14
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.15.1
+      - name: Install Dependencies
+        run: npm install
+      - name: Build Project
+        run: npm build
+      - name: Run all Tests
+        run: npm run test:nowatch
+      - name: Check Lint
+        run: npm run lint:nofix
