@@ -6,5 +6,16 @@ Simple example using [Azure AD](https://azure.microsoft.com/en-us/services/activ
 1. **/private**: A private page showing some user information and performing some REST-Calls
 1. **/auth/error**: The error page
 
+The example uses a predefined AzureAD to log in
 ## Start
-TODO
+To start the example do the following:
+
+1. Build the main library
+    ``` 
+    npm build ngx-authentication-oidc
+    ```
+2. Start the example
+    ``` 
+    npm start azure-sample
+    ```
+3. Open [localhost:4200](http://localhost:4200) in a browser. You can then log into the application using a microsoft account

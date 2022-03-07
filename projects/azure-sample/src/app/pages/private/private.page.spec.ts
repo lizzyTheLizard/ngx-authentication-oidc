@@ -1,4 +1,3 @@
-import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AuthenticationTestingModule } from 'ngx-authentication-oidc';
 
@@ -10,7 +9,7 @@ describe('PrivatePage', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule, AuthenticationTestingModule],
+      imports: [AuthenticationTestingModule],
       declarations: [PrivatePage],
     }).compileComponents();
   });
