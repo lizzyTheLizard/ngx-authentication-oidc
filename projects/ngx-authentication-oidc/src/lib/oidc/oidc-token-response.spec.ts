@@ -62,7 +62,7 @@ describe('OidcTokenResponse', () => {
       access_token: 'SlAV32hkKG'
     };
 
-    const res = await service.response(params);
+    const res = await service.response(false, params);
 
     expect(res.accessToken).toEqual('SlAV32hkKG');
     const expiresIn = Math.round((res.expiresAt!.getTime() - Date.now()) / 1000);
@@ -83,7 +83,7 @@ describe('OidcTokenResponse', () => {
       access_token: 'SlAV32hkKG'
     };
 
-    const res = await service.response(params);
+    const res = await service.response(false, params);
 
     expect(res.redirectPath).toEqual('http://xy');
     expect(res.stateMessage).toEqual('tst');
@@ -98,7 +98,7 @@ describe('OidcTokenResponse', () => {
       access_token: 'SlAV32hkKG'
     };
 
-    const promise = service.response(params);
+    const promise = service.response(false, params);
     tick(10);
 
     const req = httpTestingController.expectOne(config.provider.userInfoEndpoint);
@@ -125,7 +125,7 @@ describe('OidcTokenResponse', () => {
       error_uri: 'uri'
     };
 
-    service.response(params).then(
+    service.response(false, params).then(
       () => done.fail(new Error('This should not work')),
       (e: Error) => {
         expect(e.message).toEqual('Login failed: not_possible');
@@ -139,7 +139,7 @@ describe('OidcTokenResponse', () => {
       code: 'asd'
     };
 
-    service.response(params).then(
+    service.response(false, params).then(
       () => done.fail(new Error('This should not work')),
       (e: Error) => {
         expect(e.message).toEqual('This is not a token response');

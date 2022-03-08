@@ -75,8 +75,8 @@ export class AuthService {
       await this.oidcDiscovery.discover();
       const initializerInput = this.createInitializerInput();
       const loginResult = await this.config.initializer(initializerInput);
+      this.setLoginResult(loginResult);
       if (loginResult.isLoggedIn) {
-        this.setLoginResult(loginResult);
         this.logger.debug('Finished initialization, user is logged in');
       } else {
         this.logger.debug('Finished initialization, user is not logged in');
@@ -88,6 +88,7 @@ export class AuthService {
         loggerFactory: this.config.loggerFactory,
         router: this.router
       };
+      this.setLoginResult({ isLoggedIn: false });
       this.config.initializationErrorAction(input);
     }
     this.initialSetupFinishedResolve(true);
@@ -103,7 +104,8 @@ export class AuthService {
         this.oidcLogin.login({ ...options, finalUrl: this.router.url }),
       silentLogin: (options: LoginOptions) =>
         this.oidcSilentLogin.login({ ...options, finalUrl: this.router.url }),
-      handleResponse: () => this.handleResponse()
+      handleResponse: () => this.handleResponse(),
+      isErrorResponse: () => this.isErrorResponse()
     };
   }
 
@@ -119,7 +121,7 @@ export class AuthService {
       return this.oidcCodeResponse.response(params, redirect);
     }
     if (params.id_token || params.access_token) {
-      return this.oidcTokenResponse.response(params);
+      return this.oidcTokenResponse.response(true, params);
     }
     if (params.error) {
       try {
@@ -129,6 +131,17 @@ export class AuthService {
       }
     }
     return Promise.resolve({ isLoggedIn: false });
+  }
+
+  private isErrorResponse(): boolean {
+    const current = new URL(this.window.location.href);
+    const redirect = this.oidcLogin.getRedirectUrl();
+    if (current.pathname !== redirect.pathname) {
+      this.logger.debug('Current URL is not redirectURL', current, redirect);
+      return false;
+    }
+    const params = this.responseParameterParser.parseUrl(current);
+    return !!params.error;
   }
 
   /**

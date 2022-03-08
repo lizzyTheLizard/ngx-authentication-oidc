@@ -1,10 +1,10 @@
-/* global localStorage */
+/* global sessionStorage */
 // eslint-disable-next-line prettier/prettier
 import { AutoUpdateConfig, ErrorAction, InactiveTimeoutConfig, Initializer, Logger, LoggerFactory, LogoutAction, OauthConfig, ProviderConfig, SessionManagementConfig, SilentLoginConfig, UserInfoSource } from './configuration/oauth-config';
 import { DEFAULT_INTERRUPTSOURCES } from '@ng-idle/core';
 import { consoleLoggerFactory } from './configuration/console-logger';
-import { loginResponseCheck, silentLoginCheck } from './configuration/initializer';
-import { redirect, singleLogoutOrRedirect } from './configuration/defaultActions';
+import { loginResponseCheck, silentIframeLoginCheck } from './configuration/initializer';
+import { redirect, singleLogoutOrRedirect } from './configuration/default-actions';
 
 export class AuthConfigService {
   public readonly clientId: string;
@@ -33,7 +33,7 @@ export class AuthConfigService {
     this.discoveryUrl = this.createDiscoveryUrl();
     this.logoutAction = config.logoutAction ?? singleLogoutOrRedirect('/auth/logout');
     this.initializationErrorAction = config.initializationErrorAction ?? redirect('/auth/error');
-    this.tokenStore = config.tokenStore ?? localStorage;
+    this.tokenStore = config.tokenStore ?? sessionStorage;
     this.silentLogin = this.createSilentLogin();
     this.inactiveTimeout = this.createInactive();
     this.autoUpdate = this.createAutoUpdate();
@@ -96,7 +96,7 @@ export class AuthConfigService {
     if (input) {
       return input;
     }
-    return this.silentLogin.enabled ? silentLoginCheck : loginResponseCheck;
+    return this.silentLogin.enabled ? silentIframeLoginCheck : loginResponseCheck;
   }
 
   private createAccessTokenUrlPrefixes(): string[] {

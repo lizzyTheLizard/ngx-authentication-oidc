@@ -1,15 +1,16 @@
-// eslint-disable-next-line prettier/prettier
+/* globals window */
 import { LoginOptions, Prompt, ResponseType } from '../configuration/login-options';
 import { AuthenticationRequest, DEFAULT_SCOPE } from './authentication-request';
 
 describe('AuthenticationRequest', () => {
-  it('Create Auth Request default params', () => {
+  it('Create Auth Request default params', async () => {
     const loginOptions = {};
-    const result = new AuthenticationRequest(
+    const result = await new AuthenticationRequest(
       loginOptions,
       'https://example.com/rd',
       'id',
-      'https://example.com/auth'
+      'https://example.com/auth',
+      window
     ).toUrl();
 
     expect(result.pathname).toEqual('/auth');
@@ -19,9 +20,11 @@ describe('AuthenticationRequest', () => {
     expect(JSON.parse(result.searchParams.get('state')!)).toEqual({});
     expect(result.searchParams.get('redirect_uri')).toEqual('https://example.com/rd');
     expect(result.searchParams.has('nonce')).toBeTrue();
+    expect(result.searchParams.has('code_challenge')).toBeTrue();
+    expect(result.searchParams.has('code_challenge_method')).toBeTrue();
   });
 
-  it('Create Auth Request special params', () => {
+  it('Create Auth Request special params', async () => {
     const loginOptions: LoginOptions = {
       finalUrl: 'https://example.com/final',
       scope: ['openid', 'profile', 'email'],
@@ -32,11 +35,12 @@ describe('AuthenticationRequest', () => {
       id_token_hint: 'id_hint',
       acr_values: 'acr'
     };
-    const result = new AuthenticationRequest(
+    const result = await new AuthenticationRequest(
       loginOptions,
       'https://example.com/rd222',
       'id',
-      'https://example.com/auth'
+      'https://example.com/auth',
+      window
     ).toUrl();
 
     expect(result.pathname).toEqual('/auth');
@@ -55,7 +59,7 @@ describe('AuthenticationRequest', () => {
     expect(result.searchParams.get('acr_values')).toEqual('acr');
   });
 
-  it('toString', () => {
+  it('toString', async () => {
     const loginOptions: LoginOptions = {
       finalUrl: 'https://example.com/final',
       scope: ['openid', 'profile', 'email'],
@@ -66,11 +70,12 @@ describe('AuthenticationRequest', () => {
       id_token_hint: 'id_hint',
       acr_values: 'acr'
     };
-    const resultStr = new AuthenticationRequest(
+    const resultStr = await new AuthenticationRequest(
       loginOptions,
       'https://example.com/rd222',
       'id',
-      'https://example.com/auth'
+      'https://example.com/auth',
+      window
     ).toString();
 
     const result = new URL(resultStr);
@@ -90,16 +95,31 @@ describe('AuthenticationRequest', () => {
     expect(result.searchParams.get('acr_values')).toEqual('acr');
   });
 
-  it('nonce', () => {
+  it('nonce', async () => {
     const loginOptions = {};
     const request = new AuthenticationRequest(
       loginOptions,
       'https://example.com/rd222',
       'id',
-      'https://example.com/auth'
+      'https://example.com/auth',
+      window
     );
 
     expect(request.nonce).toBeTruthy();
-    expect(request.nonce).toEqual(request.toUrl().searchParams.get('nonce')!);
+    expect(request.nonce).toEqual((await request.toUrl()).searchParams.get('nonce')!);
+  });
+
+  it('codeVerifier', async () => {
+    const loginOptions = {};
+    const request = new AuthenticationRequest(
+      loginOptions,
+      'https://example.com/rd222',
+      'id',
+      'https://example.com/auth',
+      window
+    );
+
+    expect(request.codeVerifier).toBeTruthy();
+    expect(request.codeVerifier).toMatch('[A-Za-z0-9]{100,128}');
   });
 });

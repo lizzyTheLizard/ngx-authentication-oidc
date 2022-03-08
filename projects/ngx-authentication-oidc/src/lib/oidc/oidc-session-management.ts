@@ -35,7 +35,7 @@ export class OidcSessionManagement {
     const subject = new Subject<void>();
     const iFrameUrl = this.config.getProviderConfiguration().checkSessionIframe;
     if (!iFrameUrl) {
-      this.logger.info('Provider does not support session management');
+      this.logger.info('Provider does not support session management, no check URL defined');
       return new SessionWatch((obs) => subject.subscribe(obs));
     }
     this.logger.debug('Start watching session');

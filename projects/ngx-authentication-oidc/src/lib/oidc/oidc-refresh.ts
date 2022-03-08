@@ -44,6 +44,6 @@ export class OidcRefresh {
       id_token: response.id_token ?? oldResult.idToken,
       session_state: response.session_state ?? oldResult.sessionState
     };
-    return this.oidcTokenResponse.response(mergedResponse);
+    return this.oidcTokenResponse.response(false, mergedResponse);
   }
 }

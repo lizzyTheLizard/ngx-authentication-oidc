@@ -22,6 +22,11 @@ const hashAlgorithms = new Map<string, string>([
   ['PS512', 'SHA-512'],
   ['ES512', 'SHA-512']
 ]);
+export interface ValidationOptions {
+  implicit: boolean;
+  nonce?: string;
+  accessToken?: string;
+}
 
 @Injectable()
 export class OidcTokenValidator {
@@ -34,16 +39,13 @@ export class OidcTokenValidator {
     this.logger = this.config.loggerFactory('OidcTokenValidator');
   }
 
-  public async verify(idToken?: string, nonce?: string, accessToken?: string): Promise<UserInfo> {
-    if (!idToken) {
-      throw new Error('No id token given');
-    }
+  public async verify(idToken: string, options: ValidationOptions): Promise<UserInfo> {
     const result = await this.validateSignature(idToken);
-    await this.validateAccessTokenHash(result.payload, result.protectedHeader, accessToken);
+    await this.validateAccessTokenHash(result, options);
     this.validateIssuer(result.payload);
     this.validateAudience(result.payload);
     this.validateTime(result.payload);
-    this.validateNonce(result.payload, nonce);
+    this.validateNonce(result.payload, options.nonce);
 
     if (!result.payload.sub) {
       throw new Error('No sub given');
@@ -97,24 +99,27 @@ export class OidcTokenValidator {
       this.logger.error('No key with kid ' + headers.kid + ' could be found in the key set');
       throw new Error('No valid key found');
     }
-    return importJWK(keys[0]);
+    return importJWK(keys[0], headers.alg);
   }
 
-  private async validateAccessTokenHash(
-    claims: JWTPayload,
-    headers: JWTHeaderParameters,
-    accessToken?: string
-  ) {
-    if (!accessToken && claims['at_hash']) {
+  private async validateAccessTokenHash(result: JWTVerifyResult, options: ValidationOptions) {
+    const at_hash_claim = result.payload['at_hash'] as string;
+    const accessToken = options.accessToken;
+    if (!accessToken && at_hash_claim) {
       throw new Error('at_hash set but no access token given');
     }
     if (!accessToken) {
       return;
     }
-
-    const hashAlgorithm = this.getHashAlgorithm(headers.alg);
+    if (!at_hash_claim && options.implicit) {
+      throw new Error('at_hash not set but this is required');
+    }
+    if (!at_hash_claim) {
+      return;
+    }
+    const hashAlgorithm = this.getHashAlgorithm(result.protectedHeader.alg);
     const actualHash = await this.computeHash(accessToken, hashAlgorithm);
-    const expectedHash = this.base64UrlDecode(claims['at_hash'] as string);
+    const expectedHash = this.base64UrlDecode(at_hash_claim);
     const len = actualHash.byteLength;
     for (var i = 0; i < len; i++) {
       if (actualHash[i] !== expectedHash[i]) {

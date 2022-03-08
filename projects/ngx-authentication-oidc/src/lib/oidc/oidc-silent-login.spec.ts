@@ -1,3 +1,4 @@
+/* globals window */
 import { APP_BASE_HREF } from '@angular/common';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { DocumentToken, WindowToken } from '../authentication-module.tokens';
@@ -24,6 +25,8 @@ const config = {
 const windowMock = {
   addEventListener: jasmine.createSpy('addEventListener'),
   removeEventListener: jasmine.createSpy('removeEventListener '),
+  btoa: (str: string) => window.btoa(str),
+  atob: (str: string) => window.atob(str),
   location: { href: 'http://localhost', origin: 'http://localhost' }
 };
 
@@ -50,7 +53,10 @@ describe('OidcSilentLogin', () => {
       getLocalUrl: jasmine.createSpy('getLocalUrl').and.returnValue(new URL('https://localhost'))
     };
 
-    const tokenStoreWrapper = jasmine.createSpyObj('TokenStoreWrapper', ['saveNonce']);
+    const tokenStoreWrapper = jasmine.createSpyObj('TokenStoreWrapper', [
+      'saveNonce',
+      'saveCodeVerifier'
+    ]);
 
     TestBed.configureTestingModule({
       providers: [
@@ -68,7 +74,7 @@ describe('OidcSilentLogin', () => {
     service = TestBed.inject(OidcSilentLogin);
   });
 
-  it('Silent Login Timeout', fakeAsync(() => {
+  it('Silent Login Timeout', async () => {
     windowMock.addEventListener = jasmine.createSpy('addEventListener').and.callFake(() => {});
     oidcTokenResponse.response = jasmine.createSpy('handleURLResponse').and.returnValue(
       Promise.resolve({
@@ -79,9 +85,8 @@ describe('OidcSilentLogin', () => {
     );
 
     const result = service.login({});
-    tick(6000);
-    expectAsync(result).toBeResolvedTo({ isLoggedIn: false });
-  }));
+    await expectAsync(result).toBeResolvedTo({ isLoggedIn: false });
+  });
 
   it('Silent Login Request', async () => {
     const mock = {
@@ -117,7 +122,7 @@ describe('OidcSilentLogin', () => {
 
     const result = await service.login({});
 
-    expect(oidcTokenResponse.response.calls.mostRecent().args[0]).toEqual({ error: 'failed' });
+    expect(oidcTokenResponse.response.calls.mostRecent().args[1]).toEqual({ error: 'failed' });
     expect(result).toEqual({ isLoggedIn: false });
   });
 
@@ -144,7 +149,8 @@ describe('OidcSilentLogin', () => {
 
     const result = await service.login({});
 
-    expect(oidcTokenResponse.response.calls.mostRecent().args[0]).toEqual({
+    expect(oidcTokenResponse.response.calls.mostRecent().args[0]).toBeTrue();
+    expect(oidcTokenResponse.response.calls.mostRecent().args[1]).toEqual({
       stateMessage: 'af0ifjsldkj',
       expires_in: '3600',
       id_token:

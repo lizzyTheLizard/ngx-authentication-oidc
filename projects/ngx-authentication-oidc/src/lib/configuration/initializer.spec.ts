@@ -1,6 +1,7 @@
 import { LoginResult } from '../login-result';
 // eslint-disable-next-line prettier/prettier
-import { enforceLogin, loginResponseCheck, silentCheckAndThenEnforce, silentLoginCheck } from './initializer';
+import { enforceLogin, loginResponseCheck, silentCheckAndThenEnforce, silentIframeLoginCheck, silentRedirectLoginCheck } from './initializer';
+import { Prompt } from './login-options';
 import { InitializerInput } from './oauth-config';
 
 const successfulLoginResult: LoginResult = {
@@ -62,7 +63,7 @@ describe('loginResponseCheck', async () => {
   });
 });
 
-describe('silentLoginCheck', () => {
+describe('silentIframeLoginCheck', () => {
   beforeEach(() => {
     input = jasmine.createSpyObj('input', ['login', 'silentLogin', 'isResponse', 'handleResponse']);
     input.loggerFactory = () => console;
@@ -77,7 +78,7 @@ describe('silentLoginCheck', () => {
       .and.returnValue(Promise.resolve(failedLoginResult));
     input.initialLoginResult = failedLoginResult;
 
-    const result = await silentLoginCheck(input);
+    const result = await silentIframeLoginCheck(input);
 
     expect(result).toEqual(failedLoginResult);
     expect(input.silentLogin).toHaveBeenCalledTimes(1);
@@ -87,7 +88,7 @@ describe('silentLoginCheck', () => {
   it('Already logged in', async () => {
     input.initialLoginResult = successfulLoginResult;
 
-    const result = await silentLoginCheck(input);
+    const result = await silentIframeLoginCheck(input);
 
     expect(result).toEqual(successfulLoginResult);
     expect(input.login).toHaveBeenCalledTimes(0);
@@ -99,7 +100,7 @@ describe('silentLoginCheck', () => {
       .and.returnValue(Promise.resolve(successfulLoginResult));
     input.initialLoginResult = failedLoginResult;
 
-    const result = await silentLoginCheck(input);
+    const result = await silentIframeLoginCheck(input);
 
     expect(result).toEqual(successfulLoginResult);
     expect(input.silentLogin).toHaveBeenCalledTimes(1);
@@ -150,6 +151,65 @@ describe('enforceLogin', () => {
     expect(result).toEqual(successfulLoginResult);
     expect(input.login).toHaveBeenCalledTimes(1);
     expect(input.login).toHaveBeenCalledWith({});
+  });
+});
+
+describe('silentRedirectLoginCheck', () => {
+  beforeEach(() => {
+    input = jasmine.createSpyObj('input', [
+      'login',
+      'isResponse',
+      'handleResponse',
+      'isErrorResponse'
+    ]);
+    input.loggerFactory = () => console;
+    input.login = jasmine.createSpy('login').and.callFake(() => Promise.reject());
+    input.silentLogin = jasmine.createSpy('silentLogin').and.callFake(() => Promise.reject());
+    input.handleResponse = jasmine.createSpy('handleResponse').and.returnValue(failedLoginResult);
+  });
+
+  it('Silent Login has failed', async () => {
+    input.isErrorResponse = jasmine.createSpy('isErrorResponse').and.returnValue(true);
+    input.initialLoginResult = failedLoginResult;
+
+    const result = await silentRedirectLoginCheck(input);
+
+    expect(input.login).toHaveBeenCalledTimes(0);
+    expect(result).toEqual(failedLoginResult);
+  });
+
+  it('Silent Login failed', async () => {
+    input.isErrorResponse = jasmine.createSpy('isErrorResponse').and.returnValue(false);
+    input.login = jasmine.createSpy('login').and.returnValue(Promise.resolve(failedLoginResult));
+    input.initialLoginResult = failedLoginResult;
+
+    const result = await silentRedirectLoginCheck(input);
+
+    expect(result).toEqual(failedLoginResult);
+  });
+
+  it('Already logged in', async () => {
+    input.isErrorResponse = jasmine.createSpy('isErrorResponse').and.returnValue(false);
+    input.initialLoginResult = successfulLoginResult;
+
+    const result = await silentRedirectLoginCheck(input);
+
+    expect(result).toEqual(successfulLoginResult);
+    expect(input.login).toHaveBeenCalledTimes(0);
+  });
+
+  it('Login success', async () => {
+    input.isErrorResponse = jasmine.createSpy('isErrorResponse').and.returnValue(false);
+    input.login = jasmine
+      .createSpy('login')
+      .and.returnValue(Promise.resolve(successfulLoginResult));
+    input.initialLoginResult = failedLoginResult;
+
+    const result = await silentRedirectLoginCheck(input);
+
+    expect(result).toEqual(successfulLoginResult);
+    expect(input.login).toHaveBeenCalledTimes(1);
+    expect(input.login).toHaveBeenCalledWith({ prompts: Prompt.NONE });
   });
 });
 

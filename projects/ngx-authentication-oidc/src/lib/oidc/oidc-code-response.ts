@@ -7,6 +7,7 @@ import { LoginResult } from '../login-result';
 import { CustomHttpParamEncoder } from '../helper/custom-http-param-encoder';
 import { OidcTokenResponse } from './oidc-token-response';
 import { Response, ResponseParameterParser } from '../helper/response-parameter-parser';
+import { TokenStoreWrapper } from '../helper/token-store-wrapper';
 
 @Injectable()
 export class OidcCodeResponse {
@@ -17,7 +18,8 @@ export class OidcCodeResponse {
   constructor(
     private readonly httpClient: HttpClient,
     private readonly config: AuthConfigService,
-    private readonly oidcTokenResponse: OidcTokenResponse
+    private readonly oidcTokenResponse: OidcTokenResponse,
+    private readonly tokenStoreWrapper: TokenStoreWrapper
   ) {
     this.logger = this.config.loggerFactory('OidcCodeResponse');
   }
@@ -26,7 +28,7 @@ export class OidcCodeResponse {
     this.oidcTokenResponse.handleErrorResponse(params);
     this.handleNonCodeResponse(params);
     const response = await this.performTokenRequest(params, redirect);
-    const loginResult = await this.oidcTokenResponse.response(response);
+    const loginResult = await this.oidcTokenResponse.response(false, response);
     return {
       ...loginResult,
       // The result from the first state is relevant, so overwrite this here...
@@ -43,11 +45,15 @@ export class OidcCodeResponse {
   }
 
   private async performTokenRequest(params: Response, redirect: URL) {
-    const payload = new HttpParams({ encoder: this.encoder })
+    let payload = new HttpParams({ encoder: this.encoder })
       .set('client_id', this.config.clientId)
       .set('grant_type', 'authorization_code')
       .set('code', params.code!)
       .set('redirect_uri', redirect.toString());
+    const verifier = this.tokenStoreWrapper.getStoredVerifier();
+    if (verifier) {
+      payload = payload.set('code_verifier', verifier);
+    }
     const tokenEndpoint = this.config.getProviderConfiguration().tokenEndpoint;
     const resp = await firstValueFrom(this.httpClient.post(tokenEndpoint, payload));
     return this.responseParameterParser.parseBody(resp);

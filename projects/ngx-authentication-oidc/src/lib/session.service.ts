@@ -126,6 +126,7 @@ export class SessionService {
     const start = () => {
       const sessionState = this.authService.getLoginResult().sessionState;
       if (!sessionState) {
+        this.logger.info('Provider does not support session management, no session state returned');
         return;
       }
       this.watchSession = this.oidcSessionManagement.watchSession(sessionState);

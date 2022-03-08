@@ -6,7 +6,7 @@ ngx-authentication-oidc is a full fledged authentication solution for Angular us
 ## Features
 The following OIDC features are supported:
 * Automatic provider discovery using [OIDC Discovery](https://openid.net/specs/openid-connect-discovery-1_0.html)
-* Login using [Authorization Code Flow](https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth), [Implicit Flow](https://openid.net/specs/openid-connect-core-1_0.html#ImplicitFlowAuth) and [Hybrid Flow](https://openid.net/specs/openid-connect-core-1_0.html#HybridFlowAuth). 
+* Login using [Authorization Code Flow](https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth), [Implicit Flow](https://openid.net/specs/openid-connect-core-1_0.html#ImplicitFlowAuth) and [Hybrid Flow](https://openid.net/specs/openid-connect-core-1_0.html#HybridFlowAuth) including [PKCE](https://datatracker.ietf.org/doc/html/rfc7636)
 * Automatic token updates using [Refresh Tokens](https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens) or silent login
 * [Client initiated logout](https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
 * [Session Management](https://openid.net/specs/openid-connect-session-1_0.html)
@@ -18,6 +18,8 @@ Additionally this library features:
 * Pre-Configured [AuthGuards](https://angular.io/api/router/CanActivate)
 
 The library aims to have a simple yet complete interface for those features consisting of [AuthService](projects/ngx-authentication-oidc/src/lib/auth.service.ts) and [SessionService](projects/ngx-authentication-oidc/src/lib/session.service.ts) and a comprehensive [configuration](projects/ngx-authentication-oidc/src/lib/configuration/oauth-config.ts) using meaningful default values.
+
+Among others, this library is tested with [Keycloak](https://www.keycloak.org/) and [Azure AD](https://azure.microsoft.com/en-us/services/active-directory/)
 ## Installation
 The library can be installed using
 ```sh

@@ -60,6 +60,13 @@ export class TokenStoreWrapper {
     return this.getString('nonce');
   }
 
+  saveCodeVerifier(verifier: string) {
+    this.setString('verifier', verifier);
+  }
+  getStoredVerifier(): string | undefined {
+    return this.getString('verifier');
+  }
+
   public cleanTokenStore(): void {
     this.tokenStore.removeItem(prefix + 'isLoggedIn');
     this.tokenStore.removeItem(prefix + 'accessToken');

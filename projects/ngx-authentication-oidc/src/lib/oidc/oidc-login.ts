@@ -35,11 +35,14 @@ export class OidcLogin {
       loginOptions,
       this.getRedirectUrl().toString(),
       clientId,
-      authEndpoint
+      authEndpoint,
+      this.window
     );
     this.tokenStore.saveNonce(url.nonce);
-    this.logger.info('Start a login request to', url.toString());
-    this.window.location.href = url.toString();
+    this.tokenStore.saveCodeVerifier(url.codeVerifier);
+    const urlStr = await url.toString();
+    this.logger.info('Start a login request to', urlStr);
+    this.window.location.href = urlStr;
     return new Promise<LoginResult>((_, reject) =>
       this.window.setTimeout(() => reject('Browser should be redirected'), 1000)
     );
