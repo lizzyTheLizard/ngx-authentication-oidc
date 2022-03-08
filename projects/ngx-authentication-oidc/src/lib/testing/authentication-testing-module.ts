@@ -1,3 +1,4 @@
+/* globals console */
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { NgModule } from '@angular/core';
 import { AuthService } from '../auth.service';

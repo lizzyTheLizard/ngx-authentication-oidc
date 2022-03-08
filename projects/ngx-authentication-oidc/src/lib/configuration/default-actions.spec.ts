@@ -1,3 +1,4 @@
+/* globals console */
 import { LogoutActionInput } from './oauth-config';
 import { redirect, singleLogout, singleLogoutOrRedirect } from './default-actions';
 

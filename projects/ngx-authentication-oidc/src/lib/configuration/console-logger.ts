@@ -1,3 +1,4 @@
+/* globals console */
 import { Logger, LoggerFactory } from '../configuration/oauth-config';
 
 class ConsoleLogger implements Logger {

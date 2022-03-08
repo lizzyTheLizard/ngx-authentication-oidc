@@ -1,3 +1,4 @@
+/* globals console */
 import { LoginResult } from '../login-result';
 // eslint-disable-next-line prettier/prettier
 import { enforceLogin, loginResponseCheck, silentCheckAndThenEnforce, silentIframeLoginCheck, silentRedirectLoginCheck } from './initializer';
