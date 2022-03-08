@@ -1,6 +1,6 @@
 {
   "name": "ngx-authentication-oidc",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Full fledged authentication solution for Angular using OIDC",
   "author": "Matthias Graf",
   "repository": {
