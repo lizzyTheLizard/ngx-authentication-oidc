@@ -6,6 +6,7 @@ import { LoginResult } from '../login-result';
 import { Response } from '../helper/response-parameter-parser';
 import { OidcCodeResponse } from './oidc-code-response';
 import { OidcTokenResponse } from './oidc-token-response';
+import { TokenStoreWrapper } from '../helper/token-store-wrapper';
 
 const config = {
   provider: {
@@ -31,6 +32,7 @@ const loginResult: LoginResult = {
 };
 
 let tokenResponse: jasmine.SpyObj<OidcTokenResponse>;
+let tokenStore: jasmine.SpyObj<TokenStoreWrapper>;
 let httpTestingController: HttpTestingController;
 let service: OidcCodeResponse;
 
@@ -42,12 +44,13 @@ describe('OidcCodeResponse', () => {
       .createSpy('response')
       .and.returnValue(Promise.resolve(loginResult));
     tokenResponse.handleErrorResponse = jasmine.createSpy('handleErrorResponse');
-
+    tokenStore = jasmine.createSpyObj('TokenStore', ['getStoredVerifier']);
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
       providers: [
         { provide: OidcTokenResponse, useValue: tokenResponse },
         { provide: AuthConfigService, useValue: authConfig },
+        { provide: TokenStoreWrapper, useValue: tokenStore },
         OidcCodeResponse
       ]
     });
@@ -112,7 +115,7 @@ describe('OidcCodeResponse', () => {
           stateMessage: params.stateMessage
         });
         expect(tokenResponse.response).toHaveBeenCalledTimes(1);
-        expect(tokenResponse.response).toHaveBeenCalledWith({
+        expect(tokenResponse.response).toHaveBeenCalledWith(false, {
           access_token: 'SlAV32hkKG',
           refresh_token: '8xLOxBtZp8',
           expires_in: '3600',
@@ -131,5 +134,16 @@ describe('OidcCodeResponse', () => {
       expires_in: 3600,
       id_token: token
     });
+  });
+
+  it('Handle Code Response with code verifier', () => {
+    tokenStore.getStoredVerifier = jasmine.createSpy('getStoredVerifier').and.returnValue('VERIFY');
+    service.response(params, redirectUrl);
+
+    const req = httpTestingController.expectOne(config.provider.tokenEndpoint);
+    expect(req.request.method).toEqual('POST');
+    expect(req.request.body.toString()).toEqual(
+      'client_id=id&grant_type=authorization_code&code=123-123&redirect_uri=https%3A%2F%2Fexample.com%2Frd&code_verifier=VERIFY'
+    );
   });
 });

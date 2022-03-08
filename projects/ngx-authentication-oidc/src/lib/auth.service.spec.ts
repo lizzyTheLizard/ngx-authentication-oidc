@@ -14,7 +14,7 @@ import { Subject } from 'rxjs';
 import { WindowToken } from './authentication-module.tokens';
 import { LoginOptions } from './configuration/login-options';
 import { Initializer, OauthConfig } from './configuration/oauth-config';
-import { redirect, singleLogout } from './configuration/defaultActions';
+import { redirect, singleLogout } from './configuration/default-actions';
 import { OidcCodeResponse } from './oidc/oidc-code-response';
 import { OidcTokenResponse } from './oidc/oidc-token-response';
 
@@ -295,9 +295,9 @@ describe('AuthService', () => {
     expect(service.getIdToken()).toEqual(loginResult.idToken);
     expect(service.getUserInfo()).toEqual(loginResult.userInfo);
     expect(service.isLoggedIn()).toEqual(true);
-    expect(isLoggedInChanged).toHaveBeenCalledTimes(2);
+    expect(isLoggedInChanged).toHaveBeenCalledTimes(3);
     expect(isLoggedInChanged).toHaveBeenCalledWith(true);
-    expect(isUserInfoChanged).toHaveBeenCalledTimes(2);
+    expect(isUserInfoChanged).toHaveBeenCalledTimes(3);
     expect(isUserInfoChanged).toHaveBeenCalledWith(loginResult.userInfo);
     isLoggedInChanged.calls.reset();
     isUserInfoChanged.calls.reset();

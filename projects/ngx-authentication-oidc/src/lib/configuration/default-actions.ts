@@ -1,5 +1,5 @@
 import { Router, UrlTree } from '@angular/router';
-import { LogoutAction, LogoutActionInput } from '../configuration/oauth-config';
+import { LogoutAction, LogoutActionInput } from './oauth-config';
 
 /**
  * Logs out the user at the authentication server as well ("single logout")

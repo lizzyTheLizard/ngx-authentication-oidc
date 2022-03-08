@@ -61,7 +61,7 @@ describe('OidcRefresh', () => {
       .and.returnValue({ isLoggedIn: false });
     service.tokenRefresh(oldLoginResult).then(
       () => {
-        expect(oidcTokenResponse.response).toHaveBeenCalledWith({
+        expect(oidcTokenResponse.response).toHaveBeenCalledWith(false, {
           expires_in: 3600,
           id_token: 'id2',
           access_token: 'at2',

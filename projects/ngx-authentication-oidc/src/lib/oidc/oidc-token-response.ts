@@ -21,14 +21,15 @@ export class OidcTokenResponse {
     this.logger = this.config.loggerFactory('OidcTokenResponse');
   }
 
-  public async response(params: Response): Promise<LoginResult> {
+  public async response(implicit: boolean, params: Response): Promise<LoginResult> {
     this.handleErrorResponse(params);
     this.handleNonTokenResponse(params);
-    const userInfoFromToken = await this.verifyIdToken(params);
+    const userInfoFromToken = await this.verifyIdToken(implicit, params);
     const userInfo = await this.checkUserInfo(params, userInfoFromToken);
     return this.getLoginResult(params, userInfo);
   }
 
+  // TODO: Redirect to finalURL if given
   public handleErrorResponse(params: Response) {
     if (!params.error) {
       return;
@@ -51,14 +52,18 @@ export class OidcTokenResponse {
     }
   }
 
-  private async verifyIdToken(params: Response): Promise<UserInfo | undefined> {
+  private async verifyIdToken(implicit: boolean, params: Response): Promise<UserInfo | undefined> {
     const idToken = params.id_token ?? undefined;
     if (!idToken) {
       return;
     }
     const nonce = this.tokenStore.getStoredNonce();
     const accessToken = params.access_token ?? undefined;
-    return this.tokenValidator.verify(idToken, nonce, accessToken);
+    return this.tokenValidator.verify(idToken, {
+      accessToken: accessToken,
+      nonce: nonce,
+      implicit: implicit
+    });
   }
 
   private async checkUserInfo(params: Response, current?: UserInfo): Promise<UserInfo | undefined> {

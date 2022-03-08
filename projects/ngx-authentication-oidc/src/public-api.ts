@@ -14,7 +14,7 @@ export * from './lib/configuration/login-options';
 export * from './lib/configuration/oauth-config';
 export * from './lib/configuration/console-logger';
 export * from './lib/configuration/initializer';
-export * from './lib/configuration/defaultActions';
+export * from './lib/configuration/default-actions';
 
 export * from './lib/guard/private.guard';
 export * from './lib/guard/enforce-login.guard';

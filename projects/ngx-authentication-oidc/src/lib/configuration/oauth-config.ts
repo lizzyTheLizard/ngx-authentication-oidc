@@ -3,16 +3,10 @@ import { JWK } from 'jose';
 import { LoginResult } from '../login-result';
 import { LoginOptions } from './login-options';
 import { Router } from '@angular/router';
-// eslint-disable-next-line prettier/prettier, @typescript-eslint/no-unused-vars
-import { enforceLogin, loginResponseCheck, silentCheckAndThenEnforce, silentLoginCheck } from '../configuration/initializer';
-// eslint-disable-next-line prettier/prettier, @typescript-eslint/no-unused-vars
-import { redirect, singleLogout } from '../configuration/defaultActions';
-// eslint-disable-next-line prettier/prettier, @typescript-eslint/no-unused-vars
-import { consoleLoggerFactory } from '../configuration/console-logger';
-// eslint-disable-next-line prettier/prettier, @typescript-eslint/no-unused-vars
-import { DEFAULT_INTERRUPTSOURCES } from '@ng-idle/core';
 
-/** General configuration object, needed to initialize {@link AuthenticationModule} */
+/**
+ * General configuration object, needed to initialize {@link AuthenticationModule}
+ */
 export interface OauthConfig {
   /** OIDC Client ID */
   clientId: string;
@@ -29,16 +23,16 @@ export interface OauthConfig {
    */
   userInfoSource?: UserInfoSource;
   /**
-   * Action to be performed after a logout. Either use a default like {@link singleLogout},
-   * {@link logoutRedirect} or define your own function.
-   * When not set {@link singleLogout} with the redirectURI is used when single logout
-   * is possible and {@link logoutRedirect} to '/auth/logout' otherwise
+   * Action to be performed after a logout.
+   * See {@link ./default-actions.d.ts} for options or define your own function.
+   * When not set, a single logout is used when single logout
+   * is possible and a redirect to '/auth/logout' otherwise
    */
   logoutAction?: LogoutAction;
   /**
    * Action to be performed after an initialization error.
-   * Either use a default like {@link redirect} or define your own function.
-   * When not set {@link errorRedirect} to '/auth/logout' is used
+   * See {@link ./default-actions.d.ts} for options or define your own function.
+   * When not set a redirect to '/auth/logout' is used
    */
   initializationErrorAction?: ErrorAction;
   /**
@@ -48,18 +42,18 @@ export interface OauthConfig {
    */
   notAllowedUri?: string;
   /**
-   * Function to initialize the library. Either use a default like {@link silentLoginCheck},
-   * {@link enforceLogin}, {@link silentCheckAndThenEnforce}, {@link loginResponseCheck} or
-   * define your own function.
-   * When not set {@link silentLoginCheck} is used when silent login
-   * is enabled and {@link loginResponseCheck} otherwise
+   * Function to initialize the library.
+   * See {@link ./initializer.d.ts} for options or define your own function.
+   * When not set, single login with iframe is used when silent login
+   * is enabled and the normal response check otherwise.
    */
+  // TODO: Better default between silentRedirectLoginCheck and silentIframeLoginCheck
   initializer?: Initializer;
-  /** Factory to generate loggers. When not set {@link consoleLoggerFactory} is used. */
+  /** Factory to generate loggers. When not set the console is used. */
   loggerFactory?: LoggerFactory;
   /**
-   * Place to store tokens. Default is {@link localStorage}, but you could also use
-   * {@link sessionStorage} or your own implementation.
+   * Place to store tokens. Default is {@link sessionStorage}, but you could also use
+   * {@link localStorage} or your own implementation.
    */
   tokenStore?: Storage;
   /** Silent login configuration, check {@link @SilentLoginConfig}. */
@@ -120,6 +114,8 @@ export interface InitializerInput {
   silentLogin(loginOptions: LoginOptions): Promise<LoginResult>;
   /** Function to handle an OIDC-Response */
   handleResponse(): Promise<LoginResult>;
+  /** Check if this is an failed OIDC response */
+  isErrorResponse(): boolean;
 }
 export type Initializer = (input: InitializerInput) => Promise<LoginResult>;
 
@@ -158,12 +154,12 @@ export interface InactiveTimeoutConfig {
   idleTimeSeconds: number;
   /** Number of seconds until a user is logged out when he is inactive. Default is 60 */
   timeoutSeconds: number;
-  /** The interrupts regarded as "user activity". Default is {@link DEFAULT_INTERRUPTSOURCES} */
+  /** The interrupts regarded as "user activity" */
   interrupts: Array<InterruptSource>;
   /**
    * Action to be performed after a logout due to a timeout.
-   * Either use a default like {@link singleLogout}, {@link logoutRedirect}
-   * or define your own function. When not set {@link logoutRedirect} to '/auth/logout' is used
+   * See {@link ./default-actions.d.ts} for options or define your own function.
+   * When not set a redirect to '/auth/logout' is used
    */
   timeoutAction: LogoutAction;
 }

@@ -44,10 +44,12 @@ export class OidcSilentLogin {
       silentLoginOptions,
       redirectUrl,
       clientId,
-      authEndpoint
+      authEndpoint,
+      this.window
     );
     this.tokenStore.saveNonce(authenticationRequest.nonce);
-    const url = authenticationRequest.toUrl();
+    this.tokenStore.saveCodeVerifier(authenticationRequest.codeVerifier);
+    const url = await authenticationRequest.toUrl();
     const iframe = this.createIFrame(url);
     const result = this.setupLoginEventListener(iframe);
     this.document.body.appendChild(iframe);
@@ -108,7 +110,7 @@ export class OidcSilentLogin {
       : this.localUrl.getLocalUrl('assets/silent-refresh.html');
     const promise = params.code
       ? this.oidcCodeResponse.response(params, redirectUrl)
-      : this.oidcTokenResponse.response(params);
+      : this.oidcTokenResponse.response(true, params);
     promise.then(
       (result: LoginResult) => subject.next(result),
       (error: Error) => {

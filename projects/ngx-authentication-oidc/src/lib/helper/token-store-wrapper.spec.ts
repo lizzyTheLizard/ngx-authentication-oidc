@@ -31,6 +31,11 @@ describe('TokenStoreWrapper', () => {
     expect(service.getStoredNonce()).toEqual('nonce');
   });
 
+  it('CodeVerifier', () => {
+    service.saveCodeVerifier('verifier');
+    expect(service.getStoredVerifier()).toEqual('verifier');
+  });
+
   it('Store and reset', () => {
     const loginResult: LoginResult = {
       isLoggedIn: true,

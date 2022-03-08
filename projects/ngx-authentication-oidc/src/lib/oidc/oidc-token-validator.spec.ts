@@ -76,13 +76,13 @@ describe('OidcTokenValidator', () => {
 
   it('Valid', async () => {
     const token = await writeToken(claims);
-    await expectAsync(service.verify(token, nonce)).toBeResolved();
+    await expectAsync(service.verify(token, { nonce: nonce, implicit: false })).toBeResolved();
   });
 
   it('Wrong Signature', async () => {
     const originalToken = await writeToken(claims);
     const token = originalToken.substring(0, -1) + 'A';
-    await expectAsync(service.verify(token, nonce)).toBeRejected();
+    await expectAsync(service.verify(token, { nonce: nonce, implicit: false })).toBeRejected();
   });
 
   it('Wrong Signature but no keys', async () => {
@@ -92,34 +92,34 @@ describe('OidcTokenValidator', () => {
     config.provider.publicKeys = [];
     const token = originalToken.substring(0, originalToken.length - 1) + 'A';
 
-    await expectAsync(service.verify(token, nonce)).toBeResolved();
+    await expectAsync(service.verify(token, { nonce: nonce, implicit: false })).toBeResolved();
 
     config.provider.publicKeys = oldKeys;
   });
 
   it('Missing Issuer', async () => {
     const token = await writeToken({ ...claims, iss: undefined });
-    await expectAsync(service.verify(token, nonce)).toBeRejected();
+    await expectAsync(service.verify(token, { nonce: nonce, implicit: false })).toBeRejected();
   });
 
   it('Wrong Issuer', async () => {
     const token = await writeToken({ ...claims, iss: 'http://test.com' });
-    await expectAsync(service.verify(token, nonce)).toBeRejected();
+    await expectAsync(service.verify(token, { nonce: nonce, implicit: false })).toBeRejected();
   });
 
   it('Missing Audience', async () => {
     const token = await writeToken({ ...claims, aud: undefined });
-    await expectAsync(service.verify(token, nonce)).toBeRejected();
+    await expectAsync(service.verify(token, { nonce: nonce, implicit: false })).toBeRejected();
   });
 
   it('Single Audience', async () => {
     const token = await writeToken({ ...claims, aud: config.clientId });
-    await expectAsync(service.verify(token, nonce)).toBeResolved();
+    await expectAsync(service.verify(token, { nonce: nonce, implicit: false })).toBeResolved();
   });
 
   it('Wrong Single Audience', async () => {
     const token = await writeToken({ ...claims, aud: '1' });
-    await expectAsync(service.verify(token, nonce)).toBeRejected();
+    await expectAsync(service.verify(token, { nonce: nonce, implicit: false })).toBeRejected();
   });
 
   it('Multiple Audience', async () => {
@@ -127,71 +127,84 @@ describe('OidcTokenValidator', () => {
       ...claims,
       aud: ['1', config.clientId]
     });
-    await expectAsync(service.verify(token, nonce)).toBeResolved();
+    await expectAsync(service.verify(token, { nonce: nonce, implicit: false })).toBeResolved();
   });
 
   it('Wrong Multiple Audience', async () => {
     const token = await writeToken({ ...claims, aud: ['1', '2'] });
-    await expectAsync(service.verify(token, nonce)).toBeRejected();
+    await expectAsync(service.verify(token, { nonce: nonce, implicit: false })).toBeRejected();
   });
 
   it('exp missing', async () => {
     const token = await writeToken({ ...claims, exp: undefined });
-    await expectAsync(service.verify(token, nonce)).toBeRejected();
+    await expectAsync(service.verify(token, { nonce: nonce, implicit: false })).toBeRejected();
   });
 
   it('exp in past', async () => {
     const token = await writeToken({ ...claims, exp: getCurrentTime() - 10 });
-    await expectAsync(service.verify(token, nonce)).toBeRejected();
+    await expectAsync(service.verify(token, { nonce: nonce, implicit: false })).toBeRejected();
   });
 
   it('iat missing', async () => {
     const token = await writeToken({ ...claims, iat: undefined });
-    await expectAsync(service.verify(token, nonce)).toBeRejected();
+    await expectAsync(service.verify(token, { nonce: nonce, implicit: false })).toBeRejected();
   });
 
   it('iat in Future', async () => {
     const token = await writeToken({ ...claims, iat: getCurrentTime() + 10 });
-    await expectAsync(service.verify(token, nonce)).toBeRejected();
+    await expectAsync(service.verify(token, { nonce: nonce, implicit: false })).toBeRejected();
   });
 
   it('nbf in Future', async () => {
     const token = await writeToken({ ...claims, nbf: getCurrentTime() + 10 });
-    await expectAsync(service.verify(token, nonce)).toBeRejected();
+    await expectAsync(service.verify(token, { nonce: nonce, implicit: false })).toBeRejected();
   });
 
   it('No Nonce returned', async () => {
     const token = await writeToken({ ...claims, nonce: undefined });
-    await expectAsync(service.verify(token, nonce)).toBeRejected();
+    await expectAsync(service.verify(token, { nonce: nonce, implicit: false })).toBeRejected();
   });
 
   it('Wrong Nonce', async () => {
     const token = await writeToken({ ...claims, nonce: '123' });
-    await expectAsync(service.verify(token, nonce)).toBeRejected();
+    await expectAsync(service.verify(token, { nonce: nonce, implicit: false })).toBeRejected();
   });
 
   it('No Nonce Send', async () => {
     const token = await writeToken({ ...claims, nonce: undefined });
-    await expectAsync(service.verify(token)).toBeResolved();
+    await expectAsync(service.verify(token, { implicit: false })).toBeResolved();
   });
 
   it('No at_hash', async () => {
     const token = await writeToken({ ...claims, at_hash: undefined });
-    await expectAsync(service.verify(token, nonce, accessToken)).toBeRejected();
+    await expectAsync(
+      service.verify(token, { nonce: nonce, implicit: true, accessToken: accessToken })
+    ).toBeRejected();
+  });
+
+  it('No at_hash OK if code flow', async () => {
+    const token = await writeToken({ ...claims, at_hash: undefined });
+    await expectAsync(
+      service.verify(token, { nonce: nonce, implicit: false, accessToken: accessToken })
+    ).toBeResolved();
   });
 
   it('Wrong at_hash', async () => {
     const token = await writeToken({ ...claims, at_hash: 'ykQb7CFN9R9DXcyE5lt' });
-    await expectAsync(service.verify(token, nonce, accessToken)).toBeRejected();
+    await expectAsync(
+      service.verify(token, { nonce: nonce, implicit: false, accessToken: accessToken })
+    ).toBeRejected();
   });
 
   it('Correct at_hash', async () => {
     const token = await writeToken({ ...claims, at_hash: 'ykQb7CFN9R9DXcyE5ltG9w' });
-    await expectAsync(service.verify(token, nonce, accessToken)).toBeResolved();
+    await expectAsync(
+      service.verify(token, { nonce: nonce, implicit: false, accessToken: accessToken })
+    ).toBeResolved();
   });
 
   it('Wrong algorithm', async () => {
     const token = await writeToken(claims, { alg: 'HS512' });
-    await expectAsync(service.verify(token, nonce)).toBeRejected();
+    await expectAsync(service.verify(token, { nonce: nonce, implicit: false })).toBeRejected();
   });
 });

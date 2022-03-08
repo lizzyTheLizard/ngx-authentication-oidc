@@ -1,0 +1,90 @@
+{
+  "extends": "../../.eslintrc.json",
+  "ignorePatterns": [
+    "!**/*"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "*.ts"
+      ],
+      "parserOptions": {
+        "project": [
+          "projects/keycloak-sample/tsconfig.app.json",
+          "projects/keycloak-sample/tsconfig.spec.json"
+        ],
+        "createDefaultProgram": true
+      },
+      "extends": [
+        "eslint:recommended",
+        "plugin:@angular-eslint/recommended",
+        "plugin:@angular-eslint/template/process-inline-templates",
+        "plugin:prettier/recommended"
+      ],
+      "rules": {
+        "@angular-eslint/no-empty-lifecycle-method": "off",
+        "@angular-eslint/component-class-suffix": [
+          "warn",
+          {
+            "suffixes": ["Component", "Page"]
+          }
+        ],
+        "no-unused-vars": "off",
+       "@typescript-eslint/no-unused-vars": "error",
+        "@angular-eslint/component-selector": [
+          "error",
+          {
+            "prefix": "app",
+            "style": "kebab-case",
+            "type": "element"
+          }
+        ],
+        "@angular-eslint/directive-selector": [
+          "error",
+          {
+            "prefix": "app",
+            "style": "camelCase",
+            "type": "attribute"
+          }
+        ],
+        "sort-imports": [
+          "error",
+          {
+            "ignoreDeclarationSort": true
+          }
+        ],
+        "multiline-comment-style": ["error", "starred-block"],
+        "spaced-comment": ["error", "always", { "exceptions": ["-", "+"] }],
+        "valid-jsdoc": ["error",
+          {"requireReturn": false}
+        ],
+         "max-len": ["error", {
+          "code": 100000,
+          "comments": 100,
+          "ignoreComments": false
+         }]
+       }
+    },
+    {
+      "files": [
+        "*.html"
+      ],
+      "extends": [
+        "plugin:@angular-eslint/template/recommended"
+      ],
+      "rules": {}
+    }
+  ],
+  "globals": {
+    "expect": "readonly",
+    "it": "readonly",
+    "spyOn": "readonly",
+    "describe": "readonly",
+    "beforeEach": "readonly",
+    "afterEach": "readonly",
+    "expectAsync": "readonly",
+    "jasmine": "readonly",
+    "console": "readonly",
+    "alert": "readonly"
+  }
+}

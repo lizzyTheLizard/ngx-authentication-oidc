@@ -1,5 +1,5 @@
 import { LogoutActionInput } from './oauth-config';
-import { redirect, singleLogout, singleLogoutOrRedirect } from './defaultActions';
+import { redirect, singleLogout, singleLogoutOrRedirect } from './default-actions';
 
 describe('DefaultActions', async () => {
   it('singleLogout', async () => {
