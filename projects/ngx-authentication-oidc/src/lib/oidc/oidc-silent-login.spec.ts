@@ -1,6 +1,6 @@
 /* globals window */
 import { APP_BASE_HREF } from '@angular/common';
-import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { DocumentToken, WindowToken } from '../authentication-module.tokens';
 import { OidcSilentLogin } from './oidc-silent-login';
 import { AuthConfigService } from '../auth-config.service';
