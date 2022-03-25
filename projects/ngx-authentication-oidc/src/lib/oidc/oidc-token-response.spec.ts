@@ -69,7 +69,7 @@ describe('OidcTokenResponse', () => {
     expect(expiresIn).toEqual(3600);
     expect(res.idToken).toEqual(token);
     expect(res.isLoggedIn).toBeTrue();
-    expect(res.redirectPath).toBeUndefined();
+    expect(res.finalRoute).toBeUndefined();
     expect(res.userInfo).toEqual({ sub: '1234567890' });
   });
 
@@ -77,7 +77,7 @@ describe('OidcTokenResponse', () => {
     validator.verify = jasmine.createSpy('validate').and.returnValue({ sub: '1234567890' });
     const params: Response = {
       stateMessage: 'tst',
-      finalUrl: 'http://xy',
+      finalRoute: '/final',
       expires_in: '3600',
       id_token: token,
       access_token: 'SlAV32hkKG'
@@ -85,7 +85,7 @@ describe('OidcTokenResponse', () => {
 
     const res = await service.response(false, params);
 
-    expect(res.redirectPath).toEqual('http://xy');
+    expect(res.finalRoute).toEqual('/final');
     expect(res.stateMessage).toEqual('tst');
   });
 
@@ -93,7 +93,7 @@ describe('OidcTokenResponse', () => {
     validator.verify = jasmine.createSpy('validate').and.returnValue({ sub: '1234567890' });
     const params: Response = {
       stateMessage: 'tst',
-      finalUrl: 'http://xy',
+      finalRoute: '/final',
       expires_in: '3600',
       access_token: 'SlAV32hkKG'
     };
@@ -114,7 +114,7 @@ describe('OidcTokenResponse', () => {
     expect(expiresIn).toEqual(3600);
     expect(res.idToken).toBeUndefined();
     expect(res.isLoggedIn).toBeTrue();
-    expect(res.redirectPath).toEqual(params.finalUrl);
+    expect(res.finalRoute).toEqual(params.finalRoute);
     expect(res.userInfo).toEqual({ sub: '1234567890' });
   }));
 

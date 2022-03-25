@@ -151,7 +151,7 @@ export class AuthService {
 
   /**
    * Start a manual login. After a successful login, the user will be redirected to the
-   * current page or {@link LoginOptions.finalUrl} if given.
+   * current page or {@link LoginOptions.finalRoute} if given.
    * @param {LoginOptions} loginOptions login options, check {@link LoginOptions}
    * @returns {Promise<boolean>} The returned promise will usually not resolve,
    *   as this triggers a redirect. If it does return, the value of the promise defines

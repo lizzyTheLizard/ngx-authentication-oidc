@@ -26,7 +26,7 @@ describe('AuthenticationRequest', () => {
 
   it('Create Auth Request special params', async () => {
     const loginOptions: LoginOptions = {
-      finalUrl: 'https://example.com/final',
+      finalRoute: '/final',
       scope: ['openid', 'profile', 'email'],
       prompts: Prompt.NONE,
       ui_locales: 'de',
@@ -48,7 +48,7 @@ describe('AuthenticationRequest', () => {
     expect(result.searchParams.get('scope')).toEqual('openid profile email');
     expect(result.searchParams.get('client_id')).toEqual('id');
     expect(JSON.parse(result.searchParams.get('state')!)).toEqual({
-      finalUrl: 'https://example.com/final'
+      finalRoute: '/final'
     });
     expect(result.searchParams.get('redirect_uri')).toEqual('https://example.com/rd222');
     expect(result.searchParams.has('nonce')).toBeTrue();
@@ -61,7 +61,7 @@ describe('AuthenticationRequest', () => {
 
   it('toString', async () => {
     const loginOptions: LoginOptions = {
-      finalUrl: 'https://example.com/final',
+      finalRoute: '/final',
       scope: ['openid', 'profile', 'email'],
       prompts: Prompt.NONE,
       ui_locales: 'de',
@@ -84,7 +84,7 @@ describe('AuthenticationRequest', () => {
     expect(result.searchParams.get('scope')).toEqual('openid profile email');
     expect(result.searchParams.get('client_id')).toEqual('id');
     expect(JSON.parse(result.searchParams.get('state')!)).toEqual({
-      finalUrl: 'https://example.com/final'
+      finalRoute: '/final'
     });
     expect(result.searchParams.get('redirect_uri')).toEqual('https://example.com/rd222');
     expect(result.searchParams.has('nonce')).toBeTrue();
