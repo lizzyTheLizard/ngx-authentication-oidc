@@ -73,7 +73,7 @@ describe('OidcLogin', () => {
   it('Login', (done) => {
     const loginOptions = {
       state: 'test',
-      finalUrl: 'https://example.com/final'
+      finalRoute: '/final'
     };
 
     service.login(loginOptions);
@@ -86,7 +86,7 @@ describe('OidcLogin', () => {
       expect(url.searchParams.get('client_id')).toEqual('id');
       expect(JSON.parse(url.searchParams.get('state')!)).toEqual({
         stateMessage: 'test',
-        finalUrl: 'https://example.com/final'
+        finalRoute: '/final'
       });
       expect(url.searchParams.get('redirect_uri')).toEqual('https://example.com/rd');
       expect(url.searchParams.has('nonce')).toBeTrue();

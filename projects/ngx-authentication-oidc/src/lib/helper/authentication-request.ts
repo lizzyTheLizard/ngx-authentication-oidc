@@ -68,7 +68,7 @@ export class AuthenticationRequest {
 
   private getState(): string {
     const state: State = {
-      finalUrl: this.loginOptions.finalUrl?.toString(),
+      finalRoute: this.loginOptions.finalRoute?.toString(),
       stateMessage: this.loginOptions.state
     };
     return JSON.stringify(state);

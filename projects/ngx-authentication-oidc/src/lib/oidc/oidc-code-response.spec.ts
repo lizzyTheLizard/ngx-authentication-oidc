@@ -81,7 +81,7 @@ describe('OidcCodeResponse', () => {
 
   it('Handle Code Response without code', (done) => {
     const params: Response = {
-      finalUrl: 'test'
+      finalRoute: '/final'
     };
     service.response(params, redirectUrl).then(
       () => done.fail(new Error('This should not work')),
@@ -111,7 +111,7 @@ describe('OidcCodeResponse', () => {
       .then((res) => {
         expect(res).toEqual({
           ...loginResult,
-          redirectPath: params.finalUrl,
+          finalRoute: params.finalRoute,
           stateMessage: params.stateMessage
         });
         expect(tokenResponse.response).toHaveBeenCalledTimes(1);

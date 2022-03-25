@@ -25,7 +25,7 @@ export class EnforceLoginGuard implements CanActivate {
     }
     this.logger.info('User is not logged in, cannot access page');
     const newUrl = route.url.toString();
-    isLoggedIn = await this.auth.login({ finalUrl: newUrl });
+    isLoggedIn = await this.auth.login({ finalRoute: newUrl });
     if (isLoggedIn) {
       this.logger.debug('User is now logged in, can access page');
       return true;
