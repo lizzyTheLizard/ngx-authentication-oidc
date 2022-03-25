@@ -91,6 +91,6 @@ describe('OidcLogin', () => {
       expect(url.searchParams.get('redirect_uri')).toEqual('https://example.com/rd');
       expect(url.searchParams.has('nonce')).toBeTrue();
       done();
-    }, 10);
+    }, 20);
   });
 });
