@@ -96,14 +96,15 @@ export class AuthService {
 
   private createInitializerInput(): InitializerInput {
     const initial = this.tokenStore.getLoginResult() ?? { isLoggedIn: false };
-
+    const initialRoute =
+      this.router.getCurrentNavigation()?.finalUrl?.toString() ?? this.router.url.toString();
     return {
       loggerFactory: this.config.loggerFactory,
       initialLoginResult: initial,
-      login: (options: LoginOptions) =>
-        this.oidcLogin.login({ ...options, finalUrl: this.router.url }),
-      silentLogin: (options: LoginOptions) =>
-        this.oidcSilentLogin.login({ ...options, finalUrl: this.router.url }),
+      login: (options: LoginOptions) => {
+        return this.oidcLogin.login({ ...options, finalRoute: initialRoute });
+      },
+      silentLogin: (options: LoginOptions) => this.oidcSilentLogin.login({ ...options }),
       handleResponse: () => this.handleResponse(),
       isErrorResponse: () => this.isErrorResponse()
     };
@@ -117,20 +118,24 @@ export class AuthService {
       return Promise.resolve({ isLoggedIn: false });
     }
     const params = this.responseParameterParser.parseUrl(current);
-    if (params.code) {
-      return this.oidcCodeResponse.response(params, redirect);
-    }
-    if (params.id_token || params.access_token) {
-      return this.oidcTokenResponse.response(true, params);
-    }
-    if (params.error) {
-      try {
-        this.oidcTokenResponse.handleErrorResponse(params);
-      } catch (e) {
-        this.logger.debug('If this was a login response, it has failed', e);
+    try {
+      if (params.code) {
+        return this.oidcCodeResponse.response(params, redirect);
       }
+      if (params.id_token || params.access_token) {
+        return this.oidcTokenResponse.response(true, params);
+      }
+      if (params.error) {
+        this.oidcTokenResponse.handleErrorResponse(params);
+      }
+      return Promise.resolve({ isLoggedIn: false });
+    } catch (e) {
+      this.logger.debug('If this was a login response, it has failed', e);
+      return Promise.resolve({
+        isLoggedIn: false,
+        finalRoute: params.finalRoute
+      });
     }
-    return Promise.resolve({ isLoggedIn: false });
   }
 
   private isErrorResponse(): boolean {
@@ -156,7 +161,7 @@ export class AuthService {
     loginOptions = {
       ...loginOptions,
       id_token_hint: loginOptions.id_token_hint ?? this.getIdToken(),
-      finalUrl: loginOptions.finalUrl ?? this.router.url
+      finalRoute: loginOptions.finalRoute ?? this.router.url
     };
     const loginResult = await this.oidcLogin.login(loginOptions);
     if (loginResult.isLoggedIn) {
@@ -197,9 +202,16 @@ export class AuthService {
     this.loginResult$.next(loginResult);
 
     const userInfo = this.getUserInfo();
-    this.logger.info('Login was successful, user is logged in', userInfo);
-    if (loginResult.redirectPath) {
-      this.router.navigateByUrl(loginResult.redirectPath);
+    if (loginResult.isLoggedIn) {
+      this.logger.info('Login was successful, user is logged in', userInfo);
+    } else {
+      this.logger.info('Login was not successful, user is not logged in');
+    }
+    if (loginResult.finalRoute) {
+      this.logger.info('Redirect', loginResult.finalRoute);
+      this.router.navigateByUrl(loginResult.finalRoute);
+    } else {
+      this.logger.info('No redirect set');
     }
   }
 

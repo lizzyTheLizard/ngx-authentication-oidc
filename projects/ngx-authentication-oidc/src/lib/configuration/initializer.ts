@@ -15,8 +15,9 @@ export const loginResponseCheck: Initializer = async (input) => {
     return responseLoginResult;
   } else if (loginResult.isLoggedIn) {
     logger.debug('User is already logged in', loginResult);
+    return loginResult;
   }
-  return loginResult;
+  return responseLoginResult;
 };
 
 /**
@@ -62,10 +63,10 @@ export const silentRedirectLoginCheck: Initializer = async (input) => {
     return loginResult;
   }
 
-  logger.debug('Try login without user interaction');
   if (input.isErrorResponse()) {
     return loginResult;
   }
+  logger.debug('Try login without user interaction');
   return input.login({ prompts: Prompt.NONE }).then((r) => {
     if (r.isLoggedIn) {
       logger.debug('User is silently logged in', loginResult);

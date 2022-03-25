@@ -32,7 +32,7 @@ export class OidcCodeResponse {
     return {
       ...loginResult,
       // The result from the first state is relevant, so overwrite this here...
-      redirectPath: params.finalUrl,
+      finalRoute: params.finalRoute,
       stateMessage: params.stateMessage
     };
   }

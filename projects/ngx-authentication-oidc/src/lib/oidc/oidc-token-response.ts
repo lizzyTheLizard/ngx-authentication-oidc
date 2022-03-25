@@ -29,7 +29,6 @@ export class OidcTokenResponse {
     return this.getLoginResult(params, userInfo);
   }
 
-  // TODO: Redirect to finalURL if given
   public handleErrorResponse(params: Response) {
     if (!params.error) {
       return;
@@ -114,7 +113,7 @@ export class OidcTokenResponse {
       idToken: params.id_token,
       expiresAt: expiresAt,
       userInfo: userInfo,
-      redirectPath: params.finalUrl,
+      finalRoute: params.finalRoute,
       stateMessage: params.stateMessage,
       sessionState: params.session_state
     };

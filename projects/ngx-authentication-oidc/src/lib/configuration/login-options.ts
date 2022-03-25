@@ -66,8 +66,8 @@ export interface OidcParameters {
 
 /** Possible login options */
 export interface LoginOptions extends Partial<OidcParameters> {
-  /** URL to redirect to after login. If not given, redirect to current URL */
-  finalUrl?: string | URL;
+  /** Route to redirect to after login. If not given, redirect to current route */
+  finalRoute?: string;
 }
 
 /**

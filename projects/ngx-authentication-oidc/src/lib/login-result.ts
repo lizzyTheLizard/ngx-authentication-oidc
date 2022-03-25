@@ -3,7 +3,7 @@ export interface LoginResult {
   idToken?: string;
   accessToken?: string;
   refreshToken?: string;
-  redirectPath?: string;
+  finalRoute?: string;
   userInfo?: UserInfo;
   expiresAt?: Date;
   stateMessage?: string;

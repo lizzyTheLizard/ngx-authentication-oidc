@@ -16,6 +16,7 @@ export class LocalUrl {
     this.logger = this.config.loggerFactory('OidcLogout');
   }
 
+  //TODO: Bad name
   public getLocalUrl(relative: string): URL {
     try {
       return new URL(this.location.prepareExternalUrl(relative));
