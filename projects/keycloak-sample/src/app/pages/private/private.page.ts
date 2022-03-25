@@ -1,3 +1,4 @@
+/* globals alert */
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { AuthService, SessionService, UserInfo } from 'ngx-authentication-oidc';

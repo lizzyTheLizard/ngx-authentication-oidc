@@ -1,0 +1,42 @@
+{
+  "parserOptions": {
+    "createDefaultProgram": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:@angular-eslint/recommended",
+    "plugin:@angular-eslint/template/process-inline-templates",
+    "plugin:prettier/recommended"
+  ],
+  "rules": {
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": "error",
+    "sort-imports": [ "error", { "ignoreDeclarationSort": true } ],
+    "multiline-comment-style": ["error", "starred-block"],
+    "spaced-comment": ["error", "always", { "exceptions": ["-", "+"] }],
+    "valid-jsdoc": ["error", { "requireReturn": false } ],
+    "max-len": ["error", {
+      "code": 100000,
+      "comments": 100,
+      "ignoreComments": false
+     }],
+     "@angular-eslint/component-class-suffix": [ "error", { "suffixes": ["Component", "Page"] } ],
+     "@angular-eslint/no-empty-lifecycle-method": "off",
+     "@angular-eslint/component-selector": [
+      "error",
+      {
+        "prefix": "app",
+        "style": "kebab-case",
+        "type": "element"
+      }
+    ],
+    "@angular-eslint/directive-selector": [
+      "error",
+      {
+        "prefix": "app",
+        "style": "camelCase",
+        "type": "attribute"
+      }
+    ]
+  }
+}

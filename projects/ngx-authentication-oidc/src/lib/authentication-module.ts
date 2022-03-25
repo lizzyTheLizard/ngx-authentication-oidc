@@ -1,4 +1,4 @@
-/* global window, document */
+/* global window, document, console */
 import { Location, LocationStrategy, PathLocationStrategy } from '@angular/common';
 import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { ModuleWithProviders, NgModule } from '@angular/core';
