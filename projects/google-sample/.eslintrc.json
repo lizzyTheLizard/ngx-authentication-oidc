@@ -1,0 +1,25 @@
+{
+  "ignorePatterns": [
+    "!**/*"
+  ],
+  "overrides": [
+    {
+      "files": [ "*.ts" ],
+      "extends": [ "../../.eslintrc-typescript.json" ]
+    },
+    {
+      "files": [ "*.html" ],
+      "extends": [ "../../.eslintrc-html.json" ]
+    }
+  ],  
+  "globals": {
+    "describe": "readonly",
+    "beforeEach": "readonly",
+    "it": "readonly",
+    "afterEach": "readonly",
+    "expect": "readonly",
+    "expectAsync": "readonly",
+    "jasmine": "readonly",
+    "spyOn": "readonly"
+  }
+}

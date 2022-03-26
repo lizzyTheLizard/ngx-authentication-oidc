@@ -10,6 +10,8 @@ import { Router } from '@angular/router';
 export interface OauthConfig {
   /** OIDC Client ID */
   clientId: string;
+  /** OIDC Client Secret */
+  clientSecret?: string;
   /** OIDC Redirect URI. If not given, base URL of the application is used */
   redirectUri?: string;
   /**
@@ -64,6 +66,7 @@ export interface OauthConfig {
   autoUpdate?: Partial<AutoUpdateConfig>;
   /** Session management configuration, check {@link SessionManagementConfig} */
   sessionManagement?: Partial<SessionManagementConfig>;
+  tokenTolerances?: Partial<TokenTolerancesConfig>;
   /**
    * URL-Prefixes to whom the access token shall be send as authentication header.
    * To avoid sending the token to wrong hosts, use only at least FQDNs here,
@@ -228,4 +231,9 @@ export enum UserInfoSource {
   USER_INFO_ENDPOINT = 'userinfo',
   /** Use the information in the token if given and the userinfo endpoint otherwise */
   TOKEN_THEN_USER_INFO_ENDPOINT = 'token_then_userinfo'
+}
+
+export interface TokenTolerancesConfig {
+  expTolerance: number;
+  iatTolerance: number;
 }

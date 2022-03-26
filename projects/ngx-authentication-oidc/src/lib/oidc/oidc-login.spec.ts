@@ -6,7 +6,7 @@ import { OidcLogin } from './oidc-login';
 import { WindowToken } from '../authentication-module.tokens';
 import { AuthConfigService } from '../auth-config.service';
 import { LocalUrl } from '../helper/local-url';
-import { TokenStoreWrapper } from '../helper/token-store-wrapper';
+import { OidcAuthenticationRequest } from './oidc-authentication-request';
 
 const config = {
   provider: {
@@ -46,10 +46,12 @@ describe('OidcLogin', () => {
       getLocalUrl: jasmine.createSpy('getLocalUrl').and.returnValue(new URL('https://localhost'))
     };
     const authConfig = new AuthConfigService(config as OauthConfig);
-    const tokenStoreWrapper = jasmine.createSpyObj('TokenStoreWrapper', [
-      'saveNonce',
-      'saveCodeVerifier'
-    ]);
+
+    const authenticationRequest = {
+      generateRequest: jasmine
+        .createSpy('generateRequest')
+        .and.returnValue(new URL('https://example.com/auth?test=123'))
+    };
 
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
@@ -57,7 +59,7 @@ describe('OidcLogin', () => {
         { provide: WindowToken, useFactory: () => windowMock },
         { provide: AuthConfigService, useValue: authConfig },
         { provide: LocalUrl, useValue: localUrl },
-        { provide: TokenStoreWrapper, useValue: tokenStoreWrapper },
+        { provide: OidcAuthenticationRequest, useValue: authenticationRequest },
         OidcLogin
       ]
     });
@@ -80,16 +82,7 @@ describe('OidcLogin', () => {
 
     window.setTimeout(() => {
       const url = new URL(windowMock.location.href);
-      expect(url.pathname).toEqual('/auth');
-      expect(url.searchParams.get('response_type')).toEqual('code');
-      expect(url.searchParams.get('scope')).toEqual('openid profile email phone');
-      expect(url.searchParams.get('client_id')).toEqual('id');
-      expect(JSON.parse(url.searchParams.get('state')!)).toEqual({
-        stateMessage: 'test',
-        finalRoute: '/final'
-      });
-      expect(url.searchParams.get('redirect_uri')).toEqual('https://example.com/rd');
-      expect(url.searchParams.has('nonce')).toBeTrue();
+      expect(url.toString()).toEqual('https://example.com/auth?test=123');
       done();
     }, 20);
   });

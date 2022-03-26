@@ -5,9 +5,8 @@ import { DocumentToken, WindowToken } from '../authentication-module.tokens';
 import { LoginOptions, Prompt } from '../configuration/login-options';
 import { Logger } from '../configuration/oauth-config';
 import { LoginResult } from '../login-result';
-import { AuthenticationRequest } from '../helper/authentication-request';
+import { OidcAuthenticationRequest } from './oidc-authentication-request';
 import { LocalUrl } from '../helper/local-url';
-import { TokenStoreWrapper } from '../helper/token-store-wrapper';
 import { OidcTokenResponse } from './oidc-token-response';
 import { ResponseParameterParser } from '../helper/response-parameter-parser';
 import { OidcCodeResponse } from './oidc-code-response';
@@ -24,8 +23,8 @@ export class OidcSilentLogin {
     private readonly localUrl: LocalUrl,
     private readonly oidcTokenResponse: OidcTokenResponse,
     private readonly oidcCodeResponse: OidcCodeResponse,
-    private readonly tokenStore: TokenStoreWrapper,
     private readonly config: AuthConfigService,
+    private readonly authenticationRequest: OidcAuthenticationRequest,
     @Inject(DocumentToken) private readonly document: Document,
     @Inject(WindowToken) private readonly window: Window
   ) {
@@ -35,21 +34,10 @@ export class OidcSilentLogin {
   public async login(loginOptions: LoginOptions): Promise<LoginResult> {
     this.logger.info('Perform silent login');
     const silentLoginOptions = { ...loginOptions, prompts: Prompt.NONE };
-    const clientId = this.config.clientId;
-    const authEndpoint = this.config.getProviderConfiguration().authEndpoint;
     const redirectUrl =
       this.config.silentLogin.redirectUri ??
       this.localUrl.getLocalUrl('assets/silent-refresh.html').toString();
-    const authenticationRequest = new AuthenticationRequest(
-      silentLoginOptions,
-      redirectUrl,
-      clientId,
-      authEndpoint,
-      this.window
-    );
-    this.tokenStore.saveNonce(authenticationRequest.nonce);
-    this.tokenStore.saveCodeVerifier(authenticationRequest.codeVerifier);
-    const url = await authenticationRequest.toUrl();
+    const url = await this.authenticationRequest.generateRequest(silentLoginOptions, redirectUrl);
     const iframe = this.createIFrame(url);
     const result = this.setupLoginEventListener(iframe);
     this.document.body.appendChild(iframe);

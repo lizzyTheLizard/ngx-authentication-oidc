@@ -54,6 +54,10 @@ export class OidcCodeResponse {
     if (verifier) {
       payload = payload.set('code_verifier', verifier);
     }
+    if (this.config.clientSecret) {
+      payload = payload.set('client_secret', this.config.clientSecret);
+    }
+
     const tokenEndpoint = this.config.getProviderConfiguration().tokenEndpoint;
     const resp = await firstValueFrom(this.httpClient.post(tokenEndpoint, payload));
     return this.responseParameterParser.parseBody(resp);

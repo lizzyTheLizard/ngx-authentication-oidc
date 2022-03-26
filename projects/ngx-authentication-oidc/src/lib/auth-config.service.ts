@@ -1,6 +1,6 @@
 /* global sessionStorage */
 // eslint-disable-next-line prettier/prettier
-import { AutoUpdateConfig, ErrorAction, InactiveTimeoutConfig, Initializer, Logger, LoggerFactory, LogoutAction, OauthConfig, ProviderConfig, SessionManagementConfig, SilentLoginConfig, UserInfoSource } from './configuration/oauth-config';
+import { AutoUpdateConfig, ErrorAction, InactiveTimeoutConfig, Initializer, Logger, LoggerFactory, LogoutAction, OauthConfig, ProviderConfig, SessionManagementConfig, SilentLoginConfig, TokenTolerancesConfig, UserInfoSource } from './configuration/oauth-config';
 import { DEFAULT_INTERRUPTSOURCES } from '@ng-idle/core';
 import { consoleLoggerFactory } from './configuration/console-logger';
 import { loginResponseCheck, silentIframeLoginCheck } from './configuration/initializer';
@@ -8,6 +8,7 @@ import { redirect, singleLogoutOrRedirect } from './configuration/default-action
 
 export class AuthConfigService {
   public readonly clientId: string;
+  public readonly clientSecret?: string;
   public readonly redirectUri?: string;
   public readonly notAllowedUri: string;
   public readonly discoveryUrl?: string;
@@ -22,6 +23,7 @@ export class AuthConfigService {
   public readonly userInfoSource: UserInfoSource;
   public readonly initializer: Initializer;
   public readonly accessTokenUrlPrefixes: string[];
+  public readonly tokenTolerances: TokenTolerancesConfig;
   private providerConfiguration?: ProviderConfig;
   private readonly logger: Logger;
 
@@ -29,6 +31,7 @@ export class AuthConfigService {
     this.loggerFactory = config.loggerFactory ?? consoleLoggerFactory;
     this.logger = this.loggerFactory('AuthConfigService');
     this.clientId = config.clientId;
+    this.clientSecret = config.clientSecret;
     this.redirectUri = config.redirectUri;
     this.discoveryUrl = this.createDiscoveryUrl();
     this.logoutAction = config.logoutAction ?? singleLogoutOrRedirect('/auth/logout');
@@ -40,6 +43,7 @@ export class AuthConfigService {
     this.initializer = this.createInitializer();
     this.sessionManagement = this.createSessionMgm();
     this.accessTokenUrlPrefixes = this.createAccessTokenUrlPrefixes();
+    this.tokenTolerances = this.createTokenTolerances();
     this.userInfoSource = config.userInfoSource ?? UserInfoSource.USER_INFO_ENDPOINT;
     this.notAllowedUri = config.notAllowedUri ?? '/auth/forbidden';
     this.logger.debug('Configuration set to', this);
@@ -134,6 +138,14 @@ export class AuthConfigService {
         prefix
       );
     }
+  }
+
+  private createTokenTolerances(): TokenTolerancesConfig {
+    const input = this.config.tokenTolerances;
+    return {
+      expTolerance: input?.expTolerance ?? 5,
+      iatTolerance: input?.iatTolerance ?? 5
+    };
   }
 
   public setProviderConfiguration(providerConfiguration: ProviderConfig) {
