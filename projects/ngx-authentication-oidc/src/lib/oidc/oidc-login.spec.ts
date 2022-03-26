@@ -84,6 +84,6 @@ describe('OidcLogin', () => {
       const url = new URL(windowMock.location.href);
       expect(url.toString()).toEqual('https://example.com/auth?test=123');
       done();
-    }, 10);
+    }, 20);
   });
 });
