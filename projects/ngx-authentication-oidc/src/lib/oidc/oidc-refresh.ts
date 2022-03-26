@@ -25,10 +25,13 @@ export class OidcRefresh {
     if (!oldLoginResult.refreshToken) {
       throw new Error('Could not refresh');
     }
-    const payload = new HttpParams({ encoder: this.encoder })
+    let payload = new HttpParams({ encoder: this.encoder })
       .set('client_id', this.config.clientId)
       .set('grant_type', 'refresh_token')
       .set('refresh_token', oldLoginResult.refreshToken);
+    if (this.config.clientSecret) {
+      payload = payload.set('client_secret', this.config.clientSecret);
+    }
     const tokenEndpoint = this.config.getProviderConfiguration().tokenEndpoint;
     return await firstValueFrom(
       this.httpClient

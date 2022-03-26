@@ -1,6 +1,5 @@
 /* globals window */
 import { TestBed } from '@angular/core/testing';
-import * as exp from 'constants';
 import { AuthConfigService } from '../auth-config.service';
 import { WindowToken } from '../authentication-module.tokens';
 import { LoginOptions, Prompt, ResponseType } from '../configuration/login-options';
@@ -10,14 +9,13 @@ import { DEFAULT_SCOPE, OidcAuthenticationRequest } from './oidc-authentication-
 
 const config = {
   provider: {
-    authEndpoint: 'https://example.com/auth',
+    authEndpoint: 'https://example.com/auth'
   },
   clientId: 'id'
 };
 
-
 const windowMock = {
-  btoa: (str: string) => window.btoa(str),
+  btoa: (str: string) => window.btoa(str)
 };
 
 let tokenStoreWrapper: TokenStoreWrapper;

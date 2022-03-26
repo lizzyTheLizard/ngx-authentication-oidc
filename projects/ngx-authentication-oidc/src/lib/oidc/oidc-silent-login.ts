@@ -7,7 +7,6 @@ import { Logger } from '../configuration/oauth-config';
 import { LoginResult } from '../login-result';
 import { OidcAuthenticationRequest } from './oidc-authentication-request';
 import { LocalUrl } from '../helper/local-url';
-import { TokenStoreWrapper } from '../helper/token-store-wrapper';
 import { OidcTokenResponse } from './oidc-token-response';
 import { ResponseParameterParser } from '../helper/response-parameter-parser';
 import { OidcCodeResponse } from './oidc-code-response';

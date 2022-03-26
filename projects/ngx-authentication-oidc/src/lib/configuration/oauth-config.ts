@@ -10,6 +10,8 @@ import { Router } from '@angular/router';
 export interface OauthConfig {
   /** OIDC Client ID */
   clientId: string;
+  /** OIDC Client Secret */
+  clientSecret?: string;
   /** OIDC Redirect URI. If not given, base URL of the application is used */
   redirectUri?: string;
   /**

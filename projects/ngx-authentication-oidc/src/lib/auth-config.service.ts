@@ -8,6 +8,7 @@ import { redirect, singleLogoutOrRedirect } from './configuration/default-action
 
 export class AuthConfigService {
   public readonly clientId: string;
+  public readonly clientSecret?: string;
   public readonly redirectUri?: string;
   public readonly notAllowedUri: string;
   public readonly discoveryUrl?: string;
@@ -30,6 +31,7 @@ export class AuthConfigService {
     this.loggerFactory = config.loggerFactory ?? consoleLoggerFactory;
     this.logger = this.loggerFactory('AuthConfigService');
     this.clientId = config.clientId;
+    this.clientSecret = config.clientSecret;
     this.redirectUri = config.redirectUri;
     this.discoveryUrl = this.createDiscoveryUrl();
     this.logoutAction = config.logoutAction ?? singleLogoutOrRedirect('/auth/logout');
