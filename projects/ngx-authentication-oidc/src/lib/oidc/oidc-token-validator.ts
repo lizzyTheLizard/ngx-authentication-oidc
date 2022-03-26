@@ -197,7 +197,7 @@ export class OidcTokenValidator {
     if (!claims.exp) {
       throw new Error('exp claim required');
     }
-    if (claims.exp <= actualTime) {
+    if (claims.exp <= actualTime - this.config.tokenTolerances.expTolerance) {
       throw new Error(
         'exp claim is ' + claims.exp + ' which is in the past. Current time is ' + actualTime
       );
@@ -205,7 +205,7 @@ export class OidcTokenValidator {
     if (!claims.iat) {
       throw new Error('iat claim required');
     }
-    if (claims.iat > actualTime) {
+    if (claims.iat > actualTime + this.config.tokenTolerances.iatTolerance) {
       throw new Error(
         'iat claim is ' + claims.iat + ' which is in the future. Current time is ' + actualTime
       );
