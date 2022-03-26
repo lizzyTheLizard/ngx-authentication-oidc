@@ -58,9 +58,12 @@ const config = {
 export class AppModule {}
 ```
 
-## Usage
-TODO
+TODO: Add the silent refresh asset
 
+After installation, the library is automatically started and the configured initialization code is executed as soon as the application is started, there is nothing else to do.
+If you however want to interact with the authentication module in any way, you can inject an instance of [AuthService](projects/ngx-authentication-oidc/src/lib/auth.service.ts) into your angular application.
+
+A full configuration documentation can be found at [OauthConfig](projects/ngx-authentication-oidc/src/lib/configuration/oauth-config.ts).
 ## Documentation
 TODO
 
@@ -68,8 +71,9 @@ TODO
 The following examples are provided:
 * **[keycloak-sample](projects/keycloak-sample/README.md)**: Simple integration using [Keycloak](https://www.keycloak.org/)
 * **[azure-sample](projects/azure-sample/README.md)**: Simple integration using [Azure AD](https://azure.microsoft.com/en-us/services/active-directory/)
+* **[google-sample](projects/google-sample/README.md)**: Simple integration using [Google](https://developers.google.com/identity/protocols/oauth2/openid-connect)
 * TODO: Full Config Example
-* TODO: Okta? Google?
+* TODO: Okta
   
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
