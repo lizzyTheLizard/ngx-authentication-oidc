@@ -17,9 +17,9 @@ describe('AppComponent', () => {
     expect(app).toBeTruthy();
   });
 
-  it(`should have as title 'azure-sample'`, () => {
+  it(`should have as title 'google-sample'`, () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
-    expect(app.title).toEqual('azure-sample');
+    expect(app.title).toEqual('google-sample');
   });
 });

@@ -175,6 +175,11 @@
             "polyfills": "projects/azure-sample/src/polyfills.ts",
             "tsConfig": "projects/azure-sample/tsconfig.app.json",
             "assets": [
+              {
+                "input": "dist/ngx-authentication-oidc/assets",
+                "glob": "**/*",
+                "output": "assets"
+              },
               "projects/azure-sample/src/favicon.ico",
               "projects/azure-sample/src/assets"
             ],
@@ -282,6 +287,11 @@
             "polyfills": "projects/google-sample/src/polyfills.ts",
             "tsConfig": "projects/google-sample/tsconfig.app.json",
             "assets": [
+              {
+                "input": "dist/ngx-authentication-oidc/assets",
+                "glob": "**/*",
+                "output": "assets"
+              },
               "projects/google-sample/src/favicon.ico",
               "projects/google-sample/src/assets"
             ],
