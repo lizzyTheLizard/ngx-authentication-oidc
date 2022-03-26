@@ -22,6 +22,7 @@ import { AccessTokenInterceptor } from './guard/access-token-interceptor';
 import { PrivateGuard } from './guard/private.guard';
 import { EnforceLoginGuard } from './guard/enforce-login.guard';
 import { SessionService } from './session.service';
+import { OidcAuthenticationRequest } from './oidc/oidc-authentication-request';
 
 /**
  * Main module of the library, has to be imported into our application. The configuration
@@ -57,6 +58,7 @@ export class AuthenticationModule {
         OidcRefresh,
         OidcCodeResponse,
         OidcTokenResponse,
+        OidcAuthenticationRequest,
         TokenStoreWrapper,
         SessionService,
         LocalUrl,

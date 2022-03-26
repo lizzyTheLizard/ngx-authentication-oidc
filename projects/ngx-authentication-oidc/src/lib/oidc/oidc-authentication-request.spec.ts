@@ -1,11 +1,11 @@
 /* globals window */
 import { LoginOptions, Prompt, ResponseType } from '../configuration/login-options';
-import { AuthenticationRequest, DEFAULT_SCOPE } from './authentication-request';
+import { DEFAULT_SCOPE, OidcAuthenticationRequest } from './oidc-authentication-request';
 
-describe('AuthenticationRequest', () => {
+describe('OidcAuthenticationRequest', () => {
   it('Create Auth Request default params', async () => {
     const loginOptions = {};
-    const result = await new AuthenticationRequest(
+    const result = await new OidcAuthenticationRequest(
       loginOptions,
       'https://example.com/rd',
       'id',
@@ -35,7 +35,7 @@ describe('AuthenticationRequest', () => {
       id_token_hint: 'id_hint',
       acr_values: 'acr'
     };
-    const result = await new AuthenticationRequest(
+    const result = await new OidcAuthenticationRequest(
       loginOptions,
       'https://example.com/rd222',
       'id',
@@ -70,7 +70,7 @@ describe('AuthenticationRequest', () => {
       id_token_hint: 'id_hint',
       acr_values: 'acr'
     };
-    const resultStr = await new AuthenticationRequest(
+    const resultStr = await new OidcAuthenticationRequest(
       loginOptions,
       'https://example.com/rd222',
       'id',
@@ -97,7 +97,7 @@ describe('AuthenticationRequest', () => {
 
   it('nonce', async () => {
     const loginOptions = {};
-    const request = new AuthenticationRequest(
+    const request = new OidcAuthenticationRequest(
       loginOptions,
       'https://example.com/rd222',
       'id',
@@ -111,7 +111,7 @@ describe('AuthenticationRequest', () => {
 
   it('codeVerifier', async () => {
     const loginOptions = {};
-    const request = new AuthenticationRequest(
+    const request = new OidcAuthenticationRequest(
       loginOptions,
       'https://example.com/rd222',
       'id',

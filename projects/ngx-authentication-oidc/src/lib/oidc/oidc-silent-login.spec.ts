@@ -5,9 +5,9 @@ import { DocumentToken, WindowToken } from '../authentication-module.tokens';
 import { OidcSilentLogin } from './oidc-silent-login';
 import { AuthConfigService } from '../auth-config.service';
 import { LocalUrl } from '../helper/local-url';
-import { TokenStoreWrapper } from '../helper/token-store-wrapper';
 import { OidcTokenResponse } from './oidc-token-response';
 import { OidcCodeResponse } from './oidc-code-response';
+import { OidcAuthenticationRequest } from './oidc-authentication-request';
 
 const token =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.GjKRxKZWcBLTjWTOPSwFBoRsu0zuMkK-uh-7gdfiNDA';
@@ -53,10 +53,11 @@ describe('OidcSilentLogin', () => {
       getLocalUrl: jasmine.createSpy('getLocalUrl').and.returnValue(new URL('https://localhost'))
     };
 
-    const tokenStoreWrapper = jasmine.createSpyObj('TokenStoreWrapper', [
-      'saveNonce',
-      'saveCodeVerifier'
-    ]);
+    const authenticationRequest = {
+      generateRequest: jasmine
+        .createSpy('generateRequest')
+        .and.returnValue(new URL('https://example.com/auth?test=123'))
+    };
 
     TestBed.configureTestingModule({
       providers: [
@@ -67,7 +68,7 @@ describe('OidcSilentLogin', () => {
         { provide: DocumentToken, useFactory: () => documentMock },
         { provide: AuthConfigService, useValue: authConfig },
         { provide: LocalUrl, useValue: localUrl },
-        { provide: TokenStoreWrapper, useValue: tokenStoreWrapper },
+        { provide: OidcAuthenticationRequest, useValue: authenticationRequest },
         OidcSilentLogin
       ]
     });
