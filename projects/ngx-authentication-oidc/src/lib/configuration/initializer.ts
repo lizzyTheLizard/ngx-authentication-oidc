@@ -21,61 +21,45 @@ export const loginResponseCheck: Initializer = async (input) => {
 };
 
 /**
- * Initializer that will first perform a {@link loginResponseCheck}, and if the user is not
- * logged in then try a silent login within an iframe.
- * The user is therewith automatically logged in
- * if he already has a session at the authentication server.
- * @param {InitializerInput} input Initializer input
- * @returns {Promise<LoginResult>} The login result after a silent login
+ * Initializer that will try to do a non interactive login when the application is loaded
+ * logged in then perform a normal login. The user is therewith forced to log in, but the
+ * login is transparent if he already has a session at the authentication server. However,
+ * the login can take longer than just {@link enforceLogin}.
+ * @param {boolean} enforceLogin If set to true and the autologin fails, enforce a login
+ * @returns {Promise<LoginResult>} The initializer function
  */
-export const silentIframeLoginCheck: Initializer = async (input) => {
-  const logger = input.loggerFactory('silentIframeLoginCheck');
-  let loginResult = await loginResponseCheck(input);
+export function autoLoginIfPossible(enforceLogin?: boolean): Initializer {
+  return async (input) => {
+    const logger = input.loggerFactory('silentLogin');
+    let loginResult = await loginResponseCheck(input);
 
-  if (loginResult.isLoggedIn) {
-    return loginResult;
-  }
-
-  logger.debug('Try login without user interaction');
-  return input.silentLogin({}).then((r) => {
-    if (r.isLoggedIn) {
-      logger.debug('User is silently logged in', loginResult);
-    } else {
-      logger.debug('Single login failed');
+    if (loginResult.isLoggedIn) {
+      return loginResult;
     }
-    return r;
-  });
-};
-
-/**
- * Initializer that will first perform a {@link loginResponseCheck}, and if the user is not
- * logged in then try a silent login using redirects.
- * The user is therewith automatically logged in
- * if he already has a session at the authentication server.
- * @param {InitializerInput} input Initializer input
- * @returns {Promise<LoginResult>} The login result after a silent login
- */
-export const silentRedirectLoginCheck: Initializer = async (input) => {
-  const logger = input.loggerFactory('silentRedirectLoginCheck');
-  let loginResult = await loginResponseCheck(input);
-
-  if (loginResult.isLoggedIn) {
-    return loginResult;
-  }
-
-  if (input.isErrorResponse()) {
-    return loginResult;
-  }
-  logger.debug('Try login without user interaction');
-  return input.login({ prompts: Prompt.NONE }).then((r) => {
-    if (r.isLoggedIn) {
-      logger.debug('User is silently logged in', loginResult);
-    } else {
-      logger.debug('Single login failed');
+    if (input.isErrorResponse()) {
+      return loginResult;
     }
-    return r;
-  });
-};
+
+    logger.debug('Try login without user interaction');
+    const withoutInteractionResult = input.silentLoginEnabled
+      ? await input.silentLogin({})
+      : await input.login({ prompts: Prompt.NONE });
+    if (withoutInteractionResult.isLoggedIn) {
+      logger.debug('User is silently logged in', withoutInteractionResult);
+      return withoutInteractionResult;
+    }
+    if (!enforceLogin) {
+      return loginResult;
+    }
+    const withInteraction = await input.login({});
+    if (withInteraction.isLoggedIn) {
+      logger.debug('User is logged in', withInteraction);
+      return withInteraction;
+    } else {
+      throw new Error('Cannot log in user');
+    }
+  };
+}
 
 /**
  * Initializer that will first perform a {@link loginResponseCheck}, and if the user is not
@@ -92,39 +76,11 @@ export const enforceLogin: Initializer = async (input) => {
   }
 
   logger.debug('Try login with user interaction');
-  return input.login({}).then((r) => {
-    if (r.isLoggedIn) {
-      logger.debug('User is logged in', loginResult);
-      return r;
-    } else {
-      throw new Error('Cannot log in user');
-    }
-  });
-};
-
-/**
- * Initializer that will first perform a {@link silentIframeLoginCheck}, and if the user is not
- * logged in then perform a normal login. The user is therewith forced to log in, but the
- * login is transparent if he already has a session at the authentication server. However,
- * the login can take longer than just {@link enforceLogin}.
- * @param {InitializerInput} input Initializer input
- * @returns {Promise<LoginResult>} The login result after a silent login
- */
-export const silentCheckAndThenEnforce: Initializer = async (input) => {
-  const logger = input.loggerFactory('silentCheckAndThenEnforce');
-  let loginResult = await silentIframeLoginCheck(input);
-
-  if (loginResult.isLoggedIn) {
-    return loginResult;
+  const r = await input.login({});
+  if (r.isLoggedIn) {
+    logger.debug('User is logged in', r);
+    return r;
+  } else {
+    throw new Error('Cannot log in user');
   }
-
-  logger.debug('Try login with user interaction');
-  return input.login({}).then((r) => {
-    if (r.isLoggedIn) {
-      logger.debug('User is logged in', loginResult);
-      return r;
-    } else {
-      throw new Error('Cannot log in user');
-    }
-  });
 };

@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 // eslint-disable-next-line prettier/prettier
-import { AuthenticationModule, OauthConfig, redirect, silentRedirectLoginCheck } from 'ngx-authentication-oidc';
+import { AuthenticationModule, OauthConfig } from 'ngx-authentication-oidc';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { AuthErrorPage } from './pages/auth-error/auth-error.page';
@@ -15,10 +15,8 @@ const config: OauthConfig = {
   clientId: '472ab98a-e1c9-4eda-b6d1-646a4cce3093',
   provider:
     'https://login.microsoftonline.com/7bd72b43-52f6-4dc6-a856-5704e0f925bd/v2.0/',
-  // With AD we normally do not want to do a single logout
-  logoutAction: redirect('/'),
-  // AD does not allow iframe-login, so perform a redirect login
-  initializer: silentRedirectLoginCheck,
+  // Iframe-Login not supported with azure AD
+  silentLogin: { enabled: false },
 };
 
 @NgModule({
