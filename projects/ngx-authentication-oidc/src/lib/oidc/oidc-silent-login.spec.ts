@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { DocumentToken, WindowToken } from '../authentication-module.tokens';
 import { OidcSilentLogin } from './oidc-silent-login';
 import { AuthConfigService } from '../auth-config.service';
-import { LocalUrl } from '../helper/local-url';
+import { UrlHelper } from '../helper/url-helper';
 import { OidcTokenResponse } from './oidc-token-response';
 import { OidcCodeResponse } from './oidc-code-response';
 import { OidcAuthenticationRequest } from './oidc-authentication-request';
@@ -49,8 +49,10 @@ let service: OidcSilentLogin;
 describe('OidcSilentLogin', () => {
   beforeEach(() => {
     const authConfig = new AuthConfigService(config as any);
-    const localUrl = {
-      getLocalUrl: jasmine.createSpy('getLocalUrl').and.returnValue(new URL('https://localhost'))
+    const urlHelper = {
+      convertToAbsoluteUrl: jasmine
+        .createSpy('convertToAbsoluteUrl')
+        .and.returnValue(new URL('https://localhost'))
     };
 
     const authenticationRequest = {
@@ -67,7 +69,7 @@ describe('OidcSilentLogin', () => {
         { provide: WindowToken, useFactory: () => windowMock },
         { provide: DocumentToken, useFactory: () => documentMock },
         { provide: AuthConfigService, useValue: authConfig },
-        { provide: LocalUrl, useValue: localUrl },
+        { provide: UrlHelper, useValue: urlHelper },
         { provide: OidcAuthenticationRequest, useValue: authenticationRequest },
         OidcSilentLogin
       ]

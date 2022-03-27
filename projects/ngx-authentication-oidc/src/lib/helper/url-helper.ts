@@ -5,7 +5,7 @@ import { WindowToken } from '../authentication-module.tokens';
 import { Logger } from '../configuration/oauth-config';
 
 @Injectable()
-export class LocalUrl {
+export class UrlHelper {
   private readonly logger: Logger;
 
   constructor(
@@ -16,8 +16,7 @@ export class LocalUrl {
     this.logger = this.config.loggerFactory('OidcLogout');
   }
 
-  // TODO: Bad name
-  public getLocalUrl(relative: string): URL {
+  public convertToAbsoluteUrl(relative: string): URL {
     try {
       return new URL(this.location.prepareExternalUrl(relative));
     } catch (e) {

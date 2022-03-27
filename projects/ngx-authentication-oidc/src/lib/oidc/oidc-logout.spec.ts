@@ -2,7 +2,7 @@
 import { TestBed } from '@angular/core/testing';
 import { AuthConfigService } from '../auth-config.service';
 import { OidcLogout } from './oidc-logout';
-import { LocalUrl } from '../helper/local-url';
+import { UrlHelper } from '../helper/url-helper';
 import { WindowToken } from '../authentication-module.tokens';
 
 const config = {
@@ -10,14 +10,14 @@ const config = {
 };
 
 let service: OidcLogout;
-let localUrl: LocalUrl;
+let urlHelper: UrlHelper;
 let windowMock: Window;
 let authConfig: AuthConfigService;
 
 describe('OidcLogout', () => {
   beforeEach(() => {
     authConfig = new AuthConfigService(config as any);
-    localUrl = jasmine.createSpyObj('localUrl', ['getLocalUrl']);
+    urlHelper = jasmine.createSpyObj('urlHelper', ['convertToAbsoluteUrl']);
     windowMock = jasmine.createSpyObj('windowMock', ['setTimeout']);
     (windowMock as any).location = {};
     TestBed.configureTestingModule({
@@ -25,7 +25,7 @@ describe('OidcLogout', () => {
       providers: [
         { provide: AuthConfigService, useValue: authConfig },
         { provide: WindowToken, useValue: windowMock },
-        { provide: LocalUrl, useValue: localUrl },
+        { provide: UrlHelper, useValue: urlHelper },
         OidcLogout
       ]
     });
@@ -43,8 +43,9 @@ describe('OidcLogout', () => {
     authConfig.setProviderConfiguration({
       endSessionEndpoint: 'https://example.com/logout'
     } as any);
-    localUrl.getLocalUrl = jasmine
-      .createSpy('getLocalUrl')
+
+    urlHelper.convertToAbsoluteUrl = jasmine
+      .createSpy('convertToAbsoluteUrl')
       .and.returnValue('https://example.com/redirect');
 
     service.logout();
@@ -63,8 +64,8 @@ describe('OidcLogout', () => {
     authConfig.setProviderConfiguration({
       endSessionEndpoint: 'https://example.com/logout'
     } as any);
-    localUrl.getLocalUrl = jasmine
-      .createSpy('getLocalUrl')
+    urlHelper.convertToAbsoluteUrl = jasmine
+      .createSpy('convertToAbsoluteUrl')
       .and.returnValue('https://example.com/redirect');
 
     service.logout('idT');

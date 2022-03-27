@@ -3,16 +3,16 @@ import { TestBed } from '@angular/core/testing';
 import { AuthConfigService } from '../auth-config.service';
 import { WindowToken } from '../authentication-module.tokens';
 import { OauthConfig } from '../configuration/oauth-config';
-import { LocalUrl } from './local-url';
+import { UrlHelper } from './url-helper';
 import { Location } from '@angular/common';
 
 let windowMock: Window;
 let locationMock: Location;
-let service: LocalUrl;
+let service: UrlHelper;
 
 const config = {};
 
-describe('LocalUrl', () => {
+describe('UrlHelper', () => {
   beforeEach(() => {
     const authConfig = new AuthConfigService(config as OauthConfig);
     windowMock = {} as any;
@@ -23,10 +23,10 @@ describe('LocalUrl', () => {
         { provide: Location, useValue: locationMock },
         { provide: WindowToken, useValue: windowMock },
         { provide: AuthConfigService, useValue: authConfig },
-        LocalUrl
+        UrlHelper
       ]
     });
-    service = TestBed.inject(LocalUrl);
+    service = TestBed.inject(UrlHelper);
   });
 
   it('No Location to be used', () => {
@@ -35,7 +35,7 @@ describe('LocalUrl', () => {
       .and.throwError(new Error('not possible'));
     windowMock.location = { href: 'http://localhost:9042' } as any;
 
-    const result = service.getLocalUrl('test').toString();
+    const result = service.convertToAbsoluteUrl('test').toString();
 
     expect(result).toEqual(windowMock.location.href + '/test');
   });
@@ -45,7 +45,7 @@ describe('LocalUrl', () => {
       .createSpy('prepareExternalUrl')
       .and.returnValue('https://test.com/sds');
 
-    const result = service.getLocalUrl('test').toString();
+    const result = service.convertToAbsoluteUrl('test').toString();
 
     expect(result).toEqual('https://test.com/sds');
   });

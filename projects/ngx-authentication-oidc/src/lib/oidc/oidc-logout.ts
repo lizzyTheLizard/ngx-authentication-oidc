@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@angular/core';
 import { AuthConfigService } from '../auth-config.service';
 import { WindowToken } from '../authentication-module.tokens';
 import { Logger } from '../configuration/oauth-config';
-import { LocalUrl } from '../helper/local-url';
+import { UrlHelper } from '../helper/url-helper';
 
 @Injectable()
 export class OidcLogout {
@@ -10,7 +10,7 @@ export class OidcLogout {
 
   constructor(
     private readonly config: AuthConfigService,
-    private readonly localUrl: LocalUrl,
+    private readonly localUrl: UrlHelper,
     @Inject(WindowToken) private readonly window: Window
   ) {
     this.logger = this.config.loggerFactory('OidcLogout');
@@ -30,7 +30,7 @@ export class OidcLogout {
     if (idToken) {
       url.searchParams.set('id_token_hint', idToken);
     }
-    redirect = redirect ?? this.localUrl.getLocalUrl('').toString();
+    redirect = redirect ?? this.localUrl.convertToAbsoluteUrl('').toString();
     url.searchParams.set('post_logout_redirect_uri', redirect);
     this.logger.info('Start a logout request to', url);
     this.window.location.href = url.toString();
