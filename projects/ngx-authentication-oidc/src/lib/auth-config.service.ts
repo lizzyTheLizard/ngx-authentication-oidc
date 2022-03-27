@@ -3,7 +3,7 @@
 import { AutoUpdateConfig, ErrorAction, InactiveTimeoutConfig, Initializer, Logger, LoggerFactory, LogoutAction, OauthConfig, ProviderConfig, SessionManagementConfig, SilentLoginConfig, TokenTolerancesConfig, UserInfoSource } from './configuration/oauth-config';
 import { DEFAULT_INTERRUPTSOURCES } from '@ng-idle/core';
 import { consoleLoggerFactory } from './configuration/console-logger';
-import { loginResponseCheck, silentIframeLoginCheck } from './configuration/initializer';
+import { autoLoginIfPossible } from './configuration/initializer';
 import { redirect, singleLogoutOrRedirect } from './configuration/default-actions';
 
 export class AuthConfigService {
@@ -100,7 +100,7 @@ export class AuthConfigService {
     if (input) {
       return input;
     }
-    return this.silentLogin.enabled ? silentIframeLoginCheck : loginResponseCheck;
+    return autoLoginIfPossible(false);
   }
 
   private createAccessTokenUrlPrefixes(): string[] {

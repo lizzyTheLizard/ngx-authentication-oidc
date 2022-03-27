@@ -101,6 +101,7 @@ export class AuthService {
     return {
       loggerFactory: this.config.loggerFactory,
       initialLoginResult: initial,
+      silentLoginEnabled: this.config.silentLogin.enabled,
       login: (options: LoginOptions) => {
         return this.oidcLogin.login({ ...options, finalRoute: initialRoute });
       },

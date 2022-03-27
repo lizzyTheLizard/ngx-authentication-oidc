@@ -46,10 +46,8 @@ export interface OauthConfig {
   /**
    * Function to initialize the library.
    * See {@link ./initializer.d.ts} for options or define your own function.
-   * When not set, single login with iframe is used when silent login
-   * is enabled and the normal response check otherwise.
+   * When not set, auto login without enforcing is used.
    */
-  // TODO: Better default between silentRedirectLoginCheck and silentIframeLoginCheck
   initializer?: Initializer;
   /** Factory to generate loggers. When not set the console is used. */
   loggerFactory?: LoggerFactory;
@@ -115,6 +113,8 @@ export interface InitializerInput {
   login(loginOptions: LoginOptions): Promise<LoginResult>;
   /** Function to perform a silent login */
   silentLogin(loginOptions: LoginOptions): Promise<LoginResult>;
+  /** Is silent login enabled */
+  silentLoginEnabled: boolean;
   /** Function to handle an OIDC-Response */
   handleResponse(): Promise<LoginResult>;
   /** Check if this is an failed OIDC response */
