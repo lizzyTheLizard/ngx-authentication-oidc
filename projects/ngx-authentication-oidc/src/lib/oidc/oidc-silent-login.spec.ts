@@ -49,8 +49,10 @@ let service: OidcSilentLogin;
 describe('OidcSilentLogin', () => {
   beforeEach(() => {
     const authConfig = new AuthConfigService(config as any);
-    const localUrl = {
-      getLocalUrl: jasmine.createSpy('getLocalUrl').and.returnValue(new URL('https://localhost'))
+    const urlHelper = {
+      convertToAbsoluteUrl: jasmine
+        .createSpy('convertToAbsoluteUrl')
+        .and.returnValue(new URL('https://localhost'))
     };
 
     const authenticationRequest = {
@@ -67,7 +69,7 @@ describe('OidcSilentLogin', () => {
         { provide: WindowToken, useFactory: () => windowMock },
         { provide: DocumentToken, useFactory: () => documentMock },
         { provide: AuthConfigService, useValue: authConfig },
-        { provide: UrlHelper, useValue: localUrl },
+        { provide: UrlHelper, useValue: urlHelper },
         { provide: OidcAuthenticationRequest, useValue: authenticationRequest },
         OidcSilentLogin
       ]

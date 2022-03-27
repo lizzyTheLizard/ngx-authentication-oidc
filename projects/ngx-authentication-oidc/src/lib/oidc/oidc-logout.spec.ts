@@ -10,14 +10,14 @@ const config = {
 };
 
 let service: OidcLogout;
-let localUrl: UrlHelper;
+let urlHelper: UrlHelper;
 let windowMock: Window;
 let authConfig: AuthConfigService;
 
 describe('OidcLogout', () => {
   beforeEach(() => {
     authConfig = new AuthConfigService(config as any);
-    localUrl = jasmine.createSpyObj('localUrl', ['getLocalUrl']);
+    urlHelper = jasmine.createSpyObj('urlHelper', ['convertToAbsoluteUrl']);
     windowMock = jasmine.createSpyObj('windowMock', ['setTimeout']);
     (windowMock as any).location = {};
     TestBed.configureTestingModule({
@@ -25,7 +25,7 @@ describe('OidcLogout', () => {
       providers: [
         { provide: AuthConfigService, useValue: authConfig },
         { provide: WindowToken, useValue: windowMock },
-        { provide: UrlHelper, useValue: localUrl },
+        { provide: UrlHelper, useValue: urlHelper },
         OidcLogout
       ]
     });
@@ -43,8 +43,9 @@ describe('OidcLogout', () => {
     authConfig.setProviderConfiguration({
       endSessionEndpoint: 'https://example.com/logout'
     } as any);
-    localUrl.convertToAbsoluteUrl = jasmine
-      .createSpy('getLocalUrl')
+
+    urlHelper.convertToAbsoluteUrl = jasmine
+      .createSpy('convertToAbsoluteUrl')
       .and.returnValue('https://example.com/redirect');
 
     service.logout();
@@ -63,8 +64,8 @@ describe('OidcLogout', () => {
     authConfig.setProviderConfiguration({
       endSessionEndpoint: 'https://example.com/logout'
     } as any);
-    localUrl.convertToAbsoluteUrl = jasmine
-      .createSpy('getLocalUrl')
+    urlHelper.convertToAbsoluteUrl = jasmine
+      .createSpy('convertToAbsoluteUrl')
       .and.returnValue('https://example.com/redirect');
 
     service.logout('idT');

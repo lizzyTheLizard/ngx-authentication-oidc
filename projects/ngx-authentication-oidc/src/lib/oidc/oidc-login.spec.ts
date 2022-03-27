@@ -42,8 +42,10 @@ let service: OidcLogin;
 
 describe('OidcLogin', () => {
   beforeEach(() => {
-    const localUrl = {
-      getLocalUrl: jasmine.createSpy('getLocalUrl').and.returnValue(new URL('https://localhost'))
+    const urlHelper = {
+      convertToAbsoluteUrl: jasmine
+        .createSpy('convertToAbsoluteUrl')
+        .and.returnValue(new URL('https://localhost'))
     };
     const authConfig = new AuthConfigService(config as OauthConfig);
 
@@ -58,7 +60,7 @@ describe('OidcLogin', () => {
       providers: [
         { provide: WindowToken, useFactory: () => windowMock },
         { provide: AuthConfigService, useValue: authConfig },
-        { provide: UrlHelper, useValue: localUrl },
+        { provide: UrlHelper, useValue: urlHelper },
         { provide: OidcAuthenticationRequest, useValue: authenticationRequest },
         OidcLogin
       ]
