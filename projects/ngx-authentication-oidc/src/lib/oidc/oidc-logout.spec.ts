@@ -2,7 +2,7 @@
 import { TestBed } from '@angular/core/testing';
 import { AuthConfigService } from '../auth-config.service';
 import { OidcLogout } from './oidc-logout';
-import { LocalUrl } from '../helper/local-url';
+import { UrlHelper } from '../helper/url-helper';
 import { WindowToken } from '../authentication-module.tokens';
 
 const config = {
@@ -10,7 +10,7 @@ const config = {
 };
 
 let service: OidcLogout;
-let localUrl: LocalUrl;
+let localUrl: UrlHelper;
 let windowMock: Window;
 let authConfig: AuthConfigService;
 
@@ -25,7 +25,7 @@ describe('OidcLogout', () => {
       providers: [
         { provide: AuthConfigService, useValue: authConfig },
         { provide: WindowToken, useValue: windowMock },
-        { provide: LocalUrl, useValue: localUrl },
+        { provide: UrlHelper, useValue: localUrl },
         OidcLogout
       ]
     });
@@ -43,7 +43,7 @@ describe('OidcLogout', () => {
     authConfig.setProviderConfiguration({
       endSessionEndpoint: 'https://example.com/logout'
     } as any);
-    localUrl.getLocalUrl = jasmine
+    localUrl.convertToAbsoluteUrl = jasmine
       .createSpy('getLocalUrl')
       .and.returnValue('https://example.com/redirect');
 
@@ -63,7 +63,7 @@ describe('OidcLogout', () => {
     authConfig.setProviderConfiguration({
       endSessionEndpoint: 'https://example.com/logout'
     } as any);
-    localUrl.getLocalUrl = jasmine
+    localUrl.convertToAbsoluteUrl = jasmine
       .createSpy('getLocalUrl')
       .and.returnValue('https://example.com/redirect');
 

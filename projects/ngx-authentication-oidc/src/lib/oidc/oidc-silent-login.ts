@@ -6,7 +6,7 @@ import { LoginOptions, Prompt } from '../configuration/login-options';
 import { Logger } from '../configuration/oauth-config';
 import { LoginResult } from '../login-result';
 import { OidcAuthenticationRequest } from './oidc-authentication-request';
-import { LocalUrl } from '../helper/local-url';
+import { UrlHelper } from '../helper/url-helper';
 import { OidcTokenResponse } from './oidc-token-response';
 import { ResponseParameterParser } from '../helper/response-parameter-parser';
 import { OidcCodeResponse } from './oidc-code-response';
@@ -20,7 +20,7 @@ export class OidcSilentLogin {
   private loginEventListener?: (e: MessageEvent) => void;
 
   constructor(
-    private readonly localUrl: LocalUrl,
+    private readonly localUrl: UrlHelper,
     private readonly oidcTokenResponse: OidcTokenResponse,
     private readonly oidcCodeResponse: OidcCodeResponse,
     private readonly config: AuthConfigService,
@@ -36,7 +36,7 @@ export class OidcSilentLogin {
     const silentLoginOptions = { ...loginOptions, prompts: Prompt.NONE };
     const redirectUrl =
       this.config.silentLogin.redirectUri ??
-      this.localUrl.getLocalUrl('assets/silent-refresh.html').toString();
+      this.localUrl.convertToAbsoluteUrl('assets/silent-refresh.html').toString();
     const url = await this.authenticationRequest.generateRequest(silentLoginOptions, redirectUrl);
     const iframe = this.createIFrame(url);
     const result = this.setupLoginEventListener(iframe);
@@ -95,7 +95,7 @@ export class OidcSilentLogin {
     const params = this.responseParameterParser.parseUrl(url);
     const redirectUrl = this.config.silentLogin.redirectUri
       ? new URL(this.config.silentLogin.redirectUri)
-      : this.localUrl.getLocalUrl('assets/silent-refresh.html');
+      : this.localUrl.convertToAbsoluteUrl('assets/silent-refresh.html');
     const promise = params.code
       ? this.oidcCodeResponse.response(params, redirectUrl)
       : this.oidcTokenResponse.response(true, params);

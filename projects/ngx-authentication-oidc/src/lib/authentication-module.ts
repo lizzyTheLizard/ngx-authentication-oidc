@@ -15,7 +15,7 @@ import { OidcTokenValidator } from './oidc/oidc-token-validator';
 import { TokenStoreWrapper } from './helper/token-store-wrapper';
 import { NgIdleModule } from '@ng-idle/core';
 import { OidcRefresh } from './oidc/oidc-refresh';
-import { LocalUrl } from './helper/local-url';
+import { UrlHelper } from './helper/url-helper';
 import { OidcCodeResponse } from './oidc/oidc-code-response';
 import { OidcTokenResponse } from './oidc/oidc-token-response';
 import { AccessTokenInterceptor } from './guard/access-token-interceptor';
@@ -61,7 +61,7 @@ export class AuthenticationModule {
         OidcAuthenticationRequest,
         TokenStoreWrapper,
         SessionService,
-        LocalUrl,
+        UrlHelper,
         PrivateGuard,
         EnforceLoginGuard
       ]

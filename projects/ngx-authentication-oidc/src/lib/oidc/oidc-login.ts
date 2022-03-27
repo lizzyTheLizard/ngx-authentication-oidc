@@ -5,7 +5,7 @@ import { Logger } from '../configuration/oauth-config';
 import { LoginResult } from '../login-result';
 import { WindowToken } from '../authentication-module.tokens';
 import { OidcAuthenticationRequest } from './oidc-authentication-request';
-import { LocalUrl } from '../helper/local-url';
+import { UrlHelper } from '../helper/url-helper';
 
 @Injectable()
 export class OidcLogin {
@@ -13,7 +13,7 @@ export class OidcLogin {
 
   constructor(
     private readonly config: AuthConfigService,
-    private readonly localUrl: LocalUrl,
+    private readonly urlHelper: UrlHelper,
     private readonly authenticationRequest: OidcAuthenticationRequest,
     @Inject(WindowToken) private readonly window: Window
   ) {
@@ -23,7 +23,7 @@ export class OidcLogin {
   public getRedirectUrl(): URL {
     return this.config.redirectUri
       ? new URL(this.config.redirectUri)
-      : this.localUrl.getLocalUrl('');
+      : this.urlHelper.convertToAbsoluteUrl('');
   }
 
   public async login(loginOptions: LoginOptions): Promise<LoginResult> {

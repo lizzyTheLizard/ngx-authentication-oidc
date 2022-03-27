@@ -5,7 +5,7 @@ import { OauthConfig } from '../configuration/oauth-config';
 import { OidcLogin } from './oidc-login';
 import { WindowToken } from '../authentication-module.tokens';
 import { AuthConfigService } from '../auth-config.service';
-import { LocalUrl } from '../helper/local-url';
+import { UrlHelper } from '../helper/url-helper';
 import { OidcAuthenticationRequest } from './oidc-authentication-request';
 
 const config = {
@@ -58,7 +58,7 @@ describe('OidcLogin', () => {
       providers: [
         { provide: WindowToken, useFactory: () => windowMock },
         { provide: AuthConfigService, useValue: authConfig },
-        { provide: LocalUrl, useValue: localUrl },
+        { provide: UrlHelper, useValue: localUrl },
         { provide: OidcAuthenticationRequest, useValue: authenticationRequest },
         OidcLogin
       ]
