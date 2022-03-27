@@ -1,5 +1,4 @@
 /* globals console */
-import { info } from 'console';
 import { LoginResult } from '../login-result';
 // eslint-disable-next-line prettier/prettier
 import { autoLoginIfPossible, enforceLogin, loginResponseCheck } from './initializer';
