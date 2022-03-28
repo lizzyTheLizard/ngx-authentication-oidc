@@ -100,7 +100,7 @@ export class AuthConfigService {
     if (input) {
       return input;
     }
-    return autoLoginIfPossible(false);
+    return autoLoginIfPossible({}, false);
   }
 
   private createAccessTokenUrlPrefixes(): string[] {

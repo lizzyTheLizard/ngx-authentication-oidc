@@ -25,7 +25,8 @@ describe('loginResponseCheck', async () => {
       .and.returnValue({ isLoggedIn: false });
     input.initialLoginResult = failedLoginResult;
 
-    const result = await loginResponseCheck(input);
+    const initializer = loginResponseCheck();
+    const result = await initializer(input);
 
     expect(result).toEqual(failedLoginResult);
   });
@@ -36,7 +37,8 @@ describe('loginResponseCheck', async () => {
       .and.returnValue({ isLoggedIn: false });
     input.initialLoginResult = successfulLoginResult;
 
-    const result = await loginResponseCheck(input);
+    const initializer = loginResponseCheck();
+    const result = await initializer(input);
 
     expect(result).toEqual(successfulLoginResult);
   });
@@ -47,7 +49,8 @@ describe('loginResponseCheck', async () => {
       .and.returnValue(successfulLoginResult);
     input.initialLoginResult = failedLoginResult;
 
-    const result = await loginResponseCheck(input);
+    const initializer = loginResponseCheck();
+    const result = await initializer(input);
 
     expect(result).toEqual(successfulLoginResult);
   });
@@ -58,7 +61,8 @@ describe('loginResponseCheck', async () => {
       .and.returnValue(successfulLoginResult);
     input.initialLoginResult = { isLoggedIn: true, userInfo: { sub: 'other' } };
 
-    const result = await loginResponseCheck(input);
+    const initializer = loginResponseCheck();
+    const result = await initializer(input);
 
     expect(result).toEqual(successfulLoginResult);
   });
@@ -77,7 +81,8 @@ describe('enforceLogin', () => {
     input.login = jasmine.createSpy('login').and.returnValue(Promise.resolve(failedLoginResult));
     input.initialLoginResult = failedLoginResult;
 
-    enforceLogin(input)
+    const initializer = enforceLogin({});
+    initializer(input)
       .then(() => {
         done.fail('Should not be possible');
       })
@@ -90,7 +95,8 @@ describe('enforceLogin', () => {
   it('Already logged in', async () => {
     input.initialLoginResult = successfulLoginResult;
 
-    const result = await enforceLogin(input);
+    const initializer = enforceLogin({});
+    const result = await initializer(input);
 
     expect(result).toEqual(successfulLoginResult);
     expect(input.login).toHaveBeenCalledTimes(0);
@@ -102,22 +108,44 @@ describe('enforceLogin', () => {
       .and.returnValue(Promise.resolve(successfulLoginResult));
     input.initialLoginResult = failedLoginResult;
 
-    const result = await enforceLogin(input);
+    const initializer = enforceLogin({});
+    const result = await initializer(input);
 
     expect(result).toEqual(successfulLoginResult);
     expect(input.login).toHaveBeenCalledTimes(1);
     expect(input.login).toHaveBeenCalledWith({});
   });
+
+  it('Login options', async () => {
+    input.login = jasmine
+      .createSpy('login')
+      .and.returnValue(Promise.resolve(successfulLoginResult));
+    input.initialLoginResult = failedLoginResult;
+    const loginOptions = { scope: ['1', '2'] };
+
+    const initializer = enforceLogin(loginOptions);
+    const result = await initializer(input);
+
+    expect(result).toEqual(successfulLoginResult);
+    expect(input.login).toHaveBeenCalledTimes(1);
+    expect(input.login).toHaveBeenCalledWith(loginOptions);
+  });
 });
 
-describe('autoLoginIfPossible with Silent Login', () => {
+describe('autoLoginIfPossible', () => {
   beforeEach(() => {
-    input = jasmine.createSpyObj('input', ['login', 'silentLogin', 'isResponse', 'handleResponse']);
+    input = jasmine.createSpyObj('input', [
+      'login',
+      'silentLogin',
+      'isResponse',
+      'handleResponse',
+      'isErrorResponse'
+    ]);
     input.loggerFactory = () => console;
     input.login = jasmine.createSpy('login').and.callFake(() => Promise.reject());
     input.silentLogin = jasmine.createSpy('silentLogin').and.callFake(() => Promise.reject());
     input.handleResponse = jasmine.createSpy('handleResponse').and.returnValue(failedLoginResult);
-    input.isErrorResponse = () => false;
+    input.isErrorResponse = jasmine.createSpy('isErrorResponse').and.returnValue(false);
     input.silentLoginEnabled = true;
   });
 
@@ -127,7 +155,8 @@ describe('autoLoginIfPossible with Silent Login', () => {
       .and.returnValue(Promise.resolve(failedLoginResult));
     input.initialLoginResult = failedLoginResult;
 
-    const result = await autoLoginIfPossible(false)(input);
+    const initializer = autoLoginIfPossible({}, false);
+    const result = await initializer(input);
 
     expect(result).toEqual(failedLoginResult);
     expect(input.silentLogin).toHaveBeenCalledTimes(1);
@@ -137,7 +166,8 @@ describe('autoLoginIfPossible with Silent Login', () => {
   it('Already logged in', async () => {
     input.initialLoginResult = successfulLoginResult;
 
-    const result = await autoLoginIfPossible(false)(input);
+    const initializer = autoLoginIfPossible({}, false);
+    const result = await initializer(input);
 
     expect(result).toEqual(successfulLoginResult);
     expect(input.login).toHaveBeenCalledTimes(0);
@@ -149,7 +179,8 @@ describe('autoLoginIfPossible with Silent Login', () => {
       .and.returnValue(Promise.resolve(successfulLoginResult));
     input.initialLoginResult = failedLoginResult;
 
-    const result = await autoLoginIfPossible(false)(input);
+    const initializer = autoLoginIfPossible({}, false);
+    const result = await initializer(input);
 
     expect(result).toEqual(successfulLoginResult);
     expect(input.silentLogin).toHaveBeenCalledTimes(1);
@@ -165,7 +196,8 @@ describe('autoLoginIfPossible with Silent Login', () => {
       .and.returnValue(Promise.resolve(successfulLoginResult));
     input.initialLoginResult = failedLoginResult;
 
-    const result = await autoLoginIfPossible(true)(input);
+    const initializer = autoLoginIfPossible({}, true);
+    const result = await initializer(input);
 
     expect(result).toEqual(successfulLoginResult);
     expect(input.silentLogin).toHaveBeenCalledTimes(1);
@@ -174,14 +206,15 @@ describe('autoLoginIfPossible with Silent Login', () => {
     expect(input.login).toHaveBeenCalledWith({});
   });
 
-  it('Enforded and Both Failed', (done) => {
+  it('Enforced and Both Failed', (done) => {
     input.silentLogin = jasmine
       .createSpy('silentLogin')
       .and.returnValue(Promise.resolve(failedLoginResult));
     input.login = jasmine.createSpy('login').and.returnValue(Promise.resolve(failedLoginResult));
     input.initialLoginResult = failedLoginResult;
 
-    autoLoginIfPossible(true)(input)
+    const initializer = autoLoginIfPossible({}, true);
+    initializer(input)
       .then(() => {
         done.fail('Should not be possible');
       })
@@ -190,64 +223,84 @@ describe('autoLoginIfPossible with Silent Login', () => {
         done();
       });
   });
-});
 
-describe('autoLoginIfPossible without Silent Login', () => {
-  beforeEach(() => {
-    input = jasmine.createSpyObj('input', [
-      'login',
-      'isResponse',
-      'handleResponse',
-      'isErrorResponse'
-    ]);
-    input.loggerFactory = () => console;
-    input.login = jasmine.createSpy('login').and.callFake(() => Promise.reject());
-    input.silentLogin = jasmine.createSpy('silentLogin').and.callFake(() => Promise.reject());
-    input.handleResponse = jasmine.createSpy('handleResponse').and.returnValue(failedLoginResult);
-    input.silentLoginEnabled = false;
+  it('Login options', async () => {
+    input.silentLogin = jasmine
+      .createSpy('silentLogin')
+      .and.returnValue(Promise.resolve(successfulLoginResult));
+    input.initialLoginResult = failedLoginResult;
+    const loginOptions = { scope: ['1', '2'] };
+
+    const initializer = autoLoginIfPossible(loginOptions, false);
+    const result = await initializer(input);
+
+    expect(result).toEqual(successfulLoginResult);
+    expect(input.silentLogin).toHaveBeenCalledTimes(1);
+    expect(input.silentLogin).toHaveBeenCalledWith(loginOptions);
   });
 
-  it('Redirect Login has failed', async () => {
+  it('Redirect Login has failed without silent Login', async () => {
     input.isErrorResponse = jasmine.createSpy('isErrorResponse').and.returnValue(true);
     input.initialLoginResult = failedLoginResult;
+    input.silentLoginEnabled = false;
 
-    const result = await autoLoginIfPossible(false)(input);
+    const initializer = autoLoginIfPossible({}, false);
+    const result = await initializer(input);
 
     expect(input.login).toHaveBeenCalledTimes(0);
     expect(result).toEqual(failedLoginResult);
   });
 
-  it('Redirect Login failed', async () => {
-    input.isErrorResponse = jasmine.createSpy('isErrorResponse').and.returnValue(false);
+  it('Redirect Login failed without silent Login', async () => {
     input.login = jasmine.createSpy('login').and.returnValue(Promise.resolve(failedLoginResult));
     input.initialLoginResult = failedLoginResult;
+    input.silentLoginEnabled = false;
 
-    const result = await autoLoginIfPossible(false)(input);
+    const initializer = autoLoginIfPossible({}, false);
+    const result = await initializer(input);
 
     expect(result).toEqual(failedLoginResult);
   });
 
-  it('Already logged in', async () => {
-    input.isErrorResponse = jasmine.createSpy('isErrorResponse').and.returnValue(false);
+  it('Already logged in without silent Login', async () => {
     input.initialLoginResult = successfulLoginResult;
+    input.silentLoginEnabled = false;
 
-    const result = await autoLoginIfPossible(false)(input);
+    const initializer = autoLoginIfPossible({}, false);
+    const result = await initializer(input);
 
     expect(result).toEqual(successfulLoginResult);
     expect(input.login).toHaveBeenCalledTimes(0);
   });
 
-  it('Login success', async () => {
-    input.isErrorResponse = jasmine.createSpy('isErrorResponse').and.returnValue(false);
+  it('Login success without silent Login', async () => {
     input.login = jasmine
       .createSpy('login')
       .and.returnValue(Promise.resolve(successfulLoginResult));
     input.initialLoginResult = failedLoginResult;
+    input.silentLoginEnabled = false;
 
-    const result = await autoLoginIfPossible(false)(input);
+    const initializer = autoLoginIfPossible({}, false);
+    const result = await initializer(input);
 
     expect(result).toEqual(successfulLoginResult);
     expect(input.login).toHaveBeenCalledTimes(1);
     expect(input.login).toHaveBeenCalledWith({ prompts: Prompt.NONE });
+  });
+
+  it('Login options without silent Login', async () => {
+    input.login = jasmine
+      .createSpy('login')
+      .and.returnValue(Promise.resolve(successfulLoginResult));
+    input.initialLoginResult = failedLoginResult;
+    input.silentLoginEnabled = false;
+    const loginOptions = { scope: ['1', '2'] };
+
+    const initializer = autoLoginIfPossible(loginOptions, false);
+    const result = await initializer(input);
+
+    expect(result).toEqual(successfulLoginResult);
+    expect(input.login).toHaveBeenCalledTimes(1);
+    expect(input.login).toHaveBeenCalledWith({ prompts: Prompt.NONE, ...loginOptions });
   });
 });
