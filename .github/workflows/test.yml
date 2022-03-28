@@ -50,6 +50,6 @@ jobs:
           git tag -a `node -pe "require('./package.json').version"` -m 'Create Tag'
           git push origin --tags
       - name: Publish Version
-        run: npm publish
+        run: npm publish dist/ngx-authentication-oidc/
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
