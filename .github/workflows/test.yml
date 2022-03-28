@@ -43,13 +43,13 @@ jobs:
         with:
           node-version: 16.14.0
           registry-url: 'https://registry.npmjs.org'
+      - name: Publish Version
+        run: npm publish dist/ngx-authentication-oidc/
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Tag version
         run: |
           git config --global user.name 'lizzyTheLizard'
           git config --global user.email 'lizzyTheLizard@users.noreply.github.com>'
           git tag -a `node -pe "require('./dist/ngx-authentication-oidc/package.json').version"` -m 'Create Tag'
-          git push origin --tags
-      - name: Publish Version
-        run: npm publish dist/ngx-authentication-oidc/
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          git push origin --tags          
