@@ -47,7 +47,7 @@ jobs:
         run: |
           git config --global user.name 'lizzyTheLizard'
           git config --global user.email 'lizzyTheLizard@users.noreply.github.com>'
-          git tag -a `node -pe "require('./package.json').version"` -m 'Create Tag'
+          git tag -a `node -pe "require('./dist/ngx-authentication-oidc/package.json').version"` -m 'Create Tag'
           git push origin --tags
       - name: Publish Version
         run: npm publish dist/ngx-authentication-oidc/
