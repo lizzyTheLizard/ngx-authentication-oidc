@@ -1,10 +1,7 @@
 name: Build and Run all Tests
 on:
-  push:
-    branches:
-      - main
   pull_request:
-    types: [opened, synchronize, reopened, closed]
+    types: [opened, synchronize, reopened]
     branches:
       - main
 jobs:
@@ -29,31 +26,3 @@ jobs:
         run: npm run build
       - name: Test
         run: npm run test:nowatch
-  publish:
-    if: github.event_name == 'push'
-    needs: build
-    runs-on: ubuntu-latest
-    name: Publish
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: true
-      - name: Setup Node
-        uses: actions/setup-node@v1
-        with:
-          node-version: 16.14.0
-          registry-url: 'https://registry.npmjs.org'
-      - name: Install Dependencies
-        run: npm ci
-      - name: Build
-        run: npm run build
-      - name: Publish Version
-        run: npm publish dist/ngx-authentication-oidc/
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: Tag version
-        run: |
-          git config --global user.name 'lizzyTheLizard'
-          git config --global user.email 'lizzyTheLizard@users.noreply.github.com>'
-          git tag -a `node -pe "require('./dist/ngx-authentication-oidc/package.json').version"` -m 'Create Tag'
-          git push origin --tags          
