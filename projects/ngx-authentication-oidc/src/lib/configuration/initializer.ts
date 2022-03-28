@@ -1,6 +1,5 @@
-import { LoginOptions } from 'ngx-authentication-oidc';
 import { Initializer } from '../configuration/oauth-config';
-import { Prompt } from './login-options';
+import { LoginOptions, Prompt } from './login-options';
 
 /**
  * Initializer that will check if this is an OIDC redirect and if so log the user in
