@@ -12,10 +12,18 @@ ngx-authentication-oidc is a full fledged authentication solution for Angular us
 The following OIDC features are supported:
 * Automatic provider discovery using [OIDC Discovery](https://openid.net/specs/openid-connect-discovery-1_0.html)
 * Login using [Authorization Code Flow](https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth), [Implicit Flow](https://openid.net/specs/openid-connect-core-1_0.html#ImplicitFlowAuth) and [Hybrid Flow](https://openid.net/specs/openid-connect-core-1_0.html#HybridFlowAuth) including [PKCE](https://datatracker.ietf.org/doc/html/rfc7636)
-* Automatic token updates using [refresh tokens](https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens) or silent login
+* Automatic token updates using [Refresh Tokens](https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens) or silent login
 * [Client initiated logout](https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
 * [Session Management](https://openid.net/specs/openid-connect-session-1_0.html)
+* [Client Authentication](https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication) using client_secret_post
 
+The following parts are not supported as they are not typically used for a Single-Page-Application client
+* [Signed or encrypted Authentication Requests](https://openid.net/specs/openid-connect-core-1_0.html#JWTRequests) using JWTs
+* [Initiating Login from a Third Party](https://openid.net/specs/openid-connect-core-1_0.html#ThirdPartyInitiatedLogin)
+* [Form Post Response](https://openid.net/specs/oauth-v2-form-post-response-mode-1_0.html)
+* [Dynamic Client Registration](https://openid.net/specs/openid-connect-registration-1_0.html)
+* [Front-](https://openid.net/specs/openid-connect-frontchannel-1_0.html) and [Back-Channel Logout](https://openid.net/specs/openid-connect-backchannel-1_0.html)
+ 
 Additionally this library features:
 * Automatic logout after an inactivity timeout
 * Automatic session detection at startup using silent logins
@@ -69,8 +77,7 @@ The following examples are provided:
 * **[azure-sample](../../projects/azure-sample/README.md)**: Simple integration using [Azure AD](https://azure.microsoft.com/en-us/services/active-directory/)
 * **[google-sample](../../projects/google-sample/README.md)**: Simple integration using [Google](https://developers.google.com/identity/protocols/oauth2/openid-connect)
 * TODO: Full Config Example
-* TODO: Okta
-
+* TODO: [Self-Issued OpenID Provider (Chapter 7) (https://openid.net/specs/openid-connect-core-1_0.html#SelfIssued)
 ## Documentation
 ### Configuration
 TODO: [OauthConfig](src/lib/configuration/oauth-config.ts).

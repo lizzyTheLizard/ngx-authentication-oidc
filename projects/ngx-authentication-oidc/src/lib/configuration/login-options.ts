@@ -4,6 +4,7 @@
  * Some parameters like client_id, redirect_uri, state, response_mode, nonce and  id_token_hint will
  * be set automatically using the given {@link OauthConfig}.
  * All values are optional
+ * TODO: Requesting Claims using the "claims" Request Parameter (Chapter 5.5)
  */
 export interface OidcParameters {
   /**
