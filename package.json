@@ -1,17 +1,4 @@
 {
-  "name": "ngx-authentication-oidc",
-  "version": "0.0.1",
-  "description": "Full fledged authentication solution for Angular using OIDC",
-  "author": "Matthias Graf",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/lizzyTheLizard/ngx-authentication-oidc.git"
-  },
-  "bugs": {
-    "url": "https://github.com/lizzyTheLizard/ngx-authentication-oidc/issues"
-  },
-  "homepage": "https://github.com/lizzyTheLizard/ngx-authentication-oidc/",
-  "license": "MIT",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
