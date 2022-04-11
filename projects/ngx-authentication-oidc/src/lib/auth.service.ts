@@ -214,25 +214,41 @@ export class AuthService {
    * @param {LoginResult} loginResult The login result to be set
    */
   public async setLoginResult(loginResult: LoginResult): Promise<void> {
+    loginResult = await this.fetchAdditionalData(loginResult);
+
     if (!loginResult.isLoggedIn) {
       this.logger.info('Login was not successful, user is not logged in');
     } else if (this.config.fetchAdditionalUserInfo) {
-      const oldUserInfo = loginResult.userInfo!;
-      const newUserInfo = await this.config.fetchAdditionalUserInfo(oldUserInfo);
-      loginResult = { ...loginResult, userInfo: newUserInfo };
-      this.logger.info('Login was successful, user is logged in', newUserInfo);
-    } else {
       const userInfo = loginResult.userInfo!;
       this.logger.info('Login was successful, user is logged in', userInfo);
     }
+
     this.tokenStore.setLoginResult(loginResult);
     this.loginResult$.next(loginResult);
+
     if (loginResult.finalRoute) {
       this.logger.info('Redirect', loginResult.finalRoute);
       this.router.navigateByUrl(loginResult.finalRoute);
     } else {
       this.logger.info('No redirect set');
     }
+  }
+
+  private async fetchAdditionalData(loginResult: LoginResult): Promise<LoginResult> {
+    if (!loginResult.isLoggedIn) {
+      // If not logged in, no additional data can be fetched
+      return loginResult;
+    }
+    if (!this.config.fetchAdditionalUserInfo) {
+      return loginResult;
+    }
+    /*
+     * Store the login result first.
+     * This allows fetchAdditionalUserInfo to use the token interceptor
+     */
+    this.tokenStore.setLoginResult(loginResult);
+    const newUserInfo = await this.config.fetchAdditionalUserInfo(loginResult.userInfo!);
+    return { ...loginResult, userInfo: newUserInfo };
   }
 
   /**
