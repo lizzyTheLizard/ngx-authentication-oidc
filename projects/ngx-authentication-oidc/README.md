@@ -70,6 +70,7 @@ export class AppModule {}
 After installation, the library is automatically started and the configured initialization code is executed as soon as the application is started, there is nothing else to do.
 If you however want to interact with the authentication module in any way, you can inject an instance of [AuthService](projects/ngx-authentication-oidc/src/lib/auth.service.ts) into your angular application.
 
+Note: The library uses the base URI of the application as redirectURI. Do not configure any redirects on the URL '/', otherwise the library will not work properly
 
 ## Examples
 The following examples are provided:

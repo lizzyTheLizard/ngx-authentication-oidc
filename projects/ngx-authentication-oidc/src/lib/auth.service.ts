@@ -75,7 +75,7 @@ export class AuthService {
       await this.oidcDiscovery.discover();
       const initializerInput = this.createInitializerInput();
       const loginResult = await this.config.initializer(initializerInput);
-      this.setLoginResult(loginResult);
+      await this.setLoginResult(loginResult);
       if (loginResult.isLoggedIn) {
         this.logger.debug('Finished initialization, user is logged in');
       } else {
@@ -88,7 +88,7 @@ export class AuthService {
         loggerFactory: this.config.loggerFactory,
         router: this.router
       };
-      this.setLoginResult({ isLoggedIn: false });
+      await this.setLoginResult({ isLoggedIn: false });
       this.config.initializationErrorAction(input);
     }
     this.initialSetupFinishedResolve(true);
@@ -166,7 +166,7 @@ export class AuthService {
     };
     const loginResult = await this.oidcLogin.login(loginOptions);
     if (loginResult.isLoggedIn) {
-      this.setLoginResult(loginResult);
+      await this.setLoginResult(loginResult);
     } else {
       this.logger.info('Login was not successful, user is not logged in');
     }
@@ -186,7 +186,7 @@ export class AuthService {
     };
     const loginResult = await this.oidcSilentLogin.login(loginOptions);
     if (loginResult.isLoggedIn) {
-      this.setLoginResult(loginResult);
+      await this.setLoginResult(loginResult);
     } else {
       this.logger.info('Login was not successful, user is not logged in');
     }
@@ -198,16 +198,20 @@ export class AuthService {
    * but you can use it to set some specific state from outside as well.
    * @param {LoginResult} loginResult The login result to be set
    */
-  public setLoginResult(loginResult: LoginResult): void {
+  public async setLoginResult(loginResult: LoginResult): Promise<void> {
+    if (!loginResult.isLoggedIn) {
+      this.logger.info('Login was not successful, user is not logged in');
+    } else if (this.config.fetchAdditionalUserInfo) {
+      const oldUserInfo = loginResult.userInfo!;
+      const newUserInfo = await this.config.fetchAdditionalUserInfo(oldUserInfo);
+      loginResult = { ...loginResult, userInfo: newUserInfo };
+      this.logger.info('Login was successful, user is logged in', newUserInfo);
+    } else {
+      const userInfo = loginResult.userInfo!;
+      this.logger.info('Login was successful, user is logged in', userInfo);
+    }
     this.tokenStore.setLoginResult(loginResult);
     this.loginResult$.next(loginResult);
-
-    const userInfo = this.getUserInfo();
-    if (loginResult.isLoggedIn) {
-      this.logger.info('Login was successful, user is logged in', userInfo);
-    } else {
-      this.logger.info('Login was not successful, user is not logged in');
-    }
     if (loginResult.finalRoute) {
       this.logger.info('Redirect', loginResult.finalRoute);
       this.router.navigateByUrl(loginResult.finalRoute);
