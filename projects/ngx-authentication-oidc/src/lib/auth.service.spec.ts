@@ -1,6 +1,6 @@
 /* global localStorage*/
 import { AuthService } from './auth.service';
-import { LoginResult } from './login-result';
+import { LoginResult, UserInfo } from './login-result';
 import { TestBed } from '@angular/core/testing';
 import { AuthenticationModule } from './authentication-module';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -51,11 +51,16 @@ let oidcSessionManagementChange: Subject<void>;
 let windowMock: Window;
 let codeResponse: jasmine.Spy<(params: Response, redirect: URL) => Promise<LoginResult>>;
 let tokenResponse: jasmine.Spy<(params: Response) => Promise<LoginResult>>;
+let fetchAdditionalUserInfo: jasmine.Spy<(params: UserInfo) => Promise<UserInfo>>;
 
 describe('AuthService', () => {
   beforeEach(() => {
     initializer = jasmine.createSpy('initializer');
     config.initializer = initializer;
+    fetchAdditionalUserInfo = jasmine
+      .createSpy('fetchAdditionalUserInfo')
+      .and.callFake((ui) => Promise.resolve(ui));
+    config.fetchAdditionalUserInfo = fetchAdditionalUserInfo;
 
     login = jasmine.createSpy('login');
     silentLogin = jasmine.createSpy('silentLogin');
@@ -313,5 +318,21 @@ describe('AuthService', () => {
     expect(isLoggedInChanged).toHaveBeenCalledWith(false);
     expect(isUserInfoChanged).toHaveBeenCalledTimes(1);
     expect(isUserInfoChanged).toHaveBeenCalledWith(undefined);
+  });
+
+  it('Fetch additional user info', async () => {
+    login.and.returnValue(Promise.resolve(loginResult));
+    discovery.and.returnValue(Promise.resolve());
+    initializer.and.returnValue(Promise.resolve(failedLoginResult));
+    const fakeUserInfo = { sub: 'test222CC' };
+    fetchAdditionalUserInfo.and.callFake(() => Promise.resolve(fakeUserInfo));
+    await service.initialSetupFinished$;
+
+    await service.login();
+
+    expect(service.getUserInfo()).toEqual(fakeUserInfo);
+    expect(service.getLoginResult()).toEqual({ ...loginResult, userInfo: fakeUserInfo });
+    expect(fetchAdditionalUserInfo).toHaveBeenCalledTimes(1);
+    expect(fetchAdditionalUserInfo).toHaveBeenCalledWith(loginResult.userInfo!);
   });
 });

@@ -174,7 +174,7 @@ export class SessionService {
       this.authService.logout(this.config.inactiveTimeout.timeoutAction);
     }
     this.logger.debug('The session has been updated');
-    this.authService.setLoginResult(newLoginResult);
+    await this.authService.setLoginResult(newLoginResult);
   }
 
   private async getNewTokens(useRefresh: boolean, oldResult: LoginResult): Promise<LoginResult> {

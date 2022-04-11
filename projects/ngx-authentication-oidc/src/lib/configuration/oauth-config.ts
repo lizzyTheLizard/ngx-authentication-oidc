@@ -1,6 +1,6 @@
 import { InterruptSource } from '@ng-idle/core';
 import { JWK } from 'jose';
-import { LoginResult } from '../login-result';
+import { LoginResult, UserInfo } from '../login-result';
 import { LoginOptions } from './login-options';
 import { Router } from '@angular/router';
 
@@ -73,6 +73,12 @@ export interface OauthConfig {
    * If multiple prefixes are defined, the token is send if ONE matches the URL
    */
   accessTokenUrlPrefixes?: string | string[];
+  /**
+   * An additional call that will be made after a successful login to fetch
+   * additional user data, e.g. permissions on the actual application.
+   * This user data will be added to the userinfo object.
+   */
+  fetchAdditionalUserInfo?: AdditionalUserInfoCall;
 }
 
 /**
@@ -237,3 +243,5 @@ export interface TokenTolerancesConfig {
   expTolerance: number;
   iatTolerance: number;
 }
+
+export type AdditionalUserInfoCall = (userInfo: UserInfo) => Promise<UserInfo>;

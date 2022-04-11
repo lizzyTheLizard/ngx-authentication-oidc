@@ -1,6 +1,6 @@
 /* global sessionStorage */
 // eslint-disable-next-line prettier/prettier
-import { AutoUpdateConfig, ErrorAction, InactiveTimeoutConfig, Initializer, Logger, LoggerFactory, LogoutAction, OauthConfig, ProviderConfig, SessionManagementConfig, SilentLoginConfig, TokenTolerancesConfig, UserInfoSource } from './configuration/oauth-config';
+import { AdditionalUserInfoCall, AutoUpdateConfig, ErrorAction, InactiveTimeoutConfig, Initializer, Logger, LoggerFactory, LogoutAction, OauthConfig, ProviderConfig, SessionManagementConfig, SilentLoginConfig, TokenTolerancesConfig, UserInfoSource } from './configuration/oauth-config';
 import { DEFAULT_INTERRUPTSOURCES } from '@ng-idle/core';
 import { consoleLoggerFactory } from './configuration/console-logger';
 import { autoLoginIfPossible } from './configuration/initializer';
@@ -24,6 +24,7 @@ export class AuthConfigService {
   public readonly initializer: Initializer;
   public readonly accessTokenUrlPrefixes: string[];
   public readonly tokenTolerances: TokenTolerancesConfig;
+  public readonly fetchAdditionalUserInfo?: AdditionalUserInfoCall;
   private providerConfiguration?: ProviderConfig;
   private readonly logger: Logger;
 
@@ -46,6 +47,7 @@ export class AuthConfigService {
     this.tokenTolerances = this.createTokenTolerances();
     this.userInfoSource = config.userInfoSource ?? UserInfoSource.USER_INFO_ENDPOINT;
     this.notAllowedUri = config.notAllowedUri ?? '/auth/forbidden';
+    this.fetchAdditionalUserInfo = config.fetchAdditionalUserInfo;
     this.logger.debug('Configuration set to', this);
   }
 
