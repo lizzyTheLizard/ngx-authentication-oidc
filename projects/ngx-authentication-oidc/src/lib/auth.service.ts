@@ -13,7 +13,7 @@ import { OidcSilentLogin } from './oidc/oidc-silent-login';
 import { TokenStoreWrapper } from './helper/token-store-wrapper';
 import { WindowToken } from './authentication-module.tokens';
 import { LogoutActionInput } from './configuration/oauth-config';
-import { ResponseParameterParser } from './helper/response-parameter-parser';
+import { Response, ResponseParameterParser } from './helper/response-parameter-parser';
 import { OidcTokenResponse } from './oidc/oidc-token-response';
 import { OidcCodeResponse } from './oidc/oidc-code-response';
 
@@ -113,14 +113,13 @@ export class AuthService {
 
   private handleResponse(): Promise<LoginResult> {
     const current = new URL(this.window.location.href);
-    const redirect = this.oidcLogin.getRedirectUrl();
-    if (current.pathname !== redirect.pathname) {
-      this.logger.debug('Current URL is not redirectURL', current, redirect);
+    const params = this.responseParameterParser.parseUrl(current);
+    if (this.notRedirectUrl(params)) {
       return Promise.resolve({ isLoggedIn: false });
     }
-    const params = this.responseParameterParser.parseUrl(current);
     try {
       if (params.code) {
+        const redirect = this.oidcLogin.getRedirectUrl();
         return this.oidcCodeResponse.response(params, redirect);
       }
       if (params.id_token || params.access_token) {
@@ -141,13 +140,29 @@ export class AuthService {
 
   private isErrorResponse(): boolean {
     const current = new URL(this.window.location.href);
-    const redirect = this.oidcLogin.getRedirectUrl();
-    if (current.pathname !== redirect.pathname) {
-      this.logger.debug('Current URL is not redirectURL', current, redirect);
+    const params = this.responseParameterParser.parseUrl(current);
+    if (this.notRedirectUrl(params)) {
       return false;
     }
-    const params = this.responseParameterParser.parseUrl(current);
     return !!params.error;
+  }
+
+  private notRedirectUrl(params: Response): boolean {
+    const current = new URL(this.window.location.href);
+    const redirect = this.oidcLogin.getRedirectUrl();
+    if (current.pathname === redirect.pathname) {
+      return false;
+    }
+    if (params.code || params.error || params.access_token || params.id_token) {
+      this.logger.error(
+        'Current URL is not redirectURL but this looks like a OIDC-Response',
+        current.toString(),
+        redirect.toString()
+      );
+    } else {
+      this.logger.info('Current URL is not redirectURL', current.toString(), redirect.toString());
+    }
+    return true;
   }
 
   /**
